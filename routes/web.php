@@ -74,6 +74,11 @@ Route::middleware('auth')->group(function () {
             Route::delete('batiks/images/{image}', [App\Http\Controllers\Admin\BatikGalleryController::class, 'destroyImage'])->name('batiks.images.destroy');
             Route::post('batiks/images/{image}/main', [App\Http\Controllers\Admin\BatikGalleryController::class, 'setMainImage'])->name('batiks.images.main');
         });
+
+        // Monitor Model AI
+        Route::middleware('menu.access:monitor-ai')->group(function () {
+            Route::get('/monitor-ai', [App\Http\Controllers\Admin\MonitorAiController::class, 'index'])->name('monitor-ai.index');
+        });
     });
 });
 

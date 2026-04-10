@@ -11,6 +11,7 @@
                     'kelola-user' => route('admin.users.index'),
                     'kelola-role' => route('admin.roles.index'),
                     'kelola-galeri' => route('admin.batiks.index'),
+                    'monitor-ai' => route('admin.monitor-ai.index'),
                 ];
                 
                 $url = array_key_exists($menu->code, $routeMap) ? $routeMap[$menu->code] : '#';

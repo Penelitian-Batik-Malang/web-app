@@ -50,6 +50,8 @@ return [
             'motif' => env('ML_API_MOTIF_PATH', '/motif/scan'),
             // Path endpoint scan jenis batik (tulis/cap).
             'jenis' => env('ML_API_JENIS_PATH', '/tulis/scan'),
+            // Path endpoint health model AI.
+            'health' => env('ML_API_HEALTH_PATH', '/health'),
         ],
     ],
 

@@ -85,9 +85,3 @@ Menu ini digunakan untuk mengelola konten global yang ada di landing page (akan 
 
 Menu Monitor Model ML
 Menu ini digunakan sebagai dashboard untuk menampilkan hasil *Model health*. jadi akan ada api model health, nah menu ini akan memanggil api tersebut dan menampilkan hasilnya dalam bentuk tabel.
-
-
-Kondisi Saat ini
-- sudah ada desain halaman untuk galeri, landing, menu untuk gerbang ke menu lainnya, dan login
-- halaman diatas hanya bersifat desain dan template, perlu dipoles lagi
-- serta untuk folder layouts, ini belum benar-benar dipecah menjadi footer, header, dan sidebar. jadi masih ada layout.blade.php yang berisi semuanya 
