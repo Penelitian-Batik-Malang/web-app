@@ -26,7 +26,7 @@
 
         <!-- Login Card -->
         <div class="bg-white rounded-lg shadow-xl p-8">
-            <form method="POST" action="#" class="space-y-6">
+            <form method="POST" action="{{ route('login.post') }}" class="space-y-6">
                 @csrf
                 
                 <!-- Email Input -->
@@ -41,7 +41,11 @@
                         required
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                         placeholder="nama@email.com"
+                        value="{{ old('email') }}"
                     >
+                    @error('email')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Password Input -->
@@ -57,6 +61,9 @@
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                         placeholder="••••••••"
                     >
+                    @error('password')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Remember Me & Forgot Password -->
@@ -96,11 +103,19 @@
                 </div>
             </div>
 
+            <!-- Google Login -->
+            <div class="mb-6">
+                <a href="{{ route('google.login') }}" class="w-full flex items-center justify-center bg-white border border-gray-300 text-gray-700 font-medium py-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 mr-2" alt="Google Logo">
+                    Masuk dengan Google
+                </a>
+            </div>
+
             <!-- Register Link -->
             <div class="text-center">
                 <p class="text-sm text-gray-600">
                     Belum punya akun? 
-                    <a href="#" class="text-amber-600 hover:text-amber-700 font-medium">
+                    <a href="{{ route('register') }}" class="text-amber-600 hover:text-amber-700 font-medium">
                         Daftar sekarang
                     </a>
                 </p>

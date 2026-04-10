@@ -1,0 +1,87 @@
+Aplikasi ini merupakan aplikasi galeri batik yang terintegrasi dengan model ML yang dapat mendeteksi motif dan jenis batik, mencari batik yang serupa dengan batik yang dimiliki, mencari batik sesuai warna dominan batik, dan lain sebagainya.
+Secara teknis aplikasi ini hanya sebuah frontend yang akan melempar gambar atau text ke dalam api ML yang telah ada.
+
+Hak Akses dan Role
+- terdapat 2 role yaitu user dan admin
+- hak akses yang dimiliki user
+-- Menu Galeri Batik
+--- Melihat Gambar dan Detail Batik
+--- Like Gambar Batik serta Rekomendasi Batik dari yang telah di Like
+-- Menu Deteksi Motif Batik
+-- Menu Deteksi Jenis Batik
+-- Menu Pencarian Batik 
+-- Menu Pencarian By Warna Dominan
+-- Menu Rekomendasi By Fashion
+-- Menu Pewarnaan By Palet Warna
+-- Menu Pewarna By Prompt
+-- Menu Terapkan Batik
+-- Menu Text To Image Batik
+- hak akses yang dimiliki admin
+-- Menu Kelola User 
+-- Menu Kelola Role
+-- Menu Kelola Galeri Batik
+-- Menu Kelola Konten Global di Landing
+-- Menu Monitor Model AI
+
+Login dan Autentifikasi
+- Login menggunakan email dan password, selain itu dapat login menggunakan akun google
+- Hal yang sama berlaku untuk register
+- Terdapat fitur lupa password
+- Terdapat fitur Remember Me
+- Ketika sudah login, 
+-- Jika sebagai role user,
+--- Terdapat dropdown pada navbar yang berisi
+---- Profil
+----- Profil akan mengatur informasi akunnya
+---- Keluar
+-- Jika sebagai role admin,
+--- Terdapat sebuah navbar yang mengarah ke Admin Dashboard (ada menu admin dashboard) untuk mengakses menu-menu yang hanya bisa dilihat oleh admin
+---- Jadi, ketika role tersebut memiliki hak akses menu yang bersifat kelola maka di navbar akan ada admin dashboardnya
+--- Terdapat dropdown pada navbar yang berisi
+---- Profil
+----- Profil akan mengatur informasi akunnya
+---- Keluar
+
+Menu Deteksi Motif Batik
+Menu ini hanya pop-up yang berisi
+- upload gambar
+- tampil hasil
+jadi, setelah gambar diupload nantinya akan memanggil api dari model ML yang telah ada dan hasil keluaran model tersebut yang akan ditampilkan
+
+Menu Deteksi Jenis Batik
+Menu ini hanya pop-up yang berisi
+- upload gambar
+- tampil hasil
+jadi, setelah gambar diupload nantinya akan memanggil api dari model ML yang telah ada dan hasil keluaran model tersebut yang akan ditampilkan
+
+Menu Pencarian Batik & Pencarian By Warna Dominan
+Menu ini hanya pop-up yang berisi
+- upload gambar
+- tampil hasil
+Untuk menu pencarian batik sedikit berbeda hasil yang ditampilkan, yaitu akan menampilkan gambar-gambar yang serupa dengan gambar yang diupload
+
+Menu Kelola User
+Menu yang akan mengelola user yang ada, terdiri dari data
+- username
+- email
+- role
+- password
+
+Menu Kelola Role
+Menu yang digunakan untuk mengelola role yang ada dan juga menambahkan hak akses terhadap menu apa saja. hak akses disini hanya bersifat flagging terhadap menu-menu yang ada di aplikasi ini. sehingga, bukan dengan permission. Jadi, ketika role tersebut tidak ada flagging menu *Deteksi Motif* misalnya, maka role tersebut tidak bisa mengakses nya. Flagging menu ditambahkan di BE, dalam artinya kita mendefinisikan nama kode, masing-masing menu itu secara code, nanti di menu kelola role ini yang kita atur statis sesuai dengan penulisan di code
+
+Menu Kelola Galeri Batik
+Menu ini digunakan untuk mengelola galeri batik yang ada, terdiri dari data
+- gambar (utama) : ini yang akan tampil di menu galeri (thumbnail)
+-- gambar (detail) : ini yang akan tampil ketika di klik gambar utama
+-- like : ini digunakan untuk menghitung jumlah like dari masing-masing detail gambar, karena nantinya setelah like dapat rekomendasi gambar yang serupa. yang secara teknis ketika like, gambar yang dilike akan dilempar ke api model ML, kemudian akan memberikan gambar yang serupa
+- nama
+- deskripsi
+- Jenis Batik (cap / tulis)
+- status : sebagai flagging apakah batik tersebut akan tampil di menu galeri atau tidak
+
+Menu Kelola Konten Global di Landing
+Menu ini digunakan untuk mengelola konten global yang ada di landing page (akan menyeseuaikan dengan desain landing yang ada)
+
+Menu Monitor Model ML
+Menu ini digunakan sebagai dashboard untuk menampilkan hasil *Model health*. jadi akan ada api model health, nah menu ini akan memanggil api tersebut dan menampilkan hasilnya dalam bentuk tabel.
