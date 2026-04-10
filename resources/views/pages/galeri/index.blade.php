@@ -7,7 +7,7 @@
     {{-- Galeri Header & Filter --}}
     <div class="flex justify-center items-center gap-6 flex-col border-b border-gray-800 pb-8">
         <span class="text-md lg:text-lg font-medium text-gray-400 max-w-3xl text-center">
-            Selamat datang di Ruang Pamer Batik Malang. Di sini Anda dapat mengeksplorasi beraneka rupa corak yang memiliki sejarah dan keunikannya masing-masing.
+            Selamat datang di Galeri Batik Malang. Di sini Anda dapat mengeksplorasi beraneka motif batik Malang yang memiliki sejarah dan keunikannya masing-masing.
         </span>
         
         <form action="{{ route('galeri') }}" method="GET" class="flex flex-col sm:flex-row gap-3 w-full max-w-2xl">

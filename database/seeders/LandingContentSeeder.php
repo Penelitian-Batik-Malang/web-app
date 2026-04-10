@@ -14,7 +14,7 @@ class LandingContentSeeder extends Seeder
             ['key' => 'hero_title', 'value' => 'Batik Malang,', 'type' => 'text'],
             ['key' => 'hero_highlight', 'value' => 'Cerdas & Lestari', 'type' => 'text'],
             ['key' => 'hero_subtitle', 'value' => 'Menggabungkan kekayaan budaya Batik Malang dengan teknologi AI untuk pengalaman eksplorasi yang lebih cerdas dan interaktif.', 'type' => 'text'],
-            ['key' => 'hero_bg', 'value' => 'https://images.unsplash.com/photo-1632759145350-fbe0fdb6192a?q=80&w=2000&auto=format&fit=crop', 'type' => 'image'],
+            ['key' => 'hero_bg', 'value' => 'https://t3.ftcdn.net/jpg/02/64/50/58/360_F_264505804_DHKnvdaT3YtdJteynvJyKCxjxwWNE1EI.jpg', 'type' => 'image'],
             
             ['key' => 'about_title', 'value' => 'Menghubungkan Tradisi & Teknologi', 'type' => 'text'],
             ['key' => 'about_desc1', 'value' => 'BatikMalang.ai lahir dari kecintaan terhadap warisan budaya batik dan visi untuk membuatnya relevan bagi generasi modern. Kami percaya setiap orang memiliki motif batik yang merepresentasikan karakter mereka.', 'type' => 'text'],

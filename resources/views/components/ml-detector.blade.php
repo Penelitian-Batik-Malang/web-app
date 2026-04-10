@@ -227,7 +227,7 @@
                     onclick="MLDetector.primaryAction('{{ $id }}', '{{ $endpoint }}', '{{ $inputType }}', '{{ $outputType }}')"
                     class="bg-primary hover:bg-amber-600 text-black font-bold py-3 rounded-xl transition-all shadow-lg"
                 >
-                    Scan
+                    Pindai Gambar
                 </button>
                 <button
                     onclick="MLDetector.reset('{{ $id }}')"
