@@ -41,4 +41,16 @@ return [
         'redirect'      => env('GOOGLE_REDIRECT_URI', 'http://localhost:8000/auth/google/callback'),
     ],
 
+    'ml' => [
+        // Base URL layanan ML (tanpa trailing slash).
+        // Default diarahkan ke endpoint produksi yang kamu sebutkan.
+        'base_url' => env('ML_API_BASE_URL', 'https://galeridigital-batikmalang.id/api'),
+        'endpoints' => [
+            // Path endpoint scan motif batik.
+            'motif' => env('ML_API_MOTIF_PATH', '/motif/scan'),
+            // Path endpoint scan jenis batik (tulis/cap).
+            'jenis' => env('ML_API_JENIS_PATH', '/tulis/scan'),
+        ],
+    ],
+
 ];

@@ -84,35 +84,101 @@
                     {{-- Manajemen Gambar yang Sudah Diupload --}}
                     <div class="mt-8">
                         <h3 class="text-gray-400 font-medium mb-4 uppercase text-xs tracking-widest">Aset Visual Tersimpan</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                             @foreach($batik->images as $img)
-                                <div class="relative group rounded-xl overflow-hidden border {{ $img->is_main ? 'border-primary shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'border-gray-700' }}">
-                                    <div class="aspect-square bg-gray-900">
+                                @php $imgLikes = $img->likes()->with('role')->get(); @endphp
+                                <div class="border rounded-xl overflow-hidden {{ $img->is_main ? 'border-primary shadow-[0_0_12px_rgba(245,158,11,0.15)]' : 'border-gray-700' }} bg-gray-900">
+                                    {{-- Gambar --}}
+                                    <div class="relative aspect-video bg-black">
                                         <img src="{{ Storage::url($img->image_path) }}" class="w-full h-full object-cover">
-                                    </div>
-                                    
-                                    {{-- Lencana "Gambar Utama" Status --}}
-                                    @if($img->is_main)
-                                        <div class="absolute top-2 left-2 bg-primary text-black text-xs px-2 py-1 rounded shadow drop-shadow-md font-bold">Thumbnail Utama</div>
-                                    @endif
-
-                                    {{-- Overlay Aksi --}}
-                                    <div class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {{-- Hitungan Like Realtime ML Data Mentah --}}
-                                        <span class="text-white text-xs mb-2">❤️ {{ $img->likes()->count() }} User Likes</span>
-
-                                        @if(!$img->is_main)
-                                            <form action="{{ route('admin.batiks.images.main', $img->id) }}" method="POST" class="w-full px-4">
-                                                @csrf
-                                                <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-black text-xs py-2 rounded-lg font-bold">Jadikan Utama</button>
-                                            </form>
+                                        @if($img->is_main)
+                                            <div class="absolute top-2 left-2 bg-primary text-black text-xs px-2 py-1 rounded font-bold">Thumbnail Utama</div>
                                         @endif
+                                    </div>
 
-                                        <form action="{{ route('admin.batiks.images.destroy', $img->id) }}" method="POST" class="w-full px-4" onsubmit="return confirm('Hapus potret ini? Data jejak like otomatis memudar.')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="w-full border border-red-500 text-red-400 hover:bg-red-500 hover:text-white text-xs py-2 rounded-lg font-bold">Hapus Aset</button>
-                                        </form>
+                                    {{-- Statistik Like --}}
+                                    <div class="p-4">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-red-400 text-lg">❤️</span>
+                                                <span class="text-white font-bold">{{ $imgLikes->count() }}</span>
+                                                <span class="text-gray-400 text-sm">Suka</span>
+                                            </div>
+                                            <div class="flex gap-2">
+                                                @if(!$img->is_main)
+                                                    <form action="{{ route('admin.batiks.images.main', $img->id) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit" class="bg-amber-500 hover:bg-amber-400 text-black text-xs px-3 py-1.5 rounded-lg font-bold transition-colors">Jadikan Utama</button>
+                                                    </form>
+                                                @endif
+                                                <form action="{{ route('admin.batiks.images.destroy', $img->id) }}" method="POST" onsubmit="return confirm('Hapus potret ini?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="border border-red-500 text-red-400 hover:bg-red-500 hover:text-white text-xs px-3 py-1.5 rounded-lg font-bold transition-colors">Hapus</button>
+                                                </form>
+                                            </div>
+                                        </div>
+
+                                        {{-- Histori Email User yang Like --}}
+                                        @if($imgLikes->count() > 0)
+                                            @php $previewLikes = $imgLikes->take(5); @endphp
+                                            <div class="border-t border-gray-800 pt-3">
+                                                <p class="text-gray-500 text-xs uppercase tracking-wider mb-2 font-medium">Histori Pengguna yang Menyukai</p>
+                                                <div class="space-y-1.5">
+                                                    @foreach($previewLikes as $liker)
+                                                        <div class="flex items-center gap-2 py-1 px-2 rounded-lg bg-gray-800/60 border border-gray-700/50">
+                                                            <div class="w-5 h-5 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center flex-shrink-0">
+                                                                <i class="bi bi-person-fill text-primary text-[9px]"></i>
+                                                            </div>
+                                                            <span class="text-gray-300 text-xs truncate">{{ $liker->email }}</span>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+
+                                                {{-- Tombol Lihat Semua jika >5 --}}
+                                                @if($imgLikes->count() > 5)
+                                                    <button 
+                                                        onclick="openLikeModal('modal-likes-{{ $img->id }}')"
+                                                        class="mt-2 w-full text-xs text-amber-500 hover:text-amber-400 border border-amber-800/40 hover:border-amber-500/60 rounded-lg py-1.5 transition-all bg-amber-950/20 hover:bg-amber-950/40"
+                                                    >
+                                                        <i class="bi bi-people-fill mr-1"></i>
+                                                        Lihat Semua {{ $imgLikes->count() }} Pengguna
+                                                    </button>
+
+                                                    {{-- Modal Semua Liker --}}
+                                                    <div id="modal-likes-{{ $img->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                                                        <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+                                                            {{-- Modal Header --}}
+                                                            <div class="flex justify-between items-center p-5 border-b border-gray-800">
+                                                                <div>
+                                                                    <h3 class="text-white font-bold">Seluruh Pengguna yang Menyukai</h3>
+                                                                    <p class="text-gray-500 text-xs mt-0.5">Total: {{ $imgLikes->count() }} pengguna</p>
+                                                                </div>
+                                                                <button onclick="closeLikeModal('modal-likes-{{ $img->id }}')" class="text-gray-500 hover:text-white transition-colors">
+                                                                    <i class="bi bi-x-lg text-lg"></i>
+                                                                </button>
+                                                            </div>
+                                                            {{-- Modal Body (scrollable) --}}
+                                                            <div class="overflow-y-auto p-5 space-y-2 flex-1">
+                                                                @foreach($imgLikes as $index => $liker)
+                                                                    <div class="flex items-center gap-3 py-2 px-3 rounded-xl bg-gray-800/70 border border-gray-700/50">
+                                                                        <div class="w-7 h-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center flex-shrink-0 text-primary font-bold text-xs">
+                                                                            {{ $index + 1 }}
+                                                                        </div>
+                                                                        <span class="text-gray-300 text-sm flex-1 truncate">{{ $liker->email }}</span>
+                                                                        <span class="text-gray-600 text-xs">❤️</span>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <div class="border-t border-gray-800 pt-3">
+                                                <p class="text-gray-600 text-xs italic text-center">Belum ada yang menyukai gambar ini</p>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
@@ -158,6 +224,45 @@
                     this.on("error", function(file, errorMessage) {
                         alert("Gagal mengunggah foto: " + errorMessage);
                     });
+                }
+            });
+        }
+    });
+
+    // Modal Like Functions
+    function openLikeModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeLikeModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    }
+
+    // Tutup modal saat klik backdrop (area gelap di luar kotak)
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('[id^="modal-likes-"]').forEach(modal => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = '';
+            }
+        });
+    });
+
+    // Tutup modal dengan tombol Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('[id^="modal-likes-"]').forEach(modal => {
+                if (!modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    document.body.style.overflow = '';
                 }
             });
         }

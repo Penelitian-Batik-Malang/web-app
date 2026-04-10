@@ -12,9 +12,14 @@ class GalleryController extends Controller
     {
         $query = Batik::where('is_active', true)->with('mainImage');
         
-        // Cek filter 'tipe'
+        // Filter tipe
         if ($request->has('tipe') && in_array($request->tipe, ['tulis', 'cap'])) {
             $query->where('type', $request->tipe);
+        }
+
+        // Search by nama
+        if ($request->filled('cari')) {
+            $query->where('name', 'LIKE', '%' . $request->cari . '%');
         }
 
         $batiks = $query->latest()->get();
@@ -55,5 +60,33 @@ class GalleryController extends Controller
             'likes_count' => $image->likes()->count(),
             'is_liked' => !$isLiked
         ]);
+    }
+
+    public function autoLike($imageId)
+    {
+        $image = BatikImage::findOrFail($imageId);
+        $user = auth()->user();
+
+        // Hanya like jika belum pernah like (idempotent)
+        $alreadyLiked = $user->likedBatikImages()->where('batik_image_id', $image->id)->exists();
+        if (!$alreadyLiked) {
+            $user->likedBatikImages()->attach($image->id);
+        }
+
+        // Redirect ke halaman detail batik dengan notifikasi sukses
+        return redirect()->route('galeri.show', $image->batik_id)
+            ->with('like_success', $image->id);
+    }
+
+    public function recommend($id)
+    {
+        // Stub endpoint — akan diganti dengan call ke API model ML
+        // Ketika API ML tersedia, lakukan HTTP request ke endpoint tersebut
+        // dengan image_path dari BatikImage sebagai payload, lalu return hasilnya
+        return response()->json([
+            'success' => false,
+            'message' => 'Model AI endpoint belum terhubung',
+            'recommendations' => []
+        ], 501);
     }
 }

@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'menu.access' => \App\Http\Middleware\CheckMenuAccess::class,
+            'menu.access_or_guest' => \App\Http\Middleware\CheckMenuAccessOrGuest::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

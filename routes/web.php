@@ -13,6 +13,20 @@ Route::get('/fitur', function () {
     return view('pages.features');
 })->name('fitur');
 
+Route::middleware('menu.access_or_guest:deteksi-motif')->group(function () {
+    Route::get('/deteksi/motif', function () {
+        return view('pages.deteksi-motif');
+    })->name('deteksi.motif');
+    Route::post('/api/detect/motif', [App\Http\Controllers\MLController::class, 'detectMotif'])->name('api.detect.motif');
+});
+
+Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
+    Route::get('/deteksi/jenis', function () {
+        return view('pages.deteksi-jenis');
+    })->name('deteksi.jenis');
+    Route::post('/api/detect/jenis', [App\Http\Controllers\MLController::class, 'detectJenis'])->name('api.detect.jenis');
+});
+
 Route::get('/login', function () {
     return view('pages.login');
 })->name('login')->middleware('guest');
@@ -63,12 +77,14 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// User Features (Secured by auth & flagged menu)
+// Galeri Batik Frontend - Bisa diakses tanpa login (publik)
+Route::get('/galeri', [App\Http\Controllers\GalleryController::class, 'index'])->name('galeri');
+Route::get('/galeri/{batik}', [App\Http\Controllers\GalleryController::class, 'show'])->name('galeri.show');
+
+// Like & Rekomendasi - Wajib login (auto-like redirect dihandle oleh auth middleware)
 Route::middleware('auth')->group(function () {
-    // Galeri Batik Frontend
-    Route::middleware('menu.access:galeri-batik')->group(function () {
-        Route::get('/galeri', [App\Http\Controllers\GalleryController::class, 'index'])->name('galeri');
-        Route::get('/galeri/{batik}', [App\Http\Controllers\GalleryController::class, 'show'])->name('galeri.show');
-        Route::post('/api/batik-images/{id}/like', [App\Http\Controllers\GalleryController::class, 'toggleLike'])->name('api.batik-images.like');
-    });
+    Route::post('/api/batik-images/{id}/like', [App\Http\Controllers\GalleryController::class, 'toggleLike'])->name('api.batik-images.like');
+    Route::get('/api/batik-images/{id}/recommend', [App\Http\Controllers\GalleryController::class, 'recommend'])->name('api.batik-images.recommend');
+    // Auto-like setelah redirect login: guest klik like -> login -> route ini terpanggil -> like applied -> redirect ke detail batik
+    Route::get('/galeri/like/{imageId}', [App\Http\Controllers\GalleryController::class, 'autoLike'])->name('galeri.auto-like');
 });

@@ -28,6 +28,7 @@
                 icon="bi-image"
                 iconBgColor="bg-amber-500/10"
                 iconTextColor="text-amber-500"
+                :url="route('deteksi.motif')"
             />
             @endif
 
@@ -39,6 +40,7 @@
                 icon="bi-file-text"
                 iconBgColor="bg-blue-500/10"
                 iconTextColor="text-blue-500"
+                :url="route('deteksi.jenis')"
             />
             @endif
         </div>

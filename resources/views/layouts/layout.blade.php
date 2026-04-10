@@ -7,7 +7,18 @@
 
     <title>{{ config('app.name', 'BatikMalang.ai') }} - @yield('title', 'Digital Batik Gallery')</title>
 
-    <link rel="icon" href="{{ \App\Models\LandingContent::where('key', 'logo_icon')->value('value') ?? asset('favicon.ico') }}" type="image/x-icon">
+    @php
+        $logoIcon = \App\Models\LandingContent::where('key', 'logo_icon')->value('value');
+        $logoIconHref = null;
+        if (is_string($logoIcon) && $logoIcon !== '') {
+            // Jika nilainya URL absolute atau path root, pakai apa adanya.
+            // Jika path relatif (mis. storage/logo.png), ubah jadi URL absolute dengan asset()
+            $isAbsoluteUrl = str_starts_with($logoIcon, 'http://') || str_starts_with($logoIcon, 'https://');
+            $isRootPath = str_starts_with($logoIcon, '/');
+            $logoIconHref = ($isAbsoluteUrl || $isRootPath) ? $logoIcon : asset($logoIcon);
+        }
+    @endphp
+    <link rel="icon" href="{{ $logoIconHref ?? asset('favicon.ico') }}" type="image/x-icon">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

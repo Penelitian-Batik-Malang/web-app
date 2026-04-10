@@ -10,14 +10,42 @@
             Selamat datang di Ruang Pamer Batik Malang. Di sini Anda dapat mengeksplorasi beraneka rupa corak yang memiliki sejarah dan keunikannya masing-masing.
         </span>
         
-        <div class="flex items-center gap-4 w-full justify-center mt-4">
-            {{-- Filter Sederhana Berbasis Query String --}}
-            <form action="{{ route('galeri') }}" method="GET" class="flex gap-2">
-                <a href="{{ route('galeri') }}" class="px-5 py-2.5 rounded-xl border border-gray-600 text-sm font-medium {{ !request('tipe') ? 'bg-primary text-black' : 'text-gray-300 hover:bg-gray-800' }} transition-colors">Semua Seni</a>
-                <button type="submit" name="tipe" value="tulis" class="px-5 py-2.5 rounded-xl border border-gray-600 text-sm font-medium {{ request('tipe') === 'tulis' ? 'bg-primary text-black' : 'text-gray-300 hover:bg-gray-800' }} transition-colors">Koleksi Tulis</button>
-                <button type="submit" name="tipe" value="cap" class="px-5 py-2.5 rounded-xl border border-gray-600 text-sm font-medium {{ request('tipe') === 'cap' ? 'bg-primary text-black' : 'text-gray-300 hover:bg-gray-800' }} transition-colors">Koleksi Cap</button>
-            </form>
-        </div>
+        <form action="{{ route('galeri') }}" method="GET" class="flex flex-col sm:flex-row gap-3 w-full max-w-2xl">
+            {{-- Search Input --}}
+            <div class="relative flex-1">
+                <input 
+                    type="text" 
+                    name="cari" 
+                    value="{{ request('cari') }}"
+                    placeholder="Cari nama batik..." 
+                    class="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"
+                >
+                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            </div>
+            {{-- Filter Tipe --}}
+            <div class="flex gap-2">
+                <a href="{{ route('galeri', ['cari' => request('cari')]) }}" 
+                   class="px-4 py-3 rounded-xl border border-gray-600 text-sm font-medium whitespace-nowrap {{ !request('tipe') ? 'bg-primary text-black' : 'text-gray-300 hover:bg-gray-800' }} transition-colors">
+                    Semua
+                </a>
+                <button type="submit" name="tipe" value="tulis" 
+                    class="px-4 py-3 rounded-xl border border-gray-600 text-sm font-medium whitespace-nowrap {{ request('tipe') === 'tulis' ? 'bg-primary text-black' : 'text-gray-300 hover:bg-gray-800' }} transition-colors">
+                    Tulis
+                </button>
+                <button type="submit" name="tipe" value="cap" 
+                    class="px-4 py-3 rounded-xl border border-gray-600 text-sm font-medium whitespace-nowrap {{ request('tipe') === 'cap' ? 'bg-primary text-black' : 'text-gray-300 hover:bg-gray-800' }} transition-colors">
+                    Cap
+                </button>
+            </div>
+        </form>
+
+        {{-- Info hasil pencarian --}}
+        @if(request('cari'))
+        <p class="text-gray-500 text-sm">
+            Menampilkan hasil untuk: <span class="text-amber-500 font-medium">"{{ request('cari') }}"</span>
+            — <a href="{{ route('galeri') }}" class="text-gray-400 hover:text-white underline">Reset</a>
+        </p>
+        @endif
     </div>
 
     {{-- Main Content Grid --}}
@@ -34,9 +62,10 @@
             />
         @empty
             <div class="col-span-full py-20 text-center flex flex-col items-center">
-                <i class="bi bi-images text-5xl text-gray-700 mb-4"></i>
-                <h3 class="text-xl font-bold text-gray-400">Belum Ada Karya Visual</h3>
-                <p class="text-gray-500 mt-2">Tidak ada koleksi batik dengan filter ini. Cobalah di lain kesempatan.</p>
+                <i class="bi bi-search text-5xl text-gray-700 mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-400">Tidak Ada Hasil</h3>
+                <p class="text-gray-500 mt-2">Tidak ada koleksi batik yang cocok dengan pencarian atau filter Anda.</p>
+                <a href="{{ route('galeri') }}" class="mt-4 text-amber-500 hover:text-amber-400 underline text-sm">Tampilkan semua koleksi</a>
             </div>
         @endforelse
     </div>

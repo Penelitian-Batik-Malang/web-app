@@ -84,39 +84,39 @@
 <!-- Galeri Inspirasi Motif Section -->
 <div class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pb-24">
     <h2 class="text-4xl font-bold text-white mb-4 font-playfair tracking-wide">{{ $content['gallery_title'] ?? '' }}</h2>
-    <p class="text-gray-400 max-w-2xl mx-auto mb-16 text-lg">{{ $content['gallery_subtitle'] ?? '' }}</p>
+    <p class="text-gray-400 max-w-2xl mx-auto mb-10 text-lg">{{ $content['gallery_subtitle'] ?? '' }}</p>
 
-    <!-- 3 Card Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-auto md:h-[450px]">
-        <!-- Card 1 -->
-        <div class="relative rounded-3xl overflow-hidden group h-64 md:h-full lg:col-span-1 border border-white/10 shadow-xl">
-            <img src="{{ $content['gallery_item_1_img'] ?? '' }}" alt="Mofif 1" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8 text-left">
-                <h3 class="text-2xl font-bold text-white mb-2 font-playfair">{{ $content['gallery_item_1_title'] ?? '' }}</h3>
-                <p class="text-sm text-gray-300 leading-relaxed">{{ $content['gallery_item_1_desc'] ?? '' }}</p>
-            </div>
-        </div>
-        
-        <!-- Card 2 -->
-        <div class="relative rounded-3xl overflow-hidden group h-64 md:h-full lg:col-span-1 border border-white/10 shadow-xl">
-            <img src="{{ $content['gallery_item_2_img'] ?? '' }}" alt="Mofif 2" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8 text-left">
-                <h3 class="text-2xl font-bold text-white mb-2 font-playfair">{{ $content['gallery_item_2_title'] ?? '' }}</h3>
-                <p class="text-sm text-gray-300 leading-relaxed">{{ $content['gallery_item_2_desc'] ?? '' }}</p>
+    {{-- Layout: 1 Besar Kiri + 2 Card Stacked Kanan --}}
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-3">
+        {{-- Kartu Utama (Besar, Kiri) col-span-3 --}}
+        <div class="relative rounded-2xl overflow-hidden group border border-white/10 shadow-xl lg:col-span-3" style="height: 370px;">
+            <img src="{{ $content['gallery_item_1_img'] ?? 'https://placehold.co/800x600/1a1a2e/c8a45d?text=Motif+1' }}" alt="Motif 1" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-5 text-left">
+                <h3 class="text-lg font-bold text-white mb-0.5 font-playfair">{{ $content['gallery_item_1_title'] ?? 'Sido Mukti' }}</h3>
+                <p class="text-xs text-gray-300 leading-relaxed">{{ $content['gallery_item_1_desc'] ?? '' }}</p>
             </div>
         </div>
 
-        <!-- Card 3 -->
-        <div class="relative rounded-3xl overflow-hidden group h-64 md:h-full lg:col-span-1 border border-white/10 shadow-xl">
-            <img src="{{ $content['gallery_item_3_img'] ?? '' }}" alt="Mofif 3" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8 text-left">
-                <h3 class="text-2xl font-bold text-white mb-2 font-playfair">{{ $content['gallery_item_3_title'] ?? '' }}</h3>
-                <p class="text-sm text-gray-300 leading-relaxed">{{ $content['gallery_item_3_desc'] ?? '' }}</p>
+        {{-- 2 Card Stacked Kanan col-span-2 --}}
+        <div class="grid grid-rows-2 gap-3 lg:col-span-2" style="height: 370px;">
+            {{-- Item 2 --}}
+            <div class="relative rounded-xl overflow-hidden group border border-white/10 shadow-lg">
+                <img src="{{ $content['gallery_item_2_img'] ?? 'https://placehold.co/400x250/1a1a2e/c8a45d?text=Motif+2' }}" alt="Motif 2" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-3">
+                    <h4 class="text-xs font-bold text-white font-playfair">{{ $content['gallery_item_2_title'] ?? '' }}</h4>
+                </div>
+            </div>
+            {{-- Item 3 --}}
+            <div class="relative rounded-xl overflow-hidden group border border-white/10 shadow-lg">
+                <img src="{{ $content['gallery_item_3_img'] ?? 'https://placehold.co/400x250/1a1a2e/c8a45d?text=Motif+3' }}" alt="Motif 3" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-3">
+                    <h4 class="text-xs font-bold text-white font-playfair">{{ $content['gallery_item_3_title'] ?? '' }}</h4>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="mt-16">
+    <div class="mt-8">
         <a href="{{ route('galeri') }}" class="inline-block border-2 border-gray-700 hover:border-primary bg-gray-900/50 text-gray-300 hover:text-white px-10 py-4 rounded-xl font-bold transition-all shadow-lg hover:shadow-primary/20">
             Jelajahi Semua Motif
         </a>
