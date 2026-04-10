@@ -7,9 +7,15 @@
 
     <title>{{ config('app.name', 'BatikMalang.ai') }} - @yield('title', 'Digital Batik Gallery')</title>
 
+    <link rel="icon" href="{{ \App\Models\LandingContent::where('key', 'logo_icon')->value('value') ?? asset('favicon.ico') }}" type="image/x-icon">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|playfair-display:400,500,600,700&display=swap" rel="stylesheet" />
+
+    <style>
+        .font-playfair { font-family: 'Playfair Display', serif; }
+    </style>
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -112,14 +118,45 @@
                     @endforeach
                 </div>
 
-                {{-- Login Button --}}
-                <div class="flex items-center">
-                    <a 
-                        href="{{ route('login') ?? '#' }}" 
-                        class="text-gray-900 bg-primary hover:bg-amber-600 focus:ring-4 focus:outline-none focus:ring-amber-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-all duration-200 shadow-md hover:shadow-lg"
-                    >
-                        Masuk
-                    </a>
+                {{-- Auth Details / Login --}}
+                <div class="flex items-center space-x-4">
+                    @auth
+                        <div class="relative" x-data="{ profileOpen: false }">
+                            <button 
+                                @click="profileOpen = !profileOpen"
+                                @click.away="profileOpen = false"
+                                class="flex items-center text-sm font-medium text-white hover:text-primary transition-colors focus:outline-none"
+                            >
+                                <span class="mr-2">{{ auth()->user()->name }}</span>
+                                <svg class="w-4 h-4 transition-transform duration-200" :class="profileOpen ? 'rotate-180' : ''" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                </svg>
+                            </button>
+
+                            <div 
+                                x-show="profileOpen"
+                                x-transition.opacity.duration.200ms
+                                class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 py-1 border border-gray-200"
+                                style="display: none;"
+                            >
+                                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-colors">Profil</a>
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors">
+                                        Keluar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    @else
+                        <a 
+                            href="{{ route('login') }}" 
+                            class="text-gray-900 bg-primary hover:bg-amber-600 focus:ring-4 focus:outline-none focus:ring-amber-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-all duration-200 shadow-md hover:shadow-lg"
+                        >
+                            Masuk
+                        </a>
+                    @endauth
                 </div>
             </div>
         </div>
@@ -138,78 +175,7 @@
         </main>
 
         {{-- Footer --}}
-        <footer class="bg-dark border-t border-secondary mt-auto">
-            <div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {{-- BatikMalang.ai Section --}}
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-bold text-white">
-                            BatikMalang<span class="text-primary">.ai</span>
-                        </h3>
-                        <p class="text-gray-400 text-sm leading-relaxed">
-                            Dikembangkan melalui kemitraan khusus dengan tiga sentra batik terkemuka di Malang.
-                        </p>
-                        <ul class="space-y-2 text-gray-400 text-sm">
-                            <li class="flex items-start">
-                                <span class="mr-2">•</span>
-                                <span>Batik Blimbing</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="mr-2">•</span>
-                                <span>Batik Soeandari</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="mr-2">•</span>
-                                <span>Rumah Seni Budaya Singhasari</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    {{-- Dibuat oleh Section --}}
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-white">Dibuat oleh</h3>
-                        <ul class="space-y-2 text-gray-400 text-sm">
-                            <li>Mamluatul Hani'ah</li>
-                            <li>Vivi Nur Wijayaingrum</li>
-                            <li>Wilda Imama Salsabilla</li>
-                        </ul>
-                    </div>
-
-                    {{-- Kontak Section --}}
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-white">Kontak</h3>
-                        <ul class="space-y-2 text-gray-400 text-sm">
-                            <li class="flex items-center gap-2">
-                                <i class="bi bi-instagram"></i>
-                                <span>jtipolinema</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                                <i class="bi bi-instagram"></i>
-                                <span>polimema_campus</span>
-                            </li>
-                        </ul>
-                    </div>
-
-                    {{-- Alamat Section --}}
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-white">Alamat</h3>
-                        <address class="not-italic text-gray-400 text-sm leading-relaxed">
-                            <p>Politeknik Negeri Malang</p>
-                            <p>Jalan Soekarno Hatta No. 9</p>
-                            <p>Kota Malang, Jawa Timur</p>
-                        </address>
-                    </div>
-                </div>
-
-                {{-- Footer Bottom --}}
-                <div class="mt-8 pt-8 border-t border-gray-800">
-                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-sm">
-                        <p>Copyright {{ date('Y') }} BatikMalang.ai</p>
-                        <p>No Surat Kementrian</p>
-                    </div>
-                </div>
-            </div>
-        </footer>
+        @include('layouts.footer')
     </div>
 
     @stack('scripts')

@@ -21,6 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'google_id',
+        'role_id',
     ];
 
     /**
@@ -44,5 +46,48 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function likedBatikImages()
+    {
+        return $this->belongsToMany(BatikImage::class, 'batik_image_likes')->withTimestamps();
+    }
+
+    public function hasMenuAccess($code)
+    {
+        if (!$this->role) return false;
+        if ($this->role->name === 'Admin') return true; 
+
+        return $this->role->menus()->where('code', $code)->exists();
+    }
+
+    public function hasAdminAccess()
+    {
+        if (!$this->role) return false;
+        if ($this->role->name === 'Admin') return true;
+        
+        return $this->role->menus()->where(function($q) {
+            $q->where('code', 'LIKE', 'kelola-%')->orWhere('code', 'monitor-ai');
+        })->exists();
+    }
+
+    public function getAdminMenus()
+    {
+        if (!$this->role) return collect();
+        
+        if ($this->role->name === 'Admin') {
+            return \App\Models\Menu::where('code', 'LIKE', 'kelola-%')
+                                   ->orWhere('code', 'monitor-ai')
+                                   ->get();
+        }
+        
+        return $this->role->menus()->where(function($q) {
+            $q->where('code', 'LIKE', 'kelola-%')->orWhere('code', 'monitor-ai');
+        })->get();
     }
 }
