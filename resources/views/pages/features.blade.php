@@ -125,6 +125,7 @@
                 icon="bi-puzzle"
                 iconBgColor="bg-amber-500/10"
                 iconTextColor="text-amber-500"
+                :url="route('terapkan.batik')"
             />
             @endif
 

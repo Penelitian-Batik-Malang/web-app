@@ -27,6 +27,11 @@ Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
     Route::post('/api/detect/jenis', [App\Http\Controllers\MLController::class, 'detectJenis'])->name('api.detect.jenis');
 });
 
+Route::middleware('menu.access_or_guest:terapkan-batik')->group(function () {
+    Route::get('/terapkan-batik', [App\Http\Controllers\MLController::class, 'showApplyBatik'])->name('terapkan.batik');
+    Route::post('/api/apply-batik', [App\Http\Controllers\MLController::class, 'applyBatik'])->name('api.apply.batik');
+});
+
 Route::get('/login', function () {
     return view('pages.login');
 })->name('login')->middleware('guest');
