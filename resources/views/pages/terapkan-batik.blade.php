@@ -151,13 +151,29 @@
     const state = {
         fashionFile: null,
         batikFile: null,
-        fashionUrl: '',
-        batikUrl: '',
         webcamTarget: '',
         webcamStream: null,
     };
 
-    const setPreview = (img, src) => { img.src = src || ''; };
+    const setPreview = (img, src) => { 
+        if (!src) {
+            img.src = '';
+            return;
+        }
+        img.src = src; 
+    };
+
+    const urlToFile = async (url, filename) => {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Gagal mengambil gambar sample.');
+            const blob = await response.blob();
+            return new File([blob], filename, { type: blob.type });
+        } catch (err) {
+            console.error('urlToFile error:', err);
+            throw err;
+        }
+    };
 
     const readFile = (file, cb) => {
         const reader = new FileReader();
@@ -202,11 +218,9 @@
         readFile(file, (src) => {
             if (safeTarget === 'fashion') {
                 state.fashionFile = file;
-                state.fashionUrl = '';
                 setPreview(fashionPreview, src);
             } else if (safeTarget === 'batik') {
                 state.batikFile = file;
-                state.batikUrl = '';
                 setPreview(batikPreview, src);
             }
         });
@@ -216,14 +230,12 @@
         const file = fashionInput.files?.[0];
         if (!file) return;
         state.fashionFile = file;
-        state.fashionUrl = '';
         readFile(file, (src) => setPreview(fashionPreview, src));
     });
     fashionCameraInput.addEventListener('change', () => {
         const file = fashionCameraInput.files?.[0];
         if (!file) return;
         state.fashionFile = file;
-        state.fashionUrl = '';
         readFile(file, (src) => setPreview(fashionPreview, src));
     });
 
@@ -231,14 +243,12 @@
         const file = batikInput.files?.[0];
         if (!file) return;
         state.batikFile = file;
-        state.batikUrl = '';
         readFile(file, (src) => setPreview(batikPreview, src));
     });
     batikCameraInput.addEventListener('change', () => {
         const file = batikCameraInput.files?.[0];
         if (!file) return;
         state.batikFile = file;
-        state.batikUrl = '';
         readFile(file, (src) => setPreview(batikPreview, src));
     });
 
@@ -264,18 +274,34 @@
     webcamCloseBtn.addEventListener('click', closeWebcam);
 
     document.querySelectorAll('.sample-fashion').forEach((el) => {
-        el.addEventListener('click', () => {
-            state.fashionFile = null;
-            state.fashionUrl = el.dataset.url || '';
-            setPreview(fashionPreview, state.fashionUrl);
+        el.addEventListener('click', async () => {
+            const url = el.dataset.url;
+            if (!url) return;
+            applyStatus.textContent = 'Memuat citra fashion...';
+            try {
+                const file = await urlToFile(url, 'fashion_sample.jpg');
+                state.fashionFile = file;
+                setPreview(fashionPreview, url);
+                applyStatus.textContent = 'Citra fashion terpilih.';
+            } catch (err) {
+                applyStatus.textContent = 'Gagal memuat citra fashion.';
+            }
         });
     });
 
     document.querySelectorAll('.sample-batik').forEach((el) => {
-        el.addEventListener('click', () => {
-            state.batikFile = null;
-            state.batikUrl = el.dataset.url || '';
-            setPreview(batikPreview, state.batikUrl);
+        el.addEventListener('click', async () => {
+            const url = el.dataset.url;
+            if (!url) return;
+            applyStatus.textContent = 'Memuat citra batik...';
+            try {
+                const file = await urlToFile(url, 'batik_sample.jpg');
+                state.batikFile = file;
+                setPreview(batikPreview, url);
+                applyStatus.textContent = 'Citra batik terpilih.';
+            } catch (err) {
+                applyStatus.textContent = 'Gagal memuat citra batik.';
+            }
         });
     });
 
@@ -288,23 +314,21 @@
     });
 
     applyBtn.addEventListener('click', async () => {
-        if ((!state.fashionFile && !state.fashionUrl) || (!state.batikFile && !state.batikUrl)) {
+        if (!state.fashionFile || !state.batikFile) {
             applyStatus.textContent = 'Pilih citra fashion dan citra batik terlebih dahulu.';
             return;
         }
 
         const formData = new FormData();
-        if (state.fashionFile) formData.append('fashion_image', state.fashionFile);
-        if (state.batikFile) formData.append('batik_image', state.batikFile);
-        if (!state.fashionFile && state.fashionUrl) formData.append('fashion_url', state.fashionUrl);
-        if (!state.batikFile && state.batikUrl) formData.append('batik_url', state.batikUrl);
+        formData.append('fashion_image', state.fashionFile);
+        formData.append('batik_image', state.batikFile);
         formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.content || '');
 
         applyBtn.disabled = true;
         applyStatus.textContent = 'Memproses penerapan batik...';
 
         try {
-            const resp = await fetch("{{ url('http://127.0.0.1:5000/blend') }}", {
+            const resp = await fetch("{{ route('api.apply.batik') }}", {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
                 body: formData
@@ -312,7 +336,7 @@
 
             if (!resp.ok) {
                 const json = await resp.json().catch(() => ({}));
-                throw new Error(json.message || 'Gagal memproses gambar.');
+                throw new Error(json.message || 'Gagal memproses gambar. Pastikan API model aktif.');
             }
 
             const blob = await resp.blob();
@@ -331,8 +355,6 @@
     resetBtn.addEventListener('click', () => {
         state.fashionFile = null;
         state.batikFile = null;
-        state.fashionUrl = '';
-        state.batikUrl = '';
         fashionInput.value = '';
         batikInput.value = '';
         setPreview(fashionPreview, '');
@@ -345,16 +367,26 @@
     });
 
     // Set default sample awal jika tersedia
-    const firstFashion = document.querySelector('.sample-fashion');
-    const firstBatik = document.querySelector('.sample-batik');
-    if (firstFashion?.dataset.url) {
-        state.fashionUrl = firstFashion.dataset.url;
-        setPreview(fashionPreview, state.fashionUrl);
-    }
-    if (firstBatik?.dataset.url) {
-        state.batikUrl = firstBatik.dataset.url;
-        setPreview(batikPreview, state.batikUrl);
-    }
+    const initSamples = async () => {
+        const firstFashion = document.querySelector('.sample-fashion');
+        const firstBatik = document.querySelector('.sample-batik');
+        
+        if (firstFashion?.dataset.url) {
+            try {
+                const file = await urlToFile(firstFashion.dataset.url, 'fashion_init.jpg');
+                state.fashionFile = file;
+                setPreview(fashionPreview, firstFashion.dataset.url);
+            } catch (e) {}
+        }
+        if (firstBatik?.dataset.url) {
+            try {
+                const file = await urlToFile(firstBatik.dataset.url, 'batik_init.jpg');
+                state.batikFile = file;
+                setPreview(batikPreview, firstBatik.dataset.url);
+            } catch (e) {}
+        }
+    };
+    initSamples();
 })();
 </script>
 @endpush
