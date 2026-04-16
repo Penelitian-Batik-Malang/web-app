@@ -7,11 +7,7 @@
     {{-- Modal Container --}}
     <div class="bg-gray-900 border border-gray-700 rounded-3xl shadow-2xl w-full max-w-2xl relative">
         
-        {{-- Close Button --}}
-        <a href="{{ route('fitur') }}" class="absolute top-5 right-5 text-gray-500 hover:text-white transition-colors z-10">
-            <i class="bi bi-x-lg text-2xl"></i>
-        </a>
-        
+
         {{-- Header --}}
         <div class="text-center pt-10 pb-8 px-8 border-b border-gray-800">
             <h2 class="text-3xl font-bold text-white font-playfair mb-2">Pewarnaan Ulang Motif Batik</h2>
@@ -20,6 +16,17 @@
 
         {{-- Body --}}
         <div class="p-8">
+            {{-- Error Messages --}}
+            @if ($errors->any())
+                <div class="mb-6 bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-sm">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            
             <form id="pewarnaan-form" action="{{ route('pewarnaan.palet.proses') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
                 @csrf
                 
@@ -27,8 +34,8 @@
                 <div class="space-y-4">
                     <h3 class="text-center text-white font-semibold">Pilih Gambar Batikmu</h3>
                     
-                    <div class="border border-amber-700/60 rounded-2xl p-4 bg-black/40 max-h-72 overflow-y-auto custom-scrollbar">
-                        <div class="grid grid-cols-3 gap-4">
+                    <div class="border border-amber-700/60 rounded-2xl p-4 bg-black/40">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             @forelse($batiks as $index => $batik)
                                 <label class="cursor-pointer relative group">
                                     <input type="radio" name="batik_id" value="{{ $batik->id }}" class="peer sr-only" {{ $index === 0 ? 'checked' : '' }}>
@@ -39,9 +46,15 @@
                                         
                                         <div class="aspect-square w-full bg-gray-700 relative">
                                             @if($batik->mainImage)
-                                                <img src="{{ Storage::url($batik->mainImage->image_path) }}" 
-                                                     alt="{{ $batik->name }}" 
-                                                     class="w-full h-full object-cover">
+                                                @if(filter_var($batik->mainImage->image_path, FILTER_VALIDATE_URL))
+                                                    <img src="{{ $batik->mainImage->image_path }}" 
+                                                         alt="{{ $batik->name }}" 
+                                                         class="w-full h-full object-cover">
+                                                @else
+                                                    <img src="{{ Storage::url($batik->mainImage->image_path) }}" 
+                                                         alt="{{ $batik->name }}" 
+                                                         class="w-full h-full object-cover">
+                                                @endif
                                             @else
                                                 <div class="w-full h-full flex items-center justify-center text-gray-600">
                                                     <i class="bi bi-image text-2xl"></i>
@@ -105,27 +118,26 @@
                     <input type="hidden" id="color-file-base64" name="color_image">
                 </div>
 
+                {{-- Footer Actions Inside Form --}}
+                <div class="border-t border-gray-800 -mx-8 px-8 pt-8">
+                    <p class="text-center text-white font-semibold text-sm mb-4">Proses Sekarang?</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button
+                            type="submit"
+                            class="bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-amber-700/20"
+                        >
+                            Proses Gambar
+                        </button>
+                        <button
+                            type="button"
+                            onclick="resetFormAndFile()"
+                            class="border border-gray-700 bg-gray-800/50 hover:bg-gray-700 text-white font-bold py-3 rounded-xl transition-all"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                </div>
             </form>
-        </div>
-
-        {{-- Footer --}}
-        <div class="border-t border-gray-800 px-8 py-6">
-            <p class="text-center text-white font-semibold text-sm mb-4">Proses Sekarang?</p>
-            <div class="grid grid-cols-2 gap-4">
-                <button
-                    type="submit"
-                    class="bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-amber-700/20"
-                >
-                    Proses Gambar
-                </button>
-                <button
-                    type="button"
-                    onclick="resetFormAndFile()"
-                    class="border border-gray-700 bg-gray-800/50 hover:bg-gray-700 text-white font-bold py-3 rounded-xl transition-all"
-                >
-                    Reset
-                </button>
-            </div>
         </div>
     </div>
 </div>
@@ -151,6 +163,23 @@
     const fileInput = document.getElementById('color-file-input');
     const dropzone = document.getElementById('color-dropzone');
     const filePreview = document.getElementById('file-preview');
+    const pewarnoanForm = document.getElementById('pewarnaan-form');
+
+    // Debug: Log form submission
+    pewarnoanForm.addEventListener('submit', function(e) {
+        const batikId = document.querySelector('input[name="batik_id"]:checked');
+        console.log('Form submitted', {
+            batik_id: batikId ? batikId.value : 'TIDAK ADA',
+            hasFile: fileInput.files.length > 0,
+            colorImageValue: document.getElementById('color-file-base64').value ? 'ADA' : 'TIDAK ADA'
+        });
+        
+        if (!batikId) {
+            e.preventDefault();
+            alert('Pilih gambar batik terlebih dahulu!');
+            return false;
+        }
+    });
 
     // Drag & Drop Events
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {

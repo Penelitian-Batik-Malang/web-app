@@ -54,6 +54,7 @@ class MLController extends Controller
         return $this->handleImageDetection($request, $path);
     }
     
+
     /**
      * Shared handler untuk semua fitur image → text classification.
      * Ketika ML_API_BASE_URL tidak diset, kembalikan stub response.

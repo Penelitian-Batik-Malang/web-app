@@ -103,6 +103,7 @@
                 icon="bi-palette2"
                 iconBgColor="bg-amber-500/10"
                 iconTextColor="text-amber-500"
+                :url="route('pewarnaan.palet')"
             />
             @endif
 
