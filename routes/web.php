@@ -27,6 +27,23 @@ Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
     Route::post('/api/detect/jenis', [App\Http\Controllers\MLController::class, 'detectJenis'])->name('api.detect.jenis');
 });
 
+Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
+    Route::get('/pewarnaan/palet', function () {
+        $batiks = \App\Models\Batik::where('is_active', true)->with('mainImage')->get();
+        return view('pages.pewarnaan-pallet-warna', compact('batiks'));
+    })->name('pewarnaan.palet');
+    
+    Route::post('/pewarnaan/palet/proses', function (\Illuminate\Http\Request $request) {
+        $batik = \App\Models\Batik::find($request->batik_id);
+        $colorImage = $request->color_image ?? null;
+        
+        return view('pages.pewarnaanPalletNet.proses-gambar', compact('batik', 'colorImage'));
+    })->name('pewarnaan.palet.proses');
+    
+    Route::post('/api/colorize/palet', [App\Http\Controllers\MLController::class, 'colorizePalet'])->name('api.colorize.palet');
+});
+
+
 Route::get('/login', function () {
     return view('pages.login');
 })->name('login')->middleware('guest');

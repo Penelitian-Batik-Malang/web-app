@@ -43,6 +43,17 @@ class MLController extends Controller
         return $this->handleImageDetection($request, $path);
     }
 
+        /**
+     * Endpoint: POST /api/colorize/palet
+     * Input: Gambar (multipart/form-data)
+     * Output: { label, confidence, description }
+     */
+    public function colorizePalet(Request $request)
+    {
+        $path = $this->endpoints['palet'] ?? '/colorize/palet';
+        return $this->handleImageDetection($request, $path);
+    }
+    
     /**
      * Shared handler untuk semua fitur image → text classification.
      * Ketika ML_API_BASE_URL tidak diset, kembalikan stub response.
