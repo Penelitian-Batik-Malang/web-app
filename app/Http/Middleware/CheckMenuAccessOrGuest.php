@@ -16,7 +16,12 @@ class CheckMenuAccessOrGuest
         }
 
         if (!auth()->user()->hasMenuAccess($menuCode)) {
-            if ($request->expectsJson()) {
+            // Return JSON jika: request expects JSON, route adalah /api/*, atau dari XMLHttpRequest
+            $isApiRequest = $request->expectsJson()
+                || str_starts_with($request->path(), 'api/')
+                || $request->header('X-Requested-With') === 'XMLHttpRequest';
+
+            if ($isApiRequest) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Akses Ditolak. Anda tidak memiliki izin untuk modul (' . $menuCode . ').',

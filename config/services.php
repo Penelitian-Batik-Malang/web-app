@@ -44,16 +44,23 @@ return [
     'ml' => [
         // Base URL layanan ML (tanpa trailing slash).
         // Default diarahkan ke endpoint produksi yang kamu sebutkan.
-        'base_url' => env('ML_API_BASE_URL', 'https://galeridigital-batikmalang.id/api'),
+        'base_url' => env('ML_API_BASE_URL', 'http://127.0.0.1:5000'),
         'endpoints' => [
             // Path endpoint scan motif batik.
             'motif' => env('ML_API_MOTIF_PATH', '/motif/scan'),
             // Path endpoint scan jenis batik (tulis/cap).
             'jenis' => env('ML_API_JENIS_PATH', '/tulis/scan'),
+            // Path endpoint deteksi mask fashion.
+            'fashion_mask' => env('ML_API_FASHION_MASK_PATH', '/fashion-mask'),
             // Path endpoint terapkan batik pada citra fashion.
             'apply_batik' => env('ML_API_APPLY_BATIK_PATH', '/apply-batik'),
             // Path endpoint health model AI.
             'health' => env('ML_API_HEALTH_PATH', '/health'),
+            // Fashionpedia API endpoints
+            'inference' => env('ML_API_INFERENCE_PATH', '/inference'),
+            'blend' => env('ML_API_BLEND_PATH', '/blend'),
+            'reset' => env('ML_API_RESET_PATH', '/reset'),
+            'session' => env('ML_API_SESSION_PATH', '/session'),
         ],
     ],
 

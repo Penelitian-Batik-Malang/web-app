@@ -29,7 +29,12 @@ Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
 
 Route::middleware('menu.access_or_guest:terapkan-batik')->group(function () {
     Route::get('/terapkan-batik', [App\Http\Controllers\MLController::class, 'showApplyBatik'])->name('terapkan.batik');
+    Route::post('/api/detect/mask', [App\Http\Controllers\MLController::class, 'detectMask'])->name('api.detect.mask');
     Route::post('/api/apply-batik', [App\Http\Controllers\MLController::class, 'applyBatik'])->name('api.apply.batik');
+    Route::post('/api/inference', [App\Http\Controllers\MLController::class, 'inference'])->name('api.inference');
+    Route::post('/api/blend', [App\Http\Controllers\MLController::class, 'blend'])->name('api.blend');
+    Route::post('/api/reset', [App\Http\Controllers\MLController::class, 'reset'])->name('api.reset');
+    Route::get('/api/session/{sessionId}', [App\Http\Controllers\MLController::class, 'getSession'])->name('api.session');
 });
 
 Route::get('/login', function () {
