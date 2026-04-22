@@ -2,12 +2,14 @@
     'id' => 'color-search-modal',
     'title' => 'Rekomendasi Batik By Warna',
     'subtitle' => 'Unggah foto kain batik dan dapatkan rekomendasi berdasarkan palette warna dominan.',
-    'endpoint' => '',
+    'paletteEndpoint' => '',
+    'recommendationEndpoint' => '',
 ])
 
 <div
     id="{{ $id }}"
-    data-endpoint="{{ $endpoint }}"
+    data-palette-endpoint="{{ $paletteEndpoint }}"
+    data-recommendation-endpoint="{{ $recommendationEndpoint }}"
     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-4"
     onclick="ColorSearchModal.handleBackdropClick(event, '{{ $id }}')"
 >
@@ -27,6 +29,13 @@
         </div>
 
         <div class="space-y-5 p-4 sm:p-6 md:space-y-6 md:p-8">
+            <div id="{{ $id }}-alert" class="hidden rounded-xl border px-4 py-3 text-sm">
+                <div class="flex items-start gap-2">
+                    <i id="{{ $id }}-alert-icon" class="bi bi-info-circle-fill mt-0.5"></i>
+                    <p id="{{ $id }}-alert-message" class="leading-relaxed"></p>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:gap-6">
                 <div class="space-y-3">
                     <p class="text-center text-sm font-semibold text-white">Gambar Batikmu</p>
@@ -48,7 +57,7 @@
                                 <p class="mt-1 text-xs text-gray-500 sm:text-sm">
                                     Pilih gambar atau seret &amp; lepas di sini.
                                 </p>
-                                <p class="mt-2 text-xs text-amber-500">JPG • PNG • WEBP • MAX 10MB</p>
+                                <p class="mt-2 text-xs text-amber-500">JPG • PNG • WEBP • MAX 50MB (otomatis dioptimasi sebelum upload)</p>
                             </div>
                         </div>
 
@@ -77,7 +86,7 @@
                         onchange="ColorSearchModal.handleFile(this.files[0], '{{ $id }}')"
                     >
 
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="mx-auto grid w-full max-w-md grid-cols-1 gap-3 sm:grid-cols-2">
                         <button
                             type="button"
                             onclick="document.getElementById('{{ $id }}-camera-input').click()"
@@ -101,11 +110,23 @@
                         Hasil palette akan muncul setelah proses pindai gambar.
                     </div>
                     <div id="{{ $id }}-palette-list" class="hidden min-h-[250px] rounded-2xl border border-amber-700/60 bg-gray-900/30 p-3 sm:min-h-[300px] sm:p-4 lg:min-h-[320px]"></div>
+                    <div id="{{ $id }}-refresh-wrap" class="hidden text-center">
+                        <button
+                            id="{{ $id }}-refresh-btn"
+                            type="button"
+                            onclick="ColorSearchModal.refreshPalette('{{ $id }}')"
+                            class="inline-flex items-center gap-2 rounded-xl border border-amber-700/50 bg-amber-950/30 px-4 py-2 text-xs font-semibold text-amber-300 transition-colors hover:bg-amber-900/40"
+                        >
+                            <i class="bi bi-arrow-clockwise"></i>
+                            Refresh Palette
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div class="border-t border-gray-800 pt-5">
+            <div id="{{ $id }}-action-section" class="hidden border-t border-gray-800 pt-5">
                 <p id="{{ $id }}-action-label" class="mb-4 text-center text-lg font-semibold text-white sm:text-xl">Lakukan Pencarian Sekarang?</p>
+                <p id="{{ $id }}-action-note" class="mb-3 text-center text-xs text-gray-400"></p>
                 <div class="mx-auto grid max-w-md grid-cols-1 gap-3 sm:grid-cols-2">
                     <button
                         id="{{ $id }}-scan-btn"

@@ -71,7 +71,7 @@
                 tabindex="0"
                 onclick="ColorSearchModal.open('color-search-modal')"
                 onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); ColorSearchModal.open('color-search-modal'); }"
-                class="rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
+                class="h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
                 <x-card-features 
                     title="Pencarian by Warna Dominan" 
@@ -154,7 +154,8 @@
 
 <x-color-search-modal
     id="color-search-modal"
-    :endpoint="route('api.search.color-dominant')"
+    :palette-endpoint="route('api.search.color-palette')"
+    :recommendation-endpoint="route('api.search.color-recommendation')"
 />
 @endsection
 

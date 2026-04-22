@@ -1,13 +1,18 @@
 window.ColorSearchModal = {
     _state: {},
+    MAX_INPUT_SIZE: 50 * 1024 * 1024,
+    MAX_UPLOAD_SIZE: 45 * 1024 * 1024,
+    ALERT_TIMEOUT_MS: 4200,
 
     _getState(id) {
         if (!this._state[id]) {
             this._state[id] = {
                 file: null,
                 palettes: [],
-                selectedPalettes: [],
+                selectedPaletteIndexes: [],
                 recommendations: [],
+                alertTimer: null,
+                paletteFetchFailed: false,
             };
         }
         return this._state[id];
@@ -20,6 +25,9 @@ window.ColorSearchModal = {
         modal.classList.remove("hidden");
         modal.classList.add("flex");
         document.body.style.overflow = "hidden";
+        this._clearAlert(id);
+        this._syncActionSection(id);
+        this._syncRefreshButton(id);
     },
 
     close(id) {
@@ -29,6 +37,7 @@ window.ColorSearchModal = {
         modal.classList.add("hidden");
         modal.classList.remove("flex");
         document.body.style.overflow = "";
+        this._clearAlert(id);
     },
 
     handleBackdropClick(event, id) {
@@ -58,24 +67,60 @@ window.ColorSearchModal = {
         this.handleFile(file, id);
     },
 
-    handleFile(file, id) {
+    async handleFile(file, id) {
         if (!file) return;
 
         const validTypes = ["image/jpeg", "image/png", "image/webp"];
-        const maxSize = 10 * 1024 * 1024;
 
         if (!validTypes.includes(file.type)) {
-            alert("Format gambar harus JPG, PNG, atau WEBP.");
+            this._notify(
+                id,
+                "warning",
+                "Format gambar harus JPG, PNG, atau WEBP.",
+            );
             return;
         }
 
-        if (file.size > maxSize) {
-            alert("Ukuran gambar maksimal 10MB.");
+        if (file.size > this.MAX_INPUT_SIZE) {
+            this._notify(id, "warning", "Ukuran gambar maksimal 50MB.");
             return;
+        }
+
+        let uploadFile = file;
+        if (file.size > this.MAX_UPLOAD_SIZE) {
+            uploadFile = await this._optimizeImage(file, this.MAX_UPLOAD_SIZE);
+            if (!uploadFile) {
+                this._notify(
+                    id,
+                    "error",
+                    "Gambar terlalu besar untuk dikirim. Coba pilih gambar dengan resolusi lebih kecil.",
+                );
+                return;
+            }
+            this._notify(
+                id,
+                "info",
+                "Gambar berhasil dioptimasi agar aman untuk upload.",
+            );
         }
 
         const state = this._getState(id);
-        state.file = file;
+        state.file = uploadFile;
+        state.palettes = [];
+        state.selectedPaletteIndexes = [];
+        state.recommendations = [];
+        state.paletteFetchFailed = false;
+
+        const section = document.getElementById(`${id}-recommend-section`);
+        const list = document.getElementById(`${id}-recommend-list`);
+        const count = document.getElementById(`${id}-recommend-count`);
+        if (section) section.classList.add("hidden");
+        if (list) list.innerHTML = "";
+        if (count) count.textContent = "";
+
+        this._renderPalettes(id);
+        this._syncActionSection(id);
+        this._syncRefreshButton(id);
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -87,23 +132,366 @@ window.ColorSearchModal = {
             }
             if (uploadState) uploadState.classList.add("hidden");
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(uploadFile);
+
+        await this.fetchPalette(id);
+    },
+
+    _notify(id, type, message) {
+        const alertEl = document.getElementById(`${id}-alert`);
+        const alertIcon = document.getElementById(`${id}-alert-icon`);
+        const alertMessage = document.getElementById(`${id}-alert-message`);
+        if (!alertEl || !alertIcon || !alertMessage) return;
+
+        const variants = {
+            info: {
+                icon: "bi-info-circle-fill",
+                className: "border-cyan-700/60 bg-cyan-950/30 text-cyan-200",
+            },
+            warning: {
+                icon: "bi-exclamation-triangle-fill",
+                className: "border-amber-700/60 bg-amber-950/30 text-amber-200",
+            },
+            error: {
+                icon: "bi-x-octagon-fill",
+                className: "border-red-700/60 bg-red-950/30 text-red-200",
+            },
+        };
+
+        const variant = variants[type] || variants.info;
+        alertEl.className = `rounded-xl border px-4 py-3 text-sm ${variant.className}`;
+        alertEl.classList.remove("hidden");
+
+        alertIcon.className = `bi ${variant.icon} mt-0.5`;
+        alertMessage.textContent = message;
+
+        const state = this._getState(id);
+        if (state.alertTimer) {
+            clearTimeout(state.alertTimer);
+        }
+
+        state.alertTimer = setTimeout(() => {
+            this._clearAlert(id);
+        }, this.ALERT_TIMEOUT_MS);
+    },
+
+    _clearAlert(id) {
+        const state = this._getState(id);
+        if (state.alertTimer) {
+            clearTimeout(state.alertTimer);
+            state.alertTimer = null;
+        }
+
+        const alertEl = document.getElementById(`${id}-alert`);
+        if (alertEl) {
+            alertEl.classList.add("hidden");
+        }
+    },
+
+    _setScanButtonState(id) {
+        const state = this._getState(id);
+        const scanBtn = document.getElementById(`${id}-scan-btn`);
+        const actionNote = document.getElementById(`${id}-action-note`);
+        if (!scanBtn || !actionNote) return;
+
+        if (!state.selectedPaletteIndexes.length) {
+            scanBtn.disabled = true;
+            scanBtn.classList.add("opacity-60", "cursor-not-allowed");
+            actionNote.textContent =
+                "Pilih minimal 1 palette warna untuk melakukan pencarian rekomendasi.";
+            return;
+        }
+
+        scanBtn.disabled = false;
+        scanBtn.classList.remove("opacity-60", "cursor-not-allowed");
+        actionNote.textContent =
+            "Palette siap. Klik Pindai Gambar untuk mengambil rekomendasi.";
+    },
+
+    _syncActionSection(id) {
+        const state = this._getState(id);
+        const actionSection = document.getElementById(`${id}-action-section`);
+        if (!actionSection) return;
+
+        const visible = !!state.file && state.palettes.length > 0;
+        actionSection.classList.toggle("hidden", !visible);
+        if (visible) {
+            this._setScanButtonState(id);
+        }
+    },
+
+    _syncRefreshButton(id) {
+        const state = this._getState(id);
+        const wrap = document.getElementById(`${id}-refresh-wrap`);
+        const btn = document.getElementById(`${id}-refresh-btn`);
+        if (!wrap || !btn) return;
+
+        const visible = !!state.file;
+        wrap.classList.toggle("hidden", !visible);
+
+        if (!visible) return;
+
+        btn.disabled = false;
+        btn.classList.remove(
+            "opacity-60",
+            "cursor-not-allowed",
+            "border-red-700/60",
+            "bg-red-950/30",
+            "text-red-200",
+        );
+        btn.classList.add(
+            "border-amber-700/50",
+            "bg-amber-950/30",
+            "text-amber-300",
+        );
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Palette';
+
+        if (state.paletteFetchFailed) {
+            btn.classList.remove(
+                "border-amber-700/50",
+                "bg-amber-950/30",
+                "text-amber-300",
+            );
+            btn.classList.add(
+                "border-red-700/60",
+                "bg-red-950/30",
+                "text-red-200",
+            );
+            btn.innerHTML =
+                '<i class="bi bi-arrow-repeat"></i> Coba Ambil Palette Lagi';
+        }
+    },
+
+    async refreshPalette(id) {
+        const state = this._getState(id);
+        if (!state.file) {
+            this._notify(id, "warning", "Unggah gambar terlebih dahulu.");
+            return;
+        }
+
+        await this.fetchPalette(id);
+    },
+
+    async fetchPalette(id) {
+        const state = this._getState(id);
+        const modal = document.getElementById(id);
+        const paletteEndpoint = modal?.dataset?.paletteEndpoint || "";
+        const refreshBtn = document.getElementById(`${id}-refresh-btn`);
+
+        if (!paletteEndpoint) {
+            this._notify(id, "error", "Endpoint palette belum diset.");
+            return false;
+        }
+
+        if (!state.file) {
+            this._notify(
+                id,
+                "warning",
+                "Pilih atau unggah gambar terlebih dahulu.",
+            );
+            return false;
+        }
+
+        const csrfToken =
+            document.querySelector('meta[name="csrf-token"]')?.content || "";
+
+        this._notify(id, "info", "Mengekstrak palette warna dari gambar...");
+        state.paletteFetchFailed = false;
+        this._syncRefreshButton(id);
+
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.classList.add("opacity-60", "cursor-not-allowed");
+            refreshBtn.innerHTML =
+                '<i class="bi bi-arrow-repeat animate-spin"></i> Memuat Palette...';
+        }
+
+        try {
+            const paletteFormData = new FormData();
+            paletteFormData.append("image", state.file);
+            paletteFormData.append("num_clusters", "5");
+            paletteFormData.append("_token", csrfToken);
+
+            const paletteResponse = await fetch(paletteEndpoint, {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "X-CSRF-TOKEN": csrfToken,
+                },
+                body: paletteFormData,
+            });
+
+            const paletteData = await paletteResponse.json();
+            if (!paletteResponse.ok || !paletteData?.success) {
+                throw new Error(
+                    this._extractApiError(
+                        paletteData,
+                        "Gagal mengambil palette warna.",
+                    ),
+                );
+            }
+
+            const paletteResult = paletteData.result || {};
+            state.palettes = paletteResult.palettes || [];
+            state.selectedPaletteIndexes =
+                paletteResult.selected_palette_indexes ||
+                state.palettes.map((palette) => palette.index);
+
+            this._renderPalettes(id);
+            this._syncActionSection(id);
+            state.paletteFetchFailed = false;
+            this._syncRefreshButton(id);
+
+            if (!state.palettes.length) {
+                this._notify(
+                    id,
+                    "warning",
+                    "Palette tidak ditemukan dari gambar ini.",
+                );
+                return false;
+            }
+
+            this._notify(
+                id,
+                "info",
+                `Palette berhasil diambil (${state.palettes.length} warna). Pilih warna yang diinginkan.`,
+            );
+            return true;
+        } catch (error) {
+            state.palettes = [];
+            state.selectedPaletteIndexes = [];
+            state.paletteFetchFailed = true;
+            this._renderPalettes(id);
+            this._syncActionSection(id);
+            this._syncRefreshButton(id);
+            this._notify(
+                id,
+                "error",
+                error?.message || "Terjadi kesalahan saat mengambil palette.",
+            );
+            return false;
+        } finally {
+            if (refreshBtn) {
+                refreshBtn.disabled = false;
+                refreshBtn.classList.remove("opacity-60", "cursor-not-allowed");
+            }
+            this._syncRefreshButton(id);
+        }
+    },
+
+    _loadImage(file) {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                resolve(img);
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error("Gagal membaca gambar."));
+            };
+            img.src = url;
+        });
+    },
+
+    _blobFromCanvas(canvas, quality) {
+        return new Promise((resolve) => {
+            canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
+        });
+    },
+
+    async _optimizeImage(file, maxBytes) {
+        try {
+            const image = await this._loadImage(file);
+            const maxWidth = 1600;
+            const maxHeight = 1600;
+
+            let width = image.width;
+            let height = image.height;
+            const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+            width = Math.max(1, Math.floor(width * ratio));
+            height = Math.max(1, Math.floor(height * ratio));
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return null;
+            ctx.drawImage(image, 0, 0, width, height);
+
+            const qualities = [0.9, 0.82, 0.74, 0.66, 0.58, 0.5, 0.42];
+            for (const quality of qualities) {
+                const blob = await this._blobFromCanvas(canvas, quality);
+                if (blob && blob.size <= maxBytes) {
+                    return new File([blob], this._toJpegFileName(file.name), {
+                        type: "image/jpeg",
+                        lastModified: Date.now(),
+                    });
+                }
+            }
+
+            return null;
+        } catch (_error) {
+            return null;
+        }
+    },
+
+    _toJpegFileName(originalName) {
+        const dotIndex = originalName.lastIndexOf(".");
+        if (dotIndex === -1) return `${originalName}.jpg`;
+        return `${originalName.slice(0, dotIndex)}.jpg`;
+    },
+
+    _extractApiError(payload, fallbackMessage) {
+        if (!payload || typeof payload !== "object") return fallbackMessage;
+
+        const imageErrors = payload?.errors?.image;
+        if (Array.isArray(imageErrors) && imageErrors.length > 0) {
+            return imageErrors[0];
+        }
+
+        if (typeof payload.message === "string" && payload.message.trim()) {
+            return payload.message;
+        }
+
+        return fallbackMessage;
     },
 
     async search(id) {
         const state = this._getState(id);
         const modal = document.getElementById(id);
-        const endpoint = modal?.dataset?.endpoint || "";
+        const recommendationEndpoint =
+            modal?.dataset?.recommendationEndpoint || "";
         const scanBtn = document.getElementById(`${id}-scan-btn`);
         const actionLabel = document.getElementById(`${id}-action-label`);
 
-        if (!endpoint) {
-            alert("Endpoint pencarian warna belum diset.");
+        if (!recommendationEndpoint) {
+            this._notify(id, "error", "Endpoint rekomendasi belum diset.");
             return;
         }
 
         if (!state.file) {
-            alert("Pilih atau unggah gambar terlebih dahulu.");
+            this._notify(
+                id,
+                "warning",
+                "Pilih atau unggah gambar terlebih dahulu.",
+            );
+            return;
+        }
+
+        if (!state.palettes.length) {
+            this._notify(
+                id,
+                "warning",
+                "Palette belum tersedia. Unggah ulang gambar untuk ekstraksi palette.",
+            );
+            return;
+        }
+
+        if (!state.selectedPaletteIndexes.length) {
+            this._notify(id, "warning", "Pilih minimal 1 palette warna.");
             return;
         }
 
@@ -112,67 +500,83 @@ window.ColorSearchModal = {
             scanBtn.textContent = "Memproses...";
         }
 
-        const formData = new FormData();
-        formData.append("image", state.file);
-        state.selectedPalettes.forEach((hex) =>
-            formData.append("selected_palettes[]", hex),
-        );
-        formData.append(
-            "_token",
-            document.querySelector('meta[name="csrf-token"]')?.content || "",
-        );
+        const csrfToken =
+            document.querySelector('meta[name="csrf-token"]')?.content || "";
 
         try {
-            const response = await fetch(endpoint, {
+            this._notify(id, "info", "Mengambil rekomendasi batik...");
+
+            const recommendationFormData = new FormData();
+            recommendationFormData.append("image", state.file);
+            recommendationFormData.append("num_clusters", "5");
+            recommendationFormData.append("top_k", "10");
+            state.selectedPaletteIndexes.forEach((index) => {
+                recommendationFormData.append(
+                    "selected_colors[]",
+                    String(index),
+                );
+            });
+            recommendationFormData.append("_token", csrfToken);
+
+            const recommendationResponse = await fetch(recommendationEndpoint, {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
-                    "X-CSRF-TOKEN":
-                        document.querySelector('meta[name="csrf-token"]')
-                            ?.content || "",
+                    "X-CSRF-TOKEN": csrfToken,
                 },
-                body: formData,
+                body: recommendationFormData,
             });
 
-            const data = await response.json();
-            if (!response.ok || !data?.success) {
+            const recommendationData = await recommendationResponse.json();
+            if (!recommendationResponse.ok || !recommendationData?.success) {
                 throw new Error(
-                    data?.message || "Gagal memproses pencarian warna.",
+                    this._extractApiError(
+                        recommendationData,
+                        "Gagal mengambil rekomendasi.",
+                    ),
                 );
             }
 
-            const result = data.result || {};
-            state.palettes = result.palettes || [];
-            state.selectedPalettes = result.selected_palettes || [];
-            state.recommendations = result.recommendations || [];
+            const recommendationResult = recommendationData.result || {};
+            state.recommendations = recommendationResult.recommendations || [];
 
-            this._renderPalettes(id);
             this._renderRecommendations(id);
+            this._setScanButtonState(id);
 
             if (actionLabel) actionLabel.textContent = "Ingin Pindai Ulang?";
+            this._notify(
+                id,
+                "info",
+                `Rekomendasi berhasil diambil (${state.recommendations.length} item).`,
+            );
         } catch (error) {
-            alert(error.message || "Terjadi kesalahan.");
+            this._notify(id, "error", error?.message || "Terjadi kesalahan.");
         } finally {
             if (scanBtn) {
                 scanBtn.disabled = false;
                 scanBtn.textContent = "Pindai Gambar";
             }
+            this._setScanButtonState(id);
         }
     },
 
     togglePalette(id, hex) {
         const state = this._getState(id);
-        const hasColor = state.selectedPalettes.includes(hex);
+        const palette = state.palettes.find((item) => item.hex === hex);
+        if (!palette) return;
+
+        const hasColor = state.selectedPaletteIndexes.includes(palette.index);
 
         if (hasColor) {
-            state.selectedPalettes = state.selectedPalettes.filter(
-                (item) => item !== hex,
+            state.selectedPaletteIndexes = state.selectedPaletteIndexes.filter(
+                (item) => item !== palette.index,
             );
         } else {
-            state.selectedPalettes.push(hex);
+            state.selectedPaletteIndexes.push(palette.index);
         }
 
         this._renderPalettes(id);
+        this._setScanButtonState(id);
     },
 
     _renderPalettes(id) {
@@ -194,7 +598,9 @@ window.ColorSearchModal = {
 
         const html = state.palettes
             .map((palette) => {
-                const selected = state.selectedPalettes.includes(palette.hex);
+                const selected = state.selectedPaletteIndexes.includes(
+                    palette.index,
+                );
                 return `
                     <button
                         type="button"
@@ -251,8 +657,9 @@ window.ColorSearchModal = {
         const state = this._getState(id);
         state.file = null;
         state.palettes = [];
-        state.selectedPalettes = [];
+        state.selectedPaletteIndexes = [];
         state.recommendations = [];
+        state.paletteFetchFailed = false;
 
         const preview = document.getElementById(`${id}-preview`);
         const uploadState = document.getElementById(`${id}-upload-state`);
@@ -273,6 +680,9 @@ window.ColorSearchModal = {
         if (section) section.classList.add("hidden");
 
         this._renderPalettes(id);
+        this._syncActionSection(id);
+        this._syncRefreshButton(id);
+        this._clearAlert(id);
 
         const list = document.getElementById(`${id}-recommend-list`);
         const count = document.getElementById(`${id}-recommend-count`);

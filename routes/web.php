@@ -28,7 +28,8 @@ Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
 });
 
 Route::middleware('menu.access_or_guest:pencarian-warna')->group(function () {
-    Route::post('/api/search/color-dominant', [App\Http\Controllers\ColorSearchMockController::class, 'search'])->name('api.search.color-dominant');
+    Route::post('/api/search/color-palette', [App\Http\Controllers\ColorSearchController::class, 'getPalette'])->name('api.search.color-palette');
+    Route::post('/api/search/color-recommendation', [App\Http\Controllers\ColorSearchController::class, 'getRecommendation'])->name('api.search.color-recommendation');
 });
 
 Route::get('/login', function () {
