@@ -27,6 +27,10 @@ Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
     Route::post('/api/detect/jenis', [App\Http\Controllers\MLController::class, 'detectJenis'])->name('api.detect.jenis');
 });
 
+Route::middleware('menu.access_or_guest:pencarian-warna')->group(function () {
+    Route::post('/api/search/color-dominant', [App\Http\Controllers\ColorSearchMockController::class, 'search'])->name('api.search.color-dominant');
+});
+
 Route::get('/login', function () {
     return view('pages.login');
 })->name('login')->middleware('guest');

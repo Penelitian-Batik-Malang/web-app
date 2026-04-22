@@ -66,13 +66,21 @@
 
             {{-- Pencarian by Warna Dominan --}}
             @if(!auth()->check() || auth()->user()->hasMenuAccess('pencarian-warna'))
-            <x-card-features 
-                title="Pencarian by Warna Dominan" 
-                description="Temukan batik berdasarkan warna dominan pada kain"
-                icon="bi-palette"
-                iconBgColor="bg-amber-500/10"
-                iconTextColor="text-amber-500"
-            />
+            <div
+                role="button"
+                tabindex="0"
+                onclick="ColorSearchModal.open('color-search-modal')"
+                onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); ColorSearchModal.open('color-search-modal'); }"
+                class="rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+                <x-card-features 
+                    title="Pencarian by Warna Dominan" 
+                    description="Temukan batik berdasarkan warna dominan pada kain"
+                    icon="bi-palette"
+                    iconBgColor="bg-amber-500/10"
+                    iconTextColor="text-amber-500"
+                />
+            </div>
             @endif
 
             {{-- Rekomendasi by Fashion --}}
@@ -143,4 +151,13 @@
     </div>
     @endif
 </div>
+
+<x-color-search-modal
+    id="color-search-modal"
+    :endpoint="route('api.search.color-dominant')"
+/>
 @endsection
+
+@push('scripts')
+<script src="{{ asset('js/color-search-modal.js') }}"></script>
+@endpush
