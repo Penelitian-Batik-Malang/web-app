@@ -1,4 +1,19 @@
 <?php
+/**
+ * @deprecated Semua method di class ini sudah dipindahkan ke App\Http\Controllers\Features\*.
+ *
+ * Pemetaan:
+ *   detectMotif, detectJenis  → DeteksiMotifController, DeteksiJenisController
+ *   detectMask, applyBatik,
+ *   blend, showApplyBatik     → TerapkanBatikController
+ *   blendFromCbir,
+ *   showRekomendasiBatik      → RekomendasiBatikController
+ *   inference, reset,
+ *   getSession,
+ *   serveSampleFashion        → SharedMLController
+ *
+ * File ini bisa dihapus setelah memastikan tidak ada referensi lain.
+ */
 
 namespace App\Http\Controllers;
 
@@ -103,14 +118,7 @@ class MLController extends Controller
 
     public function showApplyBatik()
     {
-        $fashionSamples = [
-            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=480&q=80',
-            'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=480&q=80',
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=480&q=80',
-            'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=480&q=80',
-            'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=480&q=80',
-            'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=480&q=80',
-        ];
+        $fashionSamples = $this->getSampleFashionUrls();
 
         $batikSamples = Batik::query()
             ->where('is_active', true)
@@ -129,10 +137,61 @@ class MLController extends Controller
             ->filter(fn ($item) => !empty($item['image_url']))
             ->values();
 
-        return view('pages.terapkan-batik', [
+        return view('pages.features.terapkan-batik', [
             'fashionSamples' => $fashionSamples,
             'batikSamples' => $batikSamples,
         ]);
+    }
+
+    public function showRekomendasiBatik()
+    {
+        $fashionSamples = $this->getSampleFashionUrls();
+
+        return view('pages.features.rekomendasi-batik', [
+            'fashionSamples' => $fashionSamples,
+        ]);
+    }
+
+    /**
+     * Serve a file from the sample_fashion directory.
+     */
+    public function serveSampleFashion(string $filename)
+    {
+        $dir  = base_path('sample_fashion');
+        $path = realpath($dir . DIRECTORY_SEPARATOR . $filename);
+
+        // Security: ensure path is inside the allowed directory
+        if (!$path || !str_starts_with($path, realpath($dir))) {
+            abort(404);
+        }
+
+        $mime = mime_content_type($path) ?: 'image/jpeg';
+        return response()->file($path, [
+            'Content-Type'  => $mime,
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
+    }
+
+    /**
+     * Read all image files from the sample_fashion directory and return their URLs.
+     */
+    private function getSampleFashionUrls(): array
+    {
+        $dir = base_path('sample_fashion');
+        if (!is_dir($dir)) {
+            return [];
+        }
+
+        $extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        $files = array_values(array_filter(
+            scandir($dir),
+            fn ($f) => in_array(strtolower(pathinfo($f, PATHINFO_EXTENSION)), $extensions)
+        ));
+
+        return array_map(
+            fn ($f) => route('sample.fashion', ['filename' => $f]),
+            $files
+        );
     }
 
     public function applyBatik(Request $request)
@@ -281,7 +340,7 @@ class MLController extends Controller
     {
         $request->validate([
             'session_id' => 'required|string',
-            'part' => 'required|string|in:body,sleeve,collar,lapel,hood,pocket,neckline,epaulette',
+            'part' => 'required|string|in:shirt,t-shirt,sweater,cardigan,jacket,vest,dress,jumpsuit,suit,coat,sleeve,collar,lapel,hood,pocket,neckline,epaulette',
             'instance_index' => 'nullable|integer|min:0',
             'batik' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
         ]);
@@ -356,6 +415,57 @@ class MLController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Blend error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /api/blend-from-cbir - Apply batik to specific part using CBIR local path
+     */
+    public function blendFromCbir(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+            'part' => 'required|string',
+            'instance_index' => 'required|integer',
+            'batik_filename' => 'required|string',
+        ]);
+
+        if (empty($this->baseUrl)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fashionpedia API belum terhubung.',
+            ], 503);
+        }
+
+        $blendPath = $this->endpoints['blend_cbir'] ?? '/blend-from-cbir';
+        $url = $this->baseUrl . '/' . ltrim($blendPath, '/');
+
+        try {
+            $response = Http::timeout(60)
+                ->asMultipart()
+                ->post($url, [
+                    'session_id' => $request->input('session_id'),
+                    'part' => $request->input('part'),
+                    'instance_index' => $request->input('instance_index'),
+                    'batik_filename' => $request->input('batik_filename'),
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return response()->json($data);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'API error ' . $response->status(),
+            ], $response->status());
+
+        } catch (\Throwable $e) {
+            Log::error('Fashionpedia Blend CBIR Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Blend CBIR error: ' . $e->getMessage(),
             ], 500);
         }
     }

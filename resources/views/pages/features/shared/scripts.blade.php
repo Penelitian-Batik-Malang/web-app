@@ -1,215 +1,3 @@
-@extends('layouts.layout')
-@section('title', 'Terapkan Batik')
-
-@section('content')
-<div class="max-w-7xl mx-auto space-y-6" id="batik-app">
-
-    <div class="text-center">
-        <h1 class="text-4xl font-playfair font-bold text-white">Terapkan Batik</h1>
-        <p class="text-gray-400 mt-2 max-w-2xl mx-auto text-sm">
-            Unggah foto fashion, analisis bagian pakaian secara otomatis, lalu terapkan motif batik ke setiap bagian.
-        </p>
-    </div>
-
-    {{-- PHASE 1: Upload --}}
-    <div id="phase-upload">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="bg-gray-900/70 border border-amber-700/50 rounded-2xl p-4">
-                <p class="text-sm text-white font-semibold mb-3">Unggah Foto Fashion</p>
-                <div class="border-2 border-dashed border-amber-700/40 rounded-xl p-3 text-center">
-                    <img id="fashion-preview" class="w-full h-48 object-contain rounded-lg mb-3 bg-gray-800 hidden" alt="">
-                    <div id="fashion-placeholder" class="w-full h-48 rounded-lg mb-3 bg-gray-800 flex items-center justify-center">
-                        <div class="text-center"><i class="bi bi-person-standing text-3xl text-gray-600"></i><p class="text-xs text-gray-600 mt-1">Belum ada foto</p></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button id="fashion-upload-btn" type="button" class="flex items-center justify-center gap-1 text-amber-400 text-sm border border-amber-700/60 rounded-lg py-2 hover:bg-amber-950/20 transition-colors">
-                            <i class="bi bi-upload"></i> Unggah
-                        </button>
-                        <button id="fashion-camera-btn" type="button" class="flex items-center justify-center gap-1 text-amber-300 text-sm border border-amber-700/60 rounded-lg py-2 hover:bg-amber-950/20 transition-colors">
-                            <i class="bi bi-camera-fill"></i> Kamera
-                        </button>
-                    </div>
-                    <input id="fashion-input" type="file" accept="image/*" class="hidden">
-                    <input id="fashion-camera-input" type="file" accept="image/*" capture="environment" class="hidden">
-                </div>
-                <button id="analyze-btn" class="mt-4 w-full bg-primary hover:bg-amber-600 text-black font-bold py-2.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed" disabled>
-                    <i class="bi bi-cpu mr-2"></i>Analisis Pakaian
-                </button>
-                <p id="upload-status" class="text-xs text-gray-500 mt-2 text-center">Pilih foto fashion untuk memulai.</p>
-            </div>
-            <div class="lg:col-span-2">
-                <p class="text-white font-semibold mb-3 text-sm">Contoh Fashion:</p>
-                <div class="grid grid-cols-3 gap-2" id="fashion-samples">
-                    @foreach($fashionSamples as $sample)
-                        <button type="button" class="sample-fashion border border-gray-700 rounded-lg overflow-hidden hover:border-primary transition-colors" data-url="{{ $sample }}">
-                            <img src="{{ $sample }}" class="w-full h-28 object-cover" alt="Fashion sample">
-                        </button>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- PHASE: Loading --}}
-    <div id="phase-loading" class="hidden">
-        <div class="flex flex-col items-center justify-center py-20 gap-4">
-            <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-white font-semibold">Menganalisis bagian pakaian...</p>
-            <p class="text-gray-400 text-sm">Proses ini membutuhkan beberapa saat.</p>
-        </div>
-    </div>
-
-    {{-- PHASE 3: Workspace --}}
-    <div id="phase-workspace" class="hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <div class="lg:col-span-3">
-                <div class="bg-gray-900/70 border border-amber-700/50 rounded-2xl p-3">
-                    <p class="text-xs text-gray-400 mb-2">Klik atau hover bagian pakaian untuk melihat area, lalu klik untuk terapkan batik:</p>
-                    <div class="relative rounded-xl overflow-hidden bg-gray-800 flex items-center justify-center p-1" id="canvas-container">
-                        <canvas id="fashion-canvas" class="w-full h-auto object-contain block" style="max-height: 65vh; cursor:default"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="lg:col-span-2">
-                <div class="bg-gray-900/70 border border-amber-700/50 rounded-2xl p-4 h-full flex flex-col">
-                    <p class="text-sm font-semibold text-white mb-3">Bagian Terdeteksi</p>
-                    <div id="parts-list" class="space-y-2 flex-1 overflow-y-auto max-h-80"></div>
-                    <div class="mt-4 pt-4 border-t border-gray-800">
-                        <p id="workspace-status" class="text-xs text-gray-400 mb-3">Klik bagian untuk memulai.</p>
-                        <div class="flex gap-2">
-                            <button id="reset-btn" class="flex-1 border border-amber-700/60 hover:border-primary text-white text-sm font-semibold py-2 rounded-lg transition-colors">
-                                <i class="bi bi-arrow-counterclockwise mr-1"></i>Reset
-                            </button>
-                            <button id="finish-btn" class="bg-primary hover:bg-amber-600 text-black text-sm font-bold py-2 px-6 rounded-lg transition-colors shadow-lg">
-                                Selesai <i class="bi bi-chevron-right ml-1"></i>
-                            </button>
-                            <button id="back-to-upload-btn" class="border border-gray-700 hover:border-gray-500 text-gray-400 text-sm py-2 px-3 rounded-lg transition-colors" title="Kembali">
-                                <i class="bi bi-arrow-left"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- PHASE 4: Result --}}
-    <div id="phase-result" class="hidden">
-        <div class="bg-gray-900/70 border border-amber-700/50 rounded-2xl p-6 lg:p-8 max-w-5xl mx-auto my-6">
-            <h2 class="text-3xl font-playfair font-bold text-white mb-8 text-center"><i class="bi bi-stars text-primary mr-2"></i>Hasil Akhir</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-10 mb-8 items-start">
-                <div class="flex flex-col items-center">
-                    <p class="text-sm font-semibold text-gray-400 mb-3 bg-gray-800 px-4 py-1 rounded-full border border-gray-700">Foto Asli</p>
-                    <img id="result-original-img" class="w-full max-h-[50vh] object-contain rounded-xl bg-[#0a0a0a] border border-gray-800 shadow-inner" src="" alt="Asli">
-                </div>
-                <div class="flex flex-col items-center">
-                    <p class="text-sm font-semibold text-primary mb-3 bg-amber-950/40 px-4 py-1 rounded-full border border-amber-700/40">Hasil Terapkan Batik</p>
-                    <img id="result-final-img" class="w-full max-h-[50vh] object-contain rounded-xl bg-[#0a0a0a] border border-amber-700/40 shadow-[0_0_20px_rgba(217,119,6,0.15)]" src="" alt="Hasil Akhir">
-                </div>
-            </div>
-            
-            <div class="mb-8 max-w-2xl mx-auto">
-                <p class="text-sm font-semibold text-white mb-3"><i class="bi bi-card-list mr-2"></i>Daftar Modifikasi Batik:</p>
-                <div class="bg-[#0a0a0a] rounded-xl max-h-60 overflow-y-auto border border-gray-800 shadow-inner">
-                    <ul id="result-parts-list" class="divide-y divide-gray-800">
-                    </ul>
-                </div>
-            </div>
-
-            <div class="flex flex-col sm:flex-row justify-center gap-4 mt-10">
-                <button id="result-save-btn" class="bg-primary hover:bg-amber-600 text-black font-bold py-3.5 px-8 rounded-xl transition-all shadow-[0_4px_15px_rgba(217,119,6,0.3)] hover:shadow-[0_6px_20px_rgba(217,119,6,0.5)] flex items-center justify-center">
-                    <i class="bi bi-download mr-2 text-lg"></i>Simpan Gambar
-                </button>
-                <button id="result-back-btn" class="border flex items-center justify-center border-gray-600 hover:border-gray-500 text-white font-semibold py-3.5 px-8 rounded-xl transition-colors">
-                    <i class="bi bi-pencil-square mr-2"></i>Kembali Edit
-                </button>
-            </div>
-        </div>
-    </div>
-
-    {{-- BATIK PANEL --}}
-    <div id="batik-panel" class="hidden fixed inset-0 z-50 bg-black/80 items-end lg:items-center justify-center p-0 lg:p-4" style="display:none">
-        <div class="w-full max-w-4xl bg-[#0d0d0d] border border-amber-700/40 rounded-t-2xl lg:rounded-2xl overflow-hidden flex flex-col" style="max-height:90vh">
-            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
-                <div class="flex items-center gap-3">
-                    <div id="panel-part-color" class="w-3 h-3 rounded-full"></div>
-                    <div>
-                        <h3 id="panel-part-name" class="text-white font-bold text-base"></h3>
-                        <p id="panel-bbox-info" class="text-gray-500 text-xs"></p>
-                    </div>
-                </div>
-                <button id="panel-close-btn" class="text-gray-400 hover:text-white p-1"><i class="bi bi-x-lg text-lg"></i></button>
-            </div>
-            <div class="overflow-y-auto flex-1">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
-                    <div>
-                        <p class="text-xs text-gray-400 mb-2">Atur posisi motif — drag untuk geser, scroll untuk zoom:</p>
-                        <div class="rounded-xl overflow-hidden bg-gray-800 border border-gray-700">
-                            <canvas id="batik-crop-canvas" class="block w-full" style="cursor:grab;touch-action:none"></canvas>
-                        </div>
-                        <div class="grid grid-cols-5 gap-1.5 mt-2">
-                            <button id="zoom-in-btn"  class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-1.5 rounded-lg transition-colors" title="Perbesar"><i class="bi bi-zoom-in"></i></button>
-                            <button id="zoom-out-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-1.5 rounded-lg transition-colors" title="Perkecil"><i class="bi bi-zoom-out"></i></button>
-                            <button id="rotate-ccw-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-1.5 rounded-lg transition-colors" title="Putar kiri"><i class="bi bi-arrow-counterclockwise"></i></button>
-                            <button id="rotate-cw-btn"  class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-1.5 rounded-lg transition-colors" title="Putar kanan"><i class="bi bi-arrow-clockwise"></i></button>
-                            <button id="batik-reset-transform" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-1.5 rounded-lg transition-colors" title="Reset posisi"><i class="bi bi-aspect-ratio"></i></button>
-                        </div>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-400 mb-2">Pilih batik:</p>
-                        <div class="flex gap-2 mb-3">
-                            <button id="panel-upload-btn" class="flex items-center justify-center gap-1 text-amber-400 text-sm border border-amber-700/60 rounded-lg py-2 px-3 hover:bg-amber-950/20 transition-colors whitespace-nowrap">
-                                <i class="bi bi-upload"></i> Unggah
-                            </button>
-                            <input id="panel-batik-input" type="file" accept="image/*" class="hidden">
-                            <input id="panel-search" type="text" placeholder="Cari motif..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
-                        </div>
-                        <div id="panel-batik-gallery" class="grid grid-cols-3 gap-2 overflow-y-auto" style="max-height:200px">
-                            @foreach($batikSamples as $batik)
-                                <button type="button"
-                                    class="panel-sample-batik border border-gray-700 rounded-lg overflow-hidden hover:border-primary transition-colors text-left"
-                                    data-url="{{ $batik['image_url'] }}"
-                                    data-name="{{ strtolower($batik['name']) }}">
-                                    <img src="{{ $batik['image_url'] }}" class="w-full h-16 object-cover" alt="{{ $batik['name'] }}">
-                                    <p class="text-xs text-primary truncate px-1 py-0.5">{{ $batik['name'] }}</p>
-                                </button>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-                <p id="panel-status" class="hidden text-xs text-red-400 px-4 pb-1"></p>
-                <div class="flex gap-3 px-4 pb-4">
-                    <button id="apply-blend-btn" class="flex-1 bg-primary hover:bg-amber-600 text-black font-bold py-2.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                        <i class="bi bi-check2 mr-1"></i>Terapkan
-                    </button>
-                    <button id="panel-cancel-btn" class="px-6 border border-gray-600 hover:border-gray-500 text-white font-semibold py-2.5 rounded-lg transition-colors">
-                        Batal
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- WEBCAM MODAL --}}
-    <div id="webcam-modal" class="hidden fixed inset-0 z-60 bg-black/80 items-center justify-center p-4" style="display:none">
-        <div class="w-full max-w-xl bg-[#111] border border-gray-700 rounded-2xl p-4">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="text-white font-semibold">Capture Kamera</h3>
-                <button id="webcam-close-btn" class="text-gray-400 hover:text-white"><i class="bi bi-x-lg"></i></button>
-            </div>
-            <video id="webcam-video" class="w-full h-72 object-cover rounded-lg bg-black" autoplay playsinline muted></video>
-            <canvas id="webcam-canvas" class="hidden"></canvas>
-            <div class="grid grid-cols-2 gap-3 mt-4">
-                <button id="webcam-capture-btn" class="bg-primary hover:bg-amber-600 text-black font-bold py-2.5 rounded-lg">Ambil Foto</button>
-                <button id="webcam-cancel-btn" class="border border-gray-600 text-white font-bold py-2.5 rounded-lg">Batal</button>
-            </div>
-        </div>
-    </div>
-
-</div>
-@endsection
-
 @push('scripts')
 <script>
 (() => {
@@ -217,18 +5,31 @@
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const PART_COLORS = {
-    body:      [128, 128, 128],
-    sleeve:    [255,  80,  80],
-    collar:    [ 80, 160, 255],
-    lapel:     [ 80, 200,  80],
-    hood:      [255, 180,  50],
-    pocket:    [180,  80, 255],
-    neckline:  [255, 255,  80],
-    epaulette: [ 80, 220, 220],
+    'shirt':     [128, 128, 128],
+    't-shirt':   [100, 150, 200],
+    'sweater':   [200, 150, 100],
+    'cardigan':  [150, 200, 100],
+    'jacket':    [200, 100, 150],
+    'vest':      [150, 100, 200],
+    'dress':     [100, 200, 150],
+    'jumpsuit':  [250, 150,  50],
+    'suit':      [ 50, 150, 250],
+    'coat':      [150, 250,  50],
+    'sleeve':    [255,  80,  80],
+    'collar':    [ 80, 160, 255],
+    'lapel':     [ 80, 200,  80],
+    'hood':      [255, 180,  50],
+    'pocket':    [180,  80, 255],
+    'neckline':  [255, 255,  80],
+    'epaulette': [ 80, 220, 220],
 };
+window.PART_COLORS = PART_COLORS;
 const PART_LABELS = {
-    body: 'Badan', sleeve: 'Lengan', collar: 'Kerah', lapel: 'Lapel',
-    hood: 'Tudung', pocket: 'Saku', neckline: 'Leher', epaulette: 'Epaulet',
+    'shirt': 'Kemeja', 't-shirt': 'Kaos', 'sweater': 'Sweater', 'cardigan': 'Kardigan',
+    'jacket': 'Jaket', 'vest': 'Rompi', 'dress': 'Gaun', 'jumpsuit': 'Jumpsuit',
+    'suit': 'Setelan', 'coat': 'Mantel', 'sleeve': 'Lengan', 'collar': 'Kerah',
+    'lapel': 'Lapel', 'hood': 'Tudung', 'pocket': 'Saku', 'neckline': 'Leher',
+    'epaulette': 'Epaulet',
 };
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -257,6 +58,7 @@ const state = {
     webcamStream: null,
     webcamTarget: '',
 };
+window.state = state;
 
 // ─── DOM refs ────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -301,7 +103,7 @@ const panelStatus    = $('panel-status');
 const applyBlendBtn  = $('apply-blend-btn');
 
 const batikCanvas    = $('batik-crop-canvas');
-const batikCtx       = batikCanvas.getContext('2d');
+const batikCtx       = batikCanvas ? batikCanvas.getContext('2d') : null;
 const zoomInBtn      = $('zoom-in-btn');
 const zoomOutBtn     = $('zoom-out-btn');
 const rotateCwBtn    = $('rotate-cw-btn');
@@ -317,6 +119,7 @@ const webcamClose    = $('webcam-close-btn');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
+window.csrf = csrf;
 const toRgba = ([r,g,b], a) => `rgba(${r},${g},${b},${a})`;
 const toHex  = ([r,g,b]) => '#' + [r,g,b].map(x => x.toString(16).padStart(2,'0')).join('');
 
@@ -335,6 +138,7 @@ const safeJson = async (resp) => {
         throw new Error(`Response tidak valid dari server: ${text.substring(0, 100)}`);
     }
 };
+window.safeJson = safeJson;
 
 const loadImage = src => new Promise((res, rej) => {
     const img = new Image();
@@ -342,6 +146,7 @@ const loadImage = src => new Promise((res, rej) => {
     img.onerror = rej;
     img.src = src;
 });
+window.loadImage = loadImage;
 
 const readAsDataURL = file => new Promise((res, rej) => {
     const r = new FileReader();
@@ -361,8 +166,12 @@ const setPhase = p => {
     phaseUpload.classList.toggle('hidden', p !== 'upload');
     phaseLoading.classList.toggle('hidden', p !== 'loading');
     phaseWorkspace.classList.toggle('hidden', p !== 'workspace');
-    if (typeof phaseResult !== 'undefined') phaseResult.classList.toggle('hidden', p !== 'result');
+    phaseResult?.classList.toggle('hidden', p !== 'result');
+    // Phase CBIR Result — hanya ada di rekomendasi-batik
+    const phaseCbir = document.getElementById('phase-cbir-result');
+    if (phaseCbir) phaseCbir.classList.toggle('hidden', p !== 'cbir-result');
 };
+window.setPhase = setPhase;
 
 // ─── Fashion upload ───────────────────────────────────────────────────────────
 const setFashionFile = async file => {
@@ -375,10 +184,10 @@ const setFashionFile = async file => {
     uploadStatus.textContent = 'Klik "Analisis Pakaian" untuk melanjutkan.';
 };
 
-fashionInput.addEventListener('change', () => { if (fashionInput.files?.[0]) setFashionFile(fashionInput.files[0]); });
-fashionCameraInput.addEventListener('change', () => { if (fashionCameraInput.files?.[0]) setFashionFile(fashionCameraInput.files[0]); });
-fashionUploadBtn.addEventListener('click', () => fashionInput.click());
-fashionCameraBtn.addEventListener('click', () => openWebcam('fashion'));
+fashionInput?.addEventListener('change', () => { if (fashionInput.files?.[0]) setFashionFile(fashionInput.files[0]); });
+fashionCameraInput?.addEventListener('change', () => { if (fashionCameraInput.files?.[0]) setFashionFile(fashionCameraInput.files[0]); });
+fashionUploadBtn?.addEventListener('click', () => fashionInput.click());
+fashionCameraBtn?.addEventListener('click', () => openWebcam('fashion'));
 
 document.querySelectorAll('.sample-fashion').forEach(el => {
     el.addEventListener('click', async () => {
@@ -391,7 +200,7 @@ document.querySelectorAll('.sample-fashion').forEach(el => {
 });
 
 // ─── Inference ───────────────────────────────────────────────────────────────
-analyzeBtn.addEventListener('click', async () => {
+analyzeBtn?.addEventListener('click', async () => {
     if (!state.fashionFile) return;
     setPhase('loading');
 
@@ -400,14 +209,29 @@ analyzeBtn.addEventListener('click', async () => {
     fd.append('_token', csrf());
 
     try {
-        const resp = await fetch("{{ route('api.inference') }}", {
+        const resp = await fetch(apiInferenceRoute, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             body: fd,
         });
         const data = await safeJson(resp);
         if (!resp.ok || !data.session_id) throw new Error(data.message || 'Gagal menganalisis. Pastikan API aktif.');
+
+        // Simpan CBIR data global sebelum initWorkspace
+        window.cbirData = data.cbir || {};
+
         await initWorkspace(data);
+
+        // Setelah workspace siap, branch berdasarkan mode:
+        if (isRekomendasiMode) {
+            // Tampilkan phase rekomendasi CBIR dulu
+            if (typeof window.showCbirPhase === 'function') {
+                window.showCbirPhase(window.cbirData);
+            }
+            setPhase('cbir-result');
+        } else {
+            setPhase('workspace');
+        }
     } catch (err) {
         setPhase('upload');
         uploadStatus.textContent = err.message;
@@ -442,17 +266,26 @@ async function initWorkspace(data) {
         }
     }
 
-    // Sort: body first, then by area descending
+    // Kategori pakaian utama vs bagian tambahan
+    const MAIN_PARTS = ['shirt', 't-shirt', 'sweater', 'cardigan', 'jacket', 'vest', 'dress', 'jumpsuit', 'suit', 'coat'];
+    
+    // Sort: Pakaian Utama dulu, lalu bagian kecil.
+    // Di dalam masing-masing grup, kumpulkan berdasarkan nama part, lalu urutkan berdasarkan indeks.
     state.partsList.sort((a, b) => {
-        if (a.partName === 'body') return -1;
-        if (b.partName === 'body') return 1;
-        return b.area - a.area;
+        const aIsMain = MAIN_PARTS.includes(a.partName) ? 0 : 1;
+        const bIsMain = MAIN_PARTS.includes(b.partName) ? 0 : 1;
+        if (aIsMain !== bIsMain) return aIsMain - bIsMain;
+        
+        if (a.label !== b.label) return a.label.localeCompare(b.label);
+        
+        return a.index - b.index;
     });
 
     await renderFashionCanvas();
     renderPartsList();
     workspaceStatus.textContent = `${state.partsList.length} bagian terdeteksi. Klik bagian untuk terapkan batik.`;
-    setPhase('workspace');
+    // Jangan set phase di sini — analyzeBtn handler yang mengatur phase berikutnya
+    // berdasarkan mode (cbir-result untuk rekomendasi, workspace untuk terapkan)
 }
 
 // ─── Fashion canvas ───────────────────────────────────────────────────────────
@@ -525,6 +358,7 @@ async function renderFashionCanvas() {
 
     }
 }
+window.renderFashionCanvas = renderFashionCanvas;
 
 const canvasToImageCoords = e => {
     const rect = fashionCanvas.getBoundingClientRect();
@@ -597,14 +431,15 @@ function renderPartsList() {
         partsListEl.appendChild(btn);
     }
 }
+window.renderPartsList = renderPartsList;
 
 // ─── Reset & back ─────────────────────────────────────────────────────────────
-resetBtn.addEventListener('click', async () => {
+resetBtn?.addEventListener('click', async () => {
     if (!state.sessionId) return;
     resetBtn.disabled = true;
     workspaceStatus.textContent = 'Mereset...';
     try {
-        const resp = await fetch("{{ route('api.reset') }}", {
+        const resp = await fetch(apiResetRoute, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ session_id: state.sessionId }),
@@ -624,7 +459,7 @@ resetBtn.addEventListener('click', async () => {
     }
 });
 
-finishBtn.addEventListener('click', () => {
+finishBtn?.addEventListener('click', () => {
     if (!state.fashionImage) return;
     
     // Buat canvas bersih ukurannya asli gambar
@@ -658,7 +493,7 @@ finishBtn.addEventListener('click', () => {
     setPhase('result');
 });
 
-resultSaveBtn.addEventListener('click', () => {
+resultSaveBtn?.addEventListener('click', () => {
     if (!resultFinalImg.src) return;
     const a = document.createElement('a');
     a.download = 'batik-hasil.png';
@@ -666,21 +501,31 @@ resultSaveBtn.addEventListener('click', () => {
     a.click();
 });
 
-resultBackBtn.addEventListener('click', () => {
+resultBackBtn?.addEventListener('click', () => {
     setPhase('workspace');
 });
 
-backBtn.addEventListener('click', () => {
-    setPhase('upload');
-    state.sessionId = null;
-    state.partsList = [];
-    state.blendedKeys.clear();
-    state.appliedBatiks = [];
-    state.hoveredKey = null;
+backBtn?.addEventListener('click', () => {
+    if (isRekomendasiMode && window.cbirData && Object.keys(window.cbirData).length) {
+        // Dalam mode rekomendasi: kembali ke phase rekomendasi, bukan upload
+        setPhase('cbir-result');
+    } else {
+        setPhase('upload');
+        state.sessionId = null;
+        state.partsList = [];
+        state.blendedKeys.clear();
+        state.appliedBatiks = [];
+        state.hoveredKey = null;
+    }
 });
 
 // ─── Batik panel open/close ───────────────────────────────────────────────────
 function openBatikPanel(part) {
+    if (window.openBatikPanelFunc) {
+        window.openBatikPanelFunc(part);
+        return;
+    }
+    
     state.selectedPart = part;
     state.batikTransform = { scale: 1, offsetX: 0, offsetY: 0, rotation: 0 };
 
@@ -717,10 +562,11 @@ const closeBatikPanel = () => {
     batikPanel.style.display = 'none';
     document.body.style.overflow = '';
 };
+window.closeBatikPanel = closeBatikPanel;
 
-panelCloseBtn.addEventListener('click', closeBatikPanel);
-panelCancelBtn.addEventListener('click', closeBatikPanel);
-batikPanel.addEventListener('click', e => { if (e.target === batikPanel) closeBatikPanel(); });
+panelCloseBtn?.addEventListener('click', closeBatikPanel);
+panelCancelBtn?.addEventListener('click', closeBatikPanel);
+batikPanel?.addEventListener('click', e => { if (e.target === batikPanel) closeBatikPanel(); });
 
 // ─── Batik canvas draw ────────────────────────────────────────────────────────
 function drawBatikCanvas() {
@@ -829,9 +675,10 @@ function drawBatikCanvas() {
             .forEach(([x,y]) => batikCtx.fillRect(x,y,hs,hs));
     }
 }
+window.drawBatikCanvas = drawBatikCanvas;
 
 // Drag
-batikCanvas.addEventListener('mousedown', e => {
+batikCanvas?.addEventListener('mousedown', e => {
     state.isDragging = true;
     state.dragStart = { x: e.clientX, y: e.clientY };
     state.dragStartOffset = { ...state.batikTransform };
@@ -848,14 +695,14 @@ window.addEventListener('mouseup', () => {
 });
 
 // Touch drag
-batikCanvas.addEventListener('touchstart', e => {
+batikCanvas?.addEventListener('touchstart', e => {
     e.preventDefault();
     const t = e.touches[0];
     state.isDragging = true;
     state.dragStart = { x: t.clientX, y: t.clientY };
     state.dragStartOffset = { ...state.batikTransform };
 }, { passive: false });
-batikCanvas.addEventListener('touchmove', e => {
+batikCanvas?.addEventListener('touchmove', e => {
     e.preventDefault();
     if (!state.isDragging) return;
     const t = e.touches[0];
@@ -863,31 +710,32 @@ batikCanvas.addEventListener('touchmove', e => {
     state.batikTransform.offsetY = state.dragStartOffset.offsetY + (t.clientY - state.dragStart.y);
     drawBatikCanvas();
 }, { passive: false });
-batikCanvas.addEventListener('touchend', () => { state.isDragging = false; });
+batikCanvas?.addEventListener('touchend', () => { state.isDragging = false; });
 
 // Scroll zoom
-batikCanvas.addEventListener('wheel', e => {
+batikCanvas?.addEventListener('wheel', e => {
     e.preventDefault();
     state.batikTransform.scale = Math.max(0.1, Math.min(10, state.batikTransform.scale * (e.deltaY > 0 ? 0.9 : 1.1)));
     drawBatikCanvas();
 }, { passive: false });
 
-zoomInBtn.addEventListener('click',  () => { state.batikTransform.scale = Math.min(10, state.batikTransform.scale * 1.2); drawBatikCanvas(); });
-zoomOutBtn.addEventListener('click', () => { state.batikTransform.scale = Math.max(0.1, state.batikTransform.scale / 1.2); drawBatikCanvas(); });
-rotateCwBtn.addEventListener('click',  () => { state.batikTransform.rotation = (state.batikTransform.rotation + 15) % 360; drawBatikCanvas(); });
-rotateCcwBtn.addEventListener('click', () => { state.batikTransform.rotation = (state.batikTransform.rotation - 15 + 360) % 360; drawBatikCanvas(); });
-batikResetBtn.addEventListener('click', () => { state.batikTransform = { scale: 1, offsetX: 0, offsetY: 0, rotation: 0 }; drawBatikCanvas(); });
+zoomInBtn?.addEventListener('click',  () => { state.batikTransform.scale = Math.min(10, state.batikTransform.scale * 1.2); drawBatikCanvas(); });
+zoomOutBtn?.addEventListener('click', () => { state.batikTransform.scale = Math.max(0.1, state.batikTransform.scale / 1.2); drawBatikCanvas(); });
+rotateCwBtn?.addEventListener('click',  () => { state.batikTransform.rotation = (state.batikTransform.rotation + 15) % 360; drawBatikCanvas(); });
+rotateCcwBtn?.addEventListener('click', () => { state.batikTransform.rotation = (state.batikTransform.rotation - 15 + 360) % 360; drawBatikCanvas(); });
+batikResetBtn?.addEventListener('click', () => { state.batikTransform = { scale: 1, offsetX: 0, offsetY: 0, rotation: 0 }; drawBatikCanvas(); });
 
 // ─── Batik selection ──────────────────────────────────────────────────────────
 const setBatikImage = async (file, src, name) => {
     state.batikImg = await loadImage(src || URL.createObjectURL(file));
     state.batikTransform = { scale: 1, offsetX: 0, offsetY: 0, rotation: 0 };
-    state.currentBatikInfo = { src: src || URL.createObjectURL(file), name: name || 'Unggahan Custom' };
+    state.currentBatikInfo = { src: src || (file ? URL.createObjectURL(file) : null), name: name || 'Unggahan Custom' };
     drawBatikCanvas();
 };
+window.setBatikImage = setBatikImage;
 
-panelUploadBtn.addEventListener('click', () => panelBatikInput.click());
-panelBatikInput.addEventListener('change', async () => {
+panelUploadBtn?.addEventListener('click', () => panelBatikInput.click());
+panelBatikInput?.addEventListener('change', async () => {
     const file = panelBatikInput.files?.[0];
     if (file) await setBatikImage(file, null, file.name);
 });
@@ -909,7 +757,7 @@ document.querySelectorAll('.panel-sample-batik').forEach(el => {
     });
 });
 
-panelSearch.addEventListener('input', () => {
+panelSearch?.addEventListener('input', () => {
     const q = panelSearch.value.toLowerCase();
     document.querySelectorAll('.panel-sample-batik').forEach(el => {
         el.classList.toggle('hidden', !(el.dataset.name || '').includes(q));
@@ -923,20 +771,24 @@ function getCroppedBlob() {
         const cx = (W - state.cropBoxW) / 2;
         const cy = (H - state.cropBoxH) / 2;
 
+        // Faktor pengali resolusi agar hasil crop tidak pecah saat diaplikasikan ke baju besar
+        const SCALE_FACTOR = 3;
+
         const tmp = document.createElement('canvas');
-        tmp.width  = state.cropBoxW;
-        tmp.height = state.cropBoxH;
+        tmp.width  = state.cropBoxW * SCALE_FACTOR;
+        tmp.height = state.cropBoxH * SCALE_FACTOR;
         const tc = tmp.getContext('2d');
 
         if (state.batikImg) {
             const { scale, offsetX, offsetY, rotation } = state.batikTransform;
             const iw = state.batikImg.naturalWidth, ih = state.batikImg.naturalHeight;
             const fitScale = Math.max(W / iw, H / ih) * 1.05;
-            const eff = fitScale * scale;
-            const bCx = W / 2 + offsetX;
-            const bCy = H / 2 + offsetY;
+            const eff = fitScale * scale * SCALE_FACTOR;
+            const bCx = (W / 2 + offsetX) * SCALE_FACTOR;
+            const bCy = (H / 2 + offsetY) * SCALE_FACTOR;
+            
             tc.save();
-            tc.translate(bCx - cx, bCy - cy);
+            tc.translate(bCx - (cx * SCALE_FACTOR), bCy - (cy * SCALE_FACTOR));
             tc.rotate(rotation * Math.PI / 180);
             tc.drawImage(state.batikImg, -iw * eff / 2, -ih * eff / 2, iw * eff, ih * eff);
             tc.restore();
@@ -945,11 +797,11 @@ function getCroppedBlob() {
         tmp.toBlob(blob => {
             if (!blob) { reject(new Error('Gagal membuat gambar batik. Coba lagi.')); return; }
             resolve(blob);
-        }, 'image/jpeg', 0.92);
+        }, 'image/jpeg', 0.95);
     });
 }
 
-applyBlendBtn.addEventListener('click', async () => {
+applyBlendBtn?.addEventListener('click', async () => {
     const showErr = msg => {
         panelStatus.textContent = msg;
         panelStatus.classList.remove('hidden');
