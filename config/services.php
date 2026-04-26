@@ -52,6 +52,10 @@ return [
             'jenis' => env('ML_API_JENIS_PATH', '/tulis/scan'),
             // Path endpoint health model AI.
             'health' => env('ML_API_HEALTH_PATH', '/health'),
+            // Path endpoint extract palette dari gambar.
+            'palette_extract' => env('ML_API_PALETTE_EXTRACT_PATH', '/palette/extract'),
+            // Path endpoint recolor gambar batik.
+            'recolor' => env('ML_API_RECOLOR_PATH', '/recolor'),
         ],
     ],
 
