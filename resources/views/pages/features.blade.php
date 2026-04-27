@@ -48,7 +48,7 @@
     @endif
 
     {{-- PENCARIAN BATIK Section --}}
-    @if($isGuest || $user->hasMenuAccess('pencarian-batik') || $user->hasMenuAccess('pencarian-warna') || $user->hasMenuAccess('rekomendasi-fashion'))
+    @if($isGuest || $user->hasMenuAccess('pencarian-batik') || $user->hasMenuAccess('pencarian-warna') || $user->hasMenuAccess('rekomendasi-batik'))
     <div class="space-y-6 border-b border-secondary pb-10">
         <h2 class="text-xl md:text-2xl font-bold text-secondary uppercase tracking-wider">Pencarian Batik</h2>
         

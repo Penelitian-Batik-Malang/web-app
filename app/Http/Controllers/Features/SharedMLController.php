@@ -1,4 +1,32 @@
 <?php
+/**
+ * =========================================================================
+ * SharedMLController — Shared Fashionpedia Session Management
+ * =========================================================================
+ *
+ * Controller ini mengelola session Fashionpedia API yang digunakan
+ * BERSAMA oleh dua fitur:
+ *   1. Terapkan Batik (TerapkanBatikController)
+ *   2. Rekomendasi Batik (RekomendasiBatikController)
+ *
+ * Kedua fitur tersebut menggunakan alur yang sama:
+ *   Upload fashion → Inference (deteksi bagian pakaian) → Workspace
+ *
+ * TANGGUNG JAWAB:
+ *   - inference()   : Deteksi bagian pakaian via Fashionpedia API
+ *   - reset()       : Reset session ke gambar original
+ *   - getSession()  : Ambil info session yang aktif
+ *
+ * CATATAN:
+ *   - serveSampleFashion() sekarang ada di BaseMLController
+ *   - Method di sini tidak spesifik ke mode terapkan/rekomendasi
+ *   - Session ID dikelola oleh ML API, bukan Laravel
+ *
+ * @see TerapkanBatikController     — Fitur terapkan batik ke pakaian
+ * @see RekomendasiBatikController  — Fitur rekomendasi batik dari CBIR
+ * @see BaseMLController            — Parent class dengan utilities
+ * =========================================================================
+ */
 
 namespace App\Http\Controllers\Features;
 
@@ -9,8 +37,23 @@ use Illuminate\Support\Facades\Log;
 class SharedMLController extends BaseMLController
 {
     /**
-     * POST /api/inference — Detect fashion parts via Fashionpedia.
-     * Dipakai bersama oleh fitur terapkan-batik dan rekomendasi-batik.
+     * Deteksi bagian pakaian dari citra fashion via Fashionpedia.
+     *
+     * POST /api/inference
+     *
+     * Menerima gambar fashion dari frontend, mengirim ke ML API
+     * endpoint /inference, dan mengembalikan:
+     *   - session_id : ID unik session untuk blend selanjutnya
+     *   - parts      : Daftar bagian pakaian terdeteksi (bbox + mask)
+     *   - cbir       : Data rekomendasi CBIR (khusus mode rekomendasi)
+     *   - image_size : Dimensi gambar yang diproses
+     *
+     * Dipakai bersama oleh:
+     *   - Terapkan Batik  → setelah inference, langsung ke workspace
+     *   - Rekomendasi     → setelah inference, tampilkan CBIR dulu
+     *
+     * @param  \Illuminate\Http\Request  $request  Request dengan file 'image'
+     * @return \Illuminate\Http\JsonResponse
      */
     public function inference(Request $request)
     {
@@ -54,7 +97,15 @@ class SharedMLController extends BaseMLController
     }
 
     /**
-     * POST /api/reset — Reset session ke gambar original.
+     * Reset session Fashionpedia ke gambar original.
+     *
+     * POST /api/reset
+     *
+     * Mengembalikan semua blend yang sudah diterapkan ke gambar asli.
+     * Digunakan ketika user ingin mulai ulang tanpa upload ulang.
+     *
+     * @param  \Illuminate\Http\Request  $request  Request dengan 'session_id'
+     * @return \Illuminate\Http\JsonResponse
      */
     public function reset(Request $request)
     {
@@ -92,7 +143,15 @@ class SharedMLController extends BaseMLController
     }
 
     /**
-     * GET /api/session/{sessionId} — Ambil info session aktif.
+     * Ambil info session Fashionpedia yang aktif.
+     *
+     * GET /api/session/{sessionId}
+     *
+     * Mengambil state session saat ini dari ML API, termasuk
+     * gambar terkini dan daftar blend yang sudah diterapkan.
+     *
+     * @param  string  $sessionId  UUID session dari inference
+     * @return \Illuminate\Http\JsonResponse
      */
     public function getSession(string $sessionId)
     {
@@ -121,24 +180,5 @@ class SharedMLController extends BaseMLController
                 'message' => 'Gagal menghubungi Fashionpedia API.',
             ], 500);
         }
-    }
-
-    /**
-     * GET /sample-fashion/{filename} — Serve sample fashion image.
-     */
-    public function serveSampleFashion(string $filename)
-    {
-        $dir  = base_path('sample_fashion');
-        $path = realpath($dir . DIRECTORY_SEPARATOR . $filename);
-
-        if (!$path || !str_starts_with($path, realpath($dir))) {
-            abort(404);
-        }
-
-        $mime = mime_content_type($path) ?: 'image/jpeg';
-        return response()->file($path, [
-            'Content-Type'  => $mime,
-            'Cache-Control' => 'public, max-age=86400',
-        ]);
     }
 }

@@ -1,4 +1,41 @@
 <?php
+/**
+ * =========================================================================
+ * RekomendasiBatikController — Rekomendasi Batik by Fashion (CBIR)
+ * =========================================================================
+ *
+ * Fitur ini menganalisis warna dominan pakaian pada citra fashion
+ * dan merekomendasikan motif batik yang palet warnanya senada,
+ * menggunakan Content-Based Image Retrieval (CBIR) dengan ruang
+ * warna CIELAB + K-Means clustering.
+ *
+ * @status  DONE
+ * @menu    rekomendasi-batik
+ *
+ * Alur kerja lengkap:
+ *   1. Upload    → User unggah/pilih gambar fashion
+ *   2. Inference → SharedMLController::inference() → deteksi pakaian + CBIR
+ *   3. CBIR      → Tampilkan fase rekomendasi (warna dominan + grid batik)
+ *   4. Apply     → User bisa lanjut ke workspace untuk terapkan rekomendasi
+ *   5. Panel     → User pilih batik rekomendasi, atur posisi, blend
+ *   6. Result    → Gambar fashion dengan batik rekomendasi yang diterapkan
+ *
+ * Perbedaan dengan TerapkanBatik:
+ *   - Terapkan  : User langsung ke workspace, pilih batik manual dari galeri
+ *   - Rekomendasi: User dapat rekomendasi CBIR dulu, baru ke workspace
+ *
+ * Endpoints yang digunakan:
+ *   - inference      : POST /api/inference      (SharedMLController)
+ *   - blend_cbir     : POST /api/blend-from-cbir (method blendFromCbir())
+ *   - blend          : POST /api/blend           (TerapkanBatikController)
+ *   - reset          : POST /api/reset           (SharedMLController)
+ *
+ * @see SharedMLController                 — Shared session management
+ * @see TerapkanBatikController            — Fitur serupa tanpa CBIR
+ * @see config/services.php                — Endpoint configuration
+ * @see resources/views/pages/features/rekomendasi-batik.blade.php — View
+ * =========================================================================
+ */
 
 namespace App\Http\Controllers\Features;
 

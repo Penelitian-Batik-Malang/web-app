@@ -1,3 +1,35 @@
+{{--
+=========================================================================
+SHARED: Batik App Layout — Layout Bertahap untuk Fitur Fashionpedia
+=========================================================================
+
+Layout utama yang digunakan oleh:
+  - terapkan-batik.blade.php  (mode = 'terapkan')
+  - rekomendasi-batik.blade.php (mode = 'rekomendasi')
+
+Phase/Tahap UI:
+  1. phase-upload     → Upload gambar fashion
+  2. phase-loading    → Loading saat inference ML API
+  3. phase-cbir       → Hasil CBIR (hanya mode rekomendasi)
+  4. phase-workspace  → Canvas interaktif + sidebar parts
+  5. phase-result     → Perbandingan before/after
+
+Sections yang bisa di-yield oleh child view:
+  - phase_cbir      → Konten CBIR result (rekomendasi)
+  - custom_panel    → Batik panel (terapkan/rekomendasi)
+  - custom_scripts  → Script tambahan khusus mode
+
+Variabel yang dibutuhkan:
+  - $title       : Judul halaman
+  - $description : Deskripsi singkat
+  - $mode        : 'terapkan' | 'rekomendasi'
+
+@see TerapkanBatikController      → Backend terapkan
+@see RekomendasiBatikController   → Backend rekomendasi
+@see shared/scripts.blade.php     → Loader modul JS
+=========================================================================
+--}}
+
 @extends('layouts.layout')
 @section('title', $title)
 
@@ -37,10 +69,21 @@
 
 
 @push('scripts')
+{{--
+    Konfigurasi BatikApp — diset di sini karena memerlukan Blade variables.
+    Modul JS membaca dari window.BatikAppConfig alih-alih inline Blade.
+--}}
 <script>
-    const isRekomendasiMode = {{ $mode === 'rekomendasi' ? 'true' : 'false' }};
-    const apiInferenceRoute = "{{ route('api.inference') }}";
-    const apiResetRoute = "{{ route('api.reset') }}";
+    window.BatikAppConfig = {
+        /** @type {boolean} Apakah mode rekomendasi (CBIR phase dulu) atau terapkan (langsung workspace) */
+        isRekomendasiMode: {{ $mode === 'rekomendasi' ? 'true' : 'false' }},
+        /** @type {string} Route untuk inference (deteksi bagian pakaian) */
+        apiInferenceRoute: "{{ route('api.inference') }}",
+        /** @type {string} Route untuk reset session ke gambar original */
+        apiResetRoute: "{{ route('api.reset') }}",
+        /** @type {string} Route untuk blend motif batik ke segmen */
+        apiBlendRoute: "{{ route('api.blend') }}",
+    };
 </script>
 @include('pages.features.shared.scripts')
 @yield('custom_scripts')

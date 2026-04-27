@@ -4,7 +4,7 @@ TEMPLATE — Pewarnaan Batik by Palet Warna
 =========================================================================
 Status     : TODO
 Menu       : pewarnaan-palet
-Controller : App\Http\Controllers\Features\PewarnaaanPaletController
+Controller : App\Http\Controllers\Features\PewarnaanPaletController
 Route show : GET  /pewarnaan-palet          (routes/features.php)
 Route API  : POST /api/pewarnaan/palet      (routes/features.php — aktifkan TODO)
 
@@ -15,7 +15,7 @@ Panduan desain UI:
 
 Langkah implementasi:
   1. Desain UI di file ini (butuh color picker JS, misal Pickr atau vanilla input[type=color])
-  2. Implementasi method process() di PewarnaaanPaletController
+  2. Implementasi method process() di PewarnaanPaletController
   3. Tambah endpoint: config/services.php → services.ml.endpoints.pewarnaan_palet
   4. Aktifkan route POST di routes/features.php
 =========================================================================

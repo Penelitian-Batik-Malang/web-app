@@ -1,4 +1,45 @@
 <?php
+/**
+ * =========================================================================
+ * TerapkanBatikController — Terapkan Motif Batik ke Citra Fashion
+ * =========================================================================
+ *
+ * Fitur ini memungkinkan user menerapkan motif batik dari galeri ke
+ * bagian pakaian pada citra fashion. Menggunakan Fashionpedia untuk
+ * segmentasi pakaian dan blending engine untuk menerapkan motif.
+ *
+ * @status  DONE
+ * @menu    terapkan-batik
+ *
+ * Alur kerja lengkap:
+ *   1. Upload    → User unggah/pilih gambar fashion
+ *   2. Inference → SharedMLController::inference() mendeteksi bagian pakaian
+ *   3. Workspace → User melihat canvas dengan overlay bagian terdeteksi
+ *   4. Panel     → User pilih bagian, pilih motif batik, atur posisi
+ *   5. Blend     → Controller mengirim crop batik + session ke ML API
+ *   6. Result    → Gambar fashion dengan motif batik yang sudah diterapkan
+ *
+ * Session lifecycle:
+ *   - Session dibuat oleh ML API saat inference (SharedMLController)
+ *   - Session menyimpan gambar original + state blend terkini
+ *   - Reset mengembalikan ke gambar original (SharedMLController::reset())
+ *   - Blend mengubah state gambar di server (method blend() di sini)
+ *
+ * Endpoints yang digunakan:
+ *   - inference    : POST /api/inference     (SharedMLController)
+ *   - blend        : POST /api/blend         (method blend() di sini)
+ *   - reset        : POST /api/reset         (SharedMLController)
+ *   - session      : GET  /api/session/{id}  (SharedMLController)
+ *   - detect_mask  : POST /api/detect/mask   (legacy, method detectMask())
+ *   - apply_batik  : POST /api/apply-batik   (legacy, method applyBatik())
+ *
+ * @see SharedMLController                — Shared session management
+ * @see RekomendasiBatikController        — Fitur serupa dengan CBIR
+ * @see config/services.php               — Endpoint configuration
+ * @see resources/views/pages/features/terapkan-batik.blade.php  — View
+ * @see resources/views/pages/features/shared/scripts.blade.php  — JS logic
+ * =========================================================================
+ */
 
 namespace App\Http\Controllers\Features;
 
@@ -21,11 +62,10 @@ class TerapkanBatikController extends BaseMLController
             ->limit(12)
             ->get()
             ->map(function ($batik) {
-                $imagePath = optional($batik->mainImage)->image_path;
                 return [
                     'name'        => $batik->name,
                     'description' => $batik->description,
-                    'image_url'   => $imagePath ? asset('storage/' . ltrim($imagePath, '/')) : null,
+                    'image_url'   => optional($batik->mainImage)->full_url,
                 ];
             })
             ->filter(fn ($item) => !empty($item['image_url']))

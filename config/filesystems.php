@@ -60,6 +60,48 @@ return [
             'report' => false,
         ],
 
+        /*
+        |----------------------------------------------------------------------
+        | IDCloudHost S3 — Galeri Batik
+        |----------------------------------------------------------------------
+        |
+        | Bucket berisi gambar motif batik, terstruktur per folder:
+        |   batik-signature-gdrive/
+        |     ├── Acha Mahakala/
+        |     │   ├── foto1.webp
+        |     │   └── foto2.webp
+        |     ├── Adi Luhung Butterfly/
+        |     │   └── foto1.webp
+        |     └── ...
+        |
+        | Dipakai oleh: GalleryController, TerapkanBatikController,
+        |               RekomendasiBatikController, SyncBatikFromS3 command
+        |
+        */
+        's3-batik' => [
+            'driver' => 's3',
+            'key'    => env('IDC_S3_KEY'),
+            'secret' => env('IDC_S3_SECRET'),
+            'region' => env('IDC_S3_REGION', 'us-east-1'),
+            'bucket' => env('IDC_S3_BATIK_BUCKET', 'batik-signature-gdrive'),
+            'endpoint' => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id'),
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
+        // ── Template disk S3 untuk fitur lain (uncomment saat dibutuhkan) ──
+        // 's3-features' => [
+        //     'driver' => 's3',
+        //     'key'    => env('IDC_S3_KEY'),
+        //     'secret' => env('IDC_S3_SECRET'),
+        //     'region' => env('IDC_S3_REGION', 'us-east-1'),
+        //     'bucket' => env('IDC_S3_FEATURES_BUCKET'),
+        //     'endpoint' => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id'),
+        //     'use_path_style_endpoint' => true,
+        //     'throw' => false,
+        // ],
+
     ],
 
     /*

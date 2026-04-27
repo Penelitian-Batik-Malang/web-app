@@ -41,26 +41,71 @@ return [
         'redirect'      => env('GOOGLE_REDIRECT_URI', 'http://localhost:8000/auth/google/callback'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | ML API Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Konfigurasi terpusat untuk seluruh endpoint Machine Learning API.
+    | Semua fitur ML menggunakan config ini melalui BaseMLController.
+    |
+    | Cara kerja:
+    |   - Controller memanggil: $this->mlUrl('endpoint_key', '/default-path')
+    |   - Hasilnya: {base_url}/{endpoint_path}
+    |
+    | Untuk override di .env, gunakan key yang sesuai, contoh:
+    |   ML_API_BASE_URL=https://api.example.com
+    |   ML_API_MOTIF_PATH=/v2/motif/scan
+    |
+    | @see app/Http/Controllers/Features/BaseMLController.php
+    | @see docs/ML_API_STRUCTURE_PLAN.md
+    |
+    */
     'ml' => [
         // Base URL layanan ML (tanpa trailing slash).
-        // Default diarahkan ke endpoint produksi yang kamu sebutkan.
         'base_url' => env('ML_API_BASE_URL', 'http://127.0.0.1:5000'),
+
         'endpoints' => [
-            // Path endpoint scan motif batik.
-            'motif' => env('ML_API_MOTIF_PATH', '/motif/scan'),
-            // Path endpoint scan jenis batik (tulis/cap).
-            'jenis' => env('ML_API_JENIS_PATH', '/tulis/scan'),
-            // Path endpoint deteksi mask fashion.
-            'fashion_mask' => env('ML_API_FASHION_MASK_PATH', '/fashion-mask'),
-            // Path endpoint terapkan batik pada citra fashion.
-            'apply_batik' => env('ML_API_APPLY_BATIK_PATH', '/apply-batik'),
-            // Path endpoint health model AI.
-            'health' => env('ML_API_HEALTH_PATH', '/health'),
-            // Fashionpedia API endpoints
-            'inference' => env('ML_API_INFERENCE_PATH', '/inference'),
-            'blend' => env('ML_API_BLEND_PATH', '/blend'),
-            'reset' => env('ML_API_RESET_PATH', '/reset'),
-            'session' => env('ML_API_SESSION_PATH', '/session'),
+
+            // ── Deteksi & Analisis ────────────────────────────────────
+            // Scan motif batik (klasifikasi nama motif)
+            'motif'           => env('ML_API_MOTIF_PATH', '/motif/scan'),
+            // Scan jenis batik (tulis / cap)
+            'jenis'           => env('ML_API_JENIS_PATH', '/tulis/scan'),
+
+            // ── Pencarian Batik ───────────────────────────────────────
+            // CBIR pencarian batik serupa berdasarkan gambar
+            'search_batik'    => env('ML_API_SEARCH_BATIK_PATH', '/cbir/search'),
+            // Pencarian batik berdasarkan warna dominan
+            'search_warna'    => env('ML_API_SEARCH_WARNA_PATH', '/color/search'),
+
+            // ── Kreasi & Generasi ─────────────────────────────────────
+            // Pewarnaan ulang batik menggunakan palet warna
+            'pewarnaan_palet' => env('ML_API_PEWARNAAN_PALET_PATH', '/recolor/palette'),
+            // Pewarnaan ulang batik menggunakan prompt teks
+            'pewarnaan_prompt'=> env('ML_API_PEWARNAAN_PROMPT_PATH', '/recolor/prompt'),
+            // Generate motif batik dari deskripsi teks
+            'text_to_image'   => env('ML_API_TEXT_TO_IMAGE_PATH', '/generate/text2img'),
+
+            // ── Terapkan Batik & Rekomendasi (Fashionpedia) ───────────
+            // Deteksi bagian pakaian dari citra fashion
+            'inference'       => env('ML_API_INFERENCE_PATH', '/inference'),
+            // Terapkan (blend) motif batik ke segmen pakaian
+            'blend'           => env('ML_API_BLEND_PATH', '/blend'),
+            // Blend menggunakan batik dari hasil CBIR (filename server-side)
+            'blend_cbir'      => env('ML_API_BLEND_CBIR_PATH', '/blend-from-cbir'),
+            // Reset session ke gambar original
+            'reset'           => env('ML_API_RESET_PATH', '/reset'),
+            // Ambil info session yang aktif
+            'session'         => env('ML_API_SESSION_PATH', '/session'),
+
+            // ── Utilitas ──────────────────────────────────────────────
+            // Deteksi mask fashion (legacy, digantikan inference)
+            'fashion_mask'    => env('ML_API_FASHION_MASK_PATH', '/fashion-mask'),
+            // Terapkan batik langsung (legacy, digantikan blend)
+            'apply_batik'     => env('ML_API_APPLY_BATIK_PATH', '/apply-batik'),
+            // Health check model AI
+            'health'          => env('ML_API_HEALTH_PATH', '/health'),
         ],
     ],
 

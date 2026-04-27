@@ -125,54 +125,9 @@
 </div>
 @endsection
 
-{{-- ─── CUSTOM PANEL: CBIR Batik Selector with Canvas ─────────── --}}
+{{-- ─── CUSTOM PANEL: Shared Batik Selector with Canvas ─────────── --}}
 @section('custom_panel')
-<div id="batik-panel" class="hidden fixed inset-0 z-50 bg-black/80 items-end lg:items-center justify-center p-0 lg:p-4" style="display:none">
-    <div class="w-full max-w-4xl bg-[#0d0d0d] border border-amber-700/40 rounded-t-2xl lg:rounded-2xl overflow-hidden flex flex-col" style="max-height:90vh">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-800 shrink-0">
-            <div class="flex items-center gap-3">
-                <div id="panel-part-color" class="w-3 h-3 rounded-full"></div>
-                <div>
-                    <h3 id="panel-part-name" class="text-white font-bold text-base"></h3>
-                    <p id="panel-bbox-info" class="text-gray-500 text-xs"></p>
-                </div>
-            </div>
-            <button id="panel-close-btn" class="text-gray-400 hover:text-white p-1"><i class="bi bi-x-lg text-lg"></i></button>
-        </div>
-        <div class="overflow-y-auto flex-1">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
-                <div>
-                    <p class="text-xs text-gray-400 mb-2">Atur posisi motif — drag untuk geser, scroll untuk zoom:</p>
-                    <div class="rounded-xl overflow-hidden bg-gray-800 border border-gray-700">
-                        <canvas id="batik-crop-canvas" class="block w-full" style="cursor:grab;touch-action:none"></canvas>
-                    </div>
-                    <div class="grid grid-cols-5 gap-1.5 mt-2">
-                        <button id="zoom-in-btn"  class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-1.5 rounded-lg transition-colors" title="Perbesar"><i class="bi bi-zoom-in"></i></button>
-                        <button id="zoom-out-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-1.5 rounded-lg transition-colors" title="Perkecil"><i class="bi bi-zoom-out"></i></button>
-                        <button id="rotate-ccw-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-1.5 rounded-lg transition-colors" title="Putar kiri"><i class="bi bi-arrow-counterclockwise"></i></button>
-                        <button id="rotate-cw-btn"  class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-1.5 rounded-lg transition-colors" title="Putar kanan"><i class="bi bi-arrow-clockwise"></i></button>
-                        <button id="batik-reset-transform" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-1.5 rounded-lg transition-colors" title="Reset posisi"><i class="bi bi-aspect-ratio"></i></button>
-                    </div>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-400 mb-2">Pilih batik rekomendasi:</p>
-                    <div id="panel-batik-gallery" class="grid grid-cols-3 gap-2 overflow-y-auto" style="max-height:300px">
-                        {{-- populated by JS --}}
-                    </div>
-                </div>
-            </div>
-            <p id="panel-status" class="hidden text-xs text-red-400 px-4 pb-1"></p>
-            <div class="flex gap-3 px-4 pb-4">
-                <button id="apply-blend-btn" class="flex-1 bg-primary hover:bg-amber-600 text-black font-bold py-2.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                    <i class="bi bi-check2 mr-1"></i>Terapkan
-                </button>
-                <button id="panel-cancel-btn" class="px-6 border border-gray-600 hover:border-gray-500 text-white font-semibold py-2.5 rounded-lg transition-colors">
-                    Batal
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+    @include('pages.features.shared.batik-panel', ['mode' => 'rekomendasi'])
 @endsection
 
 {{-- ─── CUSTOM SCRIPTS ─────────────────────────────────────────────────────── --}}

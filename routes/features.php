@@ -3,16 +3,48 @@
  * =========================================================================
  * routes/features.php — Semua route fitur ML Batik
  * =========================================================================
- * Di-include dari routes/web.php.
  *
- * Konvensi penamaan:
- *   - Route show  : <feature>.<nama>        (e.g. deteksi.motif, pencarian.batik)
- *   - Route API   : api.<feature>.<aksi>    (e.g. api.detect.motif, api.search.batik)
+ * File ini mendefinisikan seluruh route yang berkaitan dengan fitur-fitur
+ * Machine Learning pada aplikasi Galeri Digital Batik. Di-include dari
+ * routes/web.php agar routing terpisah dan mudah di-maintain.
  *
- * Status implementasi:
- *   [DONE] Deteksi Motif, Deteksi Jenis
- *   [DONE] Terapkan Batik, Rekomendasi Batik
- *   [TODO] Pencarian Batik, Pencarian Warna, Pewarnaan Palet, Pewarnaan Prompt, Text-to-Image
+ * ARSITEKTUR:
+ *   Setiap fitur ML memiliki:
+ *   - Controller  : app/Http/Controllers/Features/<NamaFitur>Controller.php
+ *   - View        : resources/views/pages/features/<nama-fitur>.blade.php
+ *   - Config      : config/services.php → services.ml.endpoints.<key>
+ *
+ * KONVENSI PENAMAAN ROUTE:
+ *   - Route halaman : <fitur>.<sub>           (e.g. deteksi.motif, pencarian.batik)
+ *   - Route API     : api.<fitur>.<aksi>      (e.g. api.detect.motif, api.search.batik)
+ *
+ * MIDDLEWARE:
+ *   - menu.access_or_guest:<slug>  → Guest boleh akses, user login dicek flagging menu
+ *   - menu.access:<slug>           → Hanya user login dengan akses menu yang sesuai
+ *
+ * KATEGORI FITUR (sesuai UI halaman /fitur):
+ *   ┌─────────────────────────────────────────────────────────────────┐
+ *   │ DETEKSI & ANALISIS                                             │
+ *   │   [DONE] Deteksi Motif Batik    → DeteksiMotifController       │
+ *   │   [DONE] Deteksi Jenis Batik    → DeteksiJenisController       │
+ *   ├─────────────────────────────────────────────────────────────────┤
+ *   │ PENCARIAN BATIK                                                │
+ *   │   [TODO] Pencarian Umum         → PencarianBatikController     │
+ *   │   [TODO] Pencarian Warna        → PencarianWarnaController     │
+ *   │   [DONE] Rekomendasi by Fashion → RekomendasiBatikController   │
+ *   ├─────────────────────────────────────────────────────────────────┤
+ *   │ KREASI & GENERASI                                              │
+ *   │   [TODO] Pewarnaan by Palet     → PewarnaanPaletController     │
+ *   │   [TODO] Pewarnaan by Prompt    → PewarnaanPromptController    │
+ *   │   [DONE] Terapkan Batik         → TerapkanBatikController      │
+ *   │   [TODO] Text to Image Batik    → TextToImageController        │
+ *   ├─────────────────────────────────────────────────────────────────┤
+ *   │ SHARED (dipakai bersama terapkan-batik & rekomendasi-batik)    │
+ *   │   SharedMLController: inference, reset, session                │
+ *   └─────────────────────────────────────────────────────────────────┘
+ *
+ * @see config/services.php       — Konfigurasi endpoint ML API
+ * @see docs/ML_API_STRUCTURE_PLAN.md — Arsitektur API ML
  * =========================================================================
  */
 
@@ -23,8 +55,8 @@ use App\Http\Controllers\Features\TerapkanBatikController;
 use App\Http\Controllers\Features\RekomendasiBatikController;
 use App\Http\Controllers\Features\PencarianBatikController;
 use App\Http\Controllers\Features\PencarianWarnaController;
-use App\Http\Controllers\Features\PewarnaaanPaletController;
-use App\Http\Controllers\Features\PewarnaaanPromptController;
+use App\Http\Controllers\Features\PewarnaanPaletController;
+use App\Http\Controllers\Features\PewarnaanPromptController;
 use App\Http\Controllers\Features\TextToImageController;
 use Illuminate\Support\Facades\Route;
 
@@ -80,14 +112,14 @@ Route::middleware('menu.access_or_guest:pencarian-warna')->group(function () {
 
 // ── [TODO] Pewarnaan by Palet Warna ──────────────────────────────────────────
 Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
-    Route::get('/pewarnaan-palet', [PewarnaaanPaletController::class, 'show'])->name('pewarnaan.palet');
-    // TODO: Route::post('/api/pewarnaan/palet', [PewarnaaanPaletController::class, 'process'])->name('api.pewarnaan.palet');
+    Route::get('/pewarnaan-palet', [PewarnaanPaletController::class, 'show'])->name('pewarnaan.palet');
+    // TODO: Route::post('/api/pewarnaan/palet', [PewarnaanPaletController::class, 'process'])->name('api.pewarnaan.palet');
 });
 
 // ── [TODO] Pewarnaan by Prompt ────────────────────────────────────────────────
 Route::middleware('menu.access_or_guest:pewarnaan-prompt')->group(function () {
-    Route::get('/pewarnaan-prompt', [PewarnaaanPromptController::class, 'show'])->name('pewarnaan.prompt');
-    // TODO: Route::post('/api/pewarnaan/prompt', [PewarnaaanPromptController::class, 'process'])->name('api.pewarnaan.prompt');
+    Route::get('/pewarnaan-prompt', [PewarnaanPromptController::class, 'show'])->name('pewarnaan.prompt');
+    // TODO: Route::post('/api/pewarnaan/prompt', [PewarnaanPromptController::class, 'process'])->name('api.pewarnaan.prompt');
 });
 
 // ── [TODO] Text to Image Batik ────────────────────────────────────────────────

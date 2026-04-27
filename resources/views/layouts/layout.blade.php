@@ -26,6 +26,7 @@
 
     <style>
         .font-playfair { font-family: 'Playfair Display', serif; }
+        [x-cloak] { display: none !important; }
     </style>
 
     <!-- Bootstrap Icons -->

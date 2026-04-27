@@ -4,7 +4,7 @@ TEMPLATE — Pewarnaan Batik by Prompt Teks
 =========================================================================
 Status     : TODO
 Menu       : pewarnaan-prompt
-Controller : App\Http\Controllers\Features\PewarnaaanPromptController
+Controller : App\Http\Controllers\Features\PewarnaanPromptController
 Route show : GET  /pewarnaan-prompt         (routes/features.php)
 Route API  : POST /api/pewarnaan/prompt     (routes/features.php — aktifkan TODO)
 
@@ -15,7 +15,7 @@ Panduan desain UI:
 
 Langkah implementasi:
   1. Desain UI di file ini
-  2. Implementasi method process() di PewarnaaanPromptController
+  2. Implementasi method process() di PewarnaanPromptController
   3. Tambah endpoint: config/services.php → services.ml.endpoints.pewarnaan_prompt
   4. Aktifkan route POST di routes/features.php
 =========================================================================

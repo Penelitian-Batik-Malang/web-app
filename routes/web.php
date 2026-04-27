@@ -59,6 +59,8 @@ Route::middleware('auth')->group(function () {
             Route::post('batiks/{batik}/images', [App\Http\Controllers\Admin\BatikGalleryController::class, 'uploadImage'])->name('batiks.images.store');
             Route::delete('batiks/images/{image}', [App\Http\Controllers\Admin\BatikGalleryController::class, 'destroyImage'])->name('batiks.images.destroy');
             Route::post('batiks/images/{image}/main', [App\Http\Controllers\Admin\BatikGalleryController::class, 'setMainImage'])->name('batiks.images.main');
+            Route::post('batiks/sync-s3', [App\Http\Controllers\Admin\BatikGalleryController::class, 'syncFromS3'])->name('batiks.sync-s3');
+            Route::post('batiks/{batik}/activate', [App\Http\Controllers\Admin\BatikGalleryController::class, 'activate'])->name('batiks.activate');
         });
 
         Route::middleware('menu.access:monitor-ai')->group(function () {
