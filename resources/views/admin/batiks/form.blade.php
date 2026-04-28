@@ -21,26 +21,28 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {{-- Kolom Kiri: Metadata Utama --}}
-        <div class="lg:col-span-1 border border-gray-700 rounded-3xl p-6 bg-gray-800 shadow-xl h-fit">
+    <div class="flex flex-col gap-8">
+        {{-- Atas: Metadata Utama --}}
+        <div class="border border-gray-700 rounded-3xl p-6 bg-gray-800 shadow-xl">
             <h2 class="text-xl font-bold text-white mb-6 border-b border-gray-700 pb-3">Informasi Metadata</h2>
             
             <form action="{{ isset($batik) ? route('admin.batiks.update', $batik->id) : route('admin.batiks.store') }}" method="POST">
                 @csrf
                 @if(isset($batik)) @method('PUT') @endif
 
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-amber-500 mb-2 uppercase tracking-wider">Nama Batik</label>
-                    <input type="text" name="name" value="{{ old('name', $batik->name ?? '') }}" required class="w-full px-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500">
-                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                    <div>
+                        <label class="block text-sm font-medium text-amber-500 mb-2 uppercase tracking-wider">Nama Batik</label>
+                        <input type="text" name="name" value="{{ old('name', $batik->name ?? '') }}" required class="w-full px-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500">
+                    </div>
 
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-amber-500 mb-2 uppercase tracking-wider">Jenis Pembuatan</label>
-                    <select name="type" required class="w-full px-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500">
-                        <option value="tulis" {{ (old('type', $batik->type ?? '') === 'tulis') ? 'selected' : '' }}>Batik Tulis Tangan</option>
-                        <option value="cap" {{ (old('type', $batik->type ?? '') === 'cap') ? 'selected' : '' }}>Batik Rekayasa Cap</option>
-                    </select>
+                    <div>
+                        <label class="block text-sm font-medium text-amber-500 mb-2 uppercase tracking-wider">Jenis Pembuatan</label>
+                        <select name="type" required class="w-full px-4 py-3 bg-gray-900 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-amber-500">
+                            <option value="tulis" {{ (old('type', $batik->type ?? '') === 'tulis') ? 'selected' : '' }}>Batik Tulis Tangan</option>
+                            <option value="cap" {{ (old('type', $batik->type ?? '') === 'cap') ? 'selected' : '' }}>Batik Rekayasa Cap</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="mb-5">
@@ -64,8 +66,8 @@
             </form>
         </div>
 
-        {{-- Kolom Kanan: Aset Foto & Liked Data (Hanya Muncul Jika Batik Telah Dibuat) --}}
-        <div class="lg:col-span-2">
+        {{-- Bawah: Aset Foto & Liked Data (Hanya Muncul Jika Batik Telah Dibuat) --}}
+        <div>
             @if(isset($batik))
                 <div class="border border-gray-700 rounded-3xl p-6 bg-gray-800 shadow-xl mb-8">
                     <h2 class="text-xl font-bold text-white mb-6 border-b border-gray-700 pb-3 flex justify-between">
@@ -84,13 +86,13 @@
                     {{-- Manajemen Gambar yang Sudah Diupload --}}
                     <div class="mt-8">
                         <h3 class="text-gray-400 font-medium mb-4 uppercase text-xs tracking-widest">Aset Visual Tersimpan</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            @foreach($batik->images as $img)
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                            @foreach($images as $img)
                                 @php $imgLikes = $img->likes()->with('role')->get(); @endphp
                                 <div class="border rounded-xl overflow-hidden {{ $img->is_main ? 'border-primary shadow-[0_0_12px_rgba(245,158,11,0.15)]' : 'border-gray-700' }} bg-gray-900">
                                     {{-- Gambar --}}
                                     <div class="relative aspect-video bg-black">
-                                        <img src="{{ Storage::url($img->image_path) }}" class="w-full h-full object-cover">
+                                        <img src="{{ $img->full_url }}" class="w-full h-full object-cover">
                                         @if($img->is_main)
                                             <div class="absolute top-2 left-2 bg-primary text-black text-xs px-2 py-1 rounded font-bold">Thumbnail Utama</div>
                                         @endif
@@ -98,7 +100,7 @@
 
                                     {{-- Statistik Like --}}
                                     <div class="p-4">
-                                        <div class="flex justify-between items-center mb-3">
+                                        <div class="flex justify-between items-center mb-3 flex-wrap gap-y-3">
                                             <div class="flex items-center gap-2">
                                                 <span class="text-red-400 text-lg">❤️</span>
                                                 <span class="text-white font-bold">{{ $imgLikes->count() }}</span>
@@ -182,12 +184,21 @@
                                     </div>
                                 </div>
                             @endforeach
-                            @if($batik->images->count() === 0)
+
+                            @if($images->total() === 0)
                                 <div class="col-span-full py-8 text-center border-2 border-dashed border-gray-700 rounded-xl text-gray-500 italic">
                                     Koleksi foto belum ada. Unggah foto pertama (akan otomatis diplot sebagai gambar visual utama).
                                 </div>
                             @endif
+
                         </div>
+
+                        {{-- Pagination --}}
+                        @if($images->hasPages())
+                            <div class="flex justify-center pt-4">
+                                {{ $images->links() }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             @else

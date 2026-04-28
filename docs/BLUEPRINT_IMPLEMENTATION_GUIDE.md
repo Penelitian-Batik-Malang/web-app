@@ -2,225 +2,199 @@
 
 Dokumen ini menjadi acuan teknis lanjutan implementasi aplikasi, terutama menu yang melibatkan model ML dan status progres terhadap isi `blueprint.txt`.
 
+> **Terakhir diperbarui**: 2026-04-27
+
 ---
 
-## 1) Ringkasan Arsitektur Saat Ini
+## 1) Ringkasan Arsitektur
 
 - Aplikasi menggunakan Laravel (web routes + Blade + JS frontend).
 - Integrasi ML diposisikan sebagai:
-  - **Frontend UI** (popup/modal + upload/camera + result display),
-  - **Backend proxy/controller** yang memanggil API ML eksternal,
+  - **Frontend UI** (Blade views + modular JS),
+  - **Backend controller** yang memanggil API ML eksternal via HTTP,
   - **Konfigurasi endpoint terpusat** di `config/services.php`.
 
-### File kunci yang sudah jadi template/pola reusable
+### Hierarki Controller ML
 
-- Konfigurasi endpoint ML:
-  - `config/services.php` (`services.ml.base_url`, `services.ml.endpoints.`*)
-- Integrasi API deteksi (backend):
-  - `app/Http/Controllers/MLController.php`
-- Komponen popup ML reusable (UI):
-  - `resources/views/components/ml-detector.blade.php`
-- Logic JS reusable untuk modal ML:
-  - `public/js/ml-detector.js`
-- Routing fitur deteksi saat ini:
-  - `routes/web.php`
-- Monitoring health model:
-  - `app/Http/Controllers/Admin/MonitorAiController.php`
-  - `resources/views/admin/monitor-ai.blade.php`
-
----
-
-## 2) Standar Integrasi API ML (Wajib Dipakai)
-
-## 2.1 Konfigurasi endpoint (jangan hardcode URL panjang)
-
-Seluruh endpoint ML harus didefinisikan di:
-
-- `config/services.php`:
-  - `services.ml.base_url`
-  - `services.ml.endpoints.<fitur>`
-
-Contoh endpoint yang sudah ada:
-
-- `motif` -> `/motif/scan`
-- `jenis` -> `/tulis/scan`
-- `health` -> `/health`
-
-Tambahkan endpoint baru untuk fitur berikutnya di lokasi yang sama.
-
-## 2.2 Kontrak response internal (normalisasi)
-
-Backend sebaiknya menormalisasi response API eksternal agar frontend konsisten.
-
-Pola minimum untuk klasifikasi image->text:
-
-```json
-{
-  "success": true,
-  "result": {
-    "label": "Balai Kota",
-    "confidence": 0.9994,
-    "description": "-"
-  }
-}
+```
+BaseMLController (abstract) ← config, URL builder, image detection, sample fashion
+├── DeteksiMotifController     [DONE]  — Deteksi motif batik
+├── DeteksiJenisController     [DONE]  — Deteksi jenis batik (tulis/cap)
+├── PencarianBatikController   [TODO]  — Pencarian batik serupa (CBIR)
+├── PencarianWarnaController   [TODO]  — Pencarian by warna dominan
+├── PewarnaanPaletController   [TODO]  — Pewarnaan by palet warna
+├── PewarnaanPromptController  [TODO]  — Pewarnaan by prompt teks
+├── TerapkanBatikController    [DONE]  — Terapkan motif ke pakaian
+├── RekomendasiBatikController [DONE]  — Rekomendasi batik by fashion
+├── TextToImageController      [TODO]  — Generate motif dari teks
+└── SharedMLController                 — Session Fashionpedia (inference/reset)
 ```
 
-Pola error:
+### File Kunci
 
-```json
-{
-  "success": false,
-  "message": "Pesan error"
-}
+| Kategori | File | Deskripsi |
+|----------|------|-----------|
+| Config | `config/services.php` | Semua endpoint ML API |
+| Routes | `routes/features.php` | Semua route fitur ML |
+| Base | `app/Http/Controllers/Features/BaseMLController.php` | Base controller ML |
+| UI Deteksi | `resources/views/components/ml-detector.blade.php` | Komponen reusable |
+| JS Deteksi | `public/js/ml-detector.js` | Logic modal deteksi |
+| JS BatikApp | `public/js/batik-app/*.js` | Modul JS modular (12 file) |
+| Views | `resources/views/pages/features/*.blade.php` | Halaman fitur |
+| Shared Views | `resources/views/pages/features/shared/*.blade.php` | Layout & partial shared |
+| Docs ML API | `docs/ML_API_STRUCTURE_PLAN.md` | Arsitektur API ML |
+| Docs JS | `docs/JS_MODULES_GUIDE.md` | Panduan modul JS |
+
+---
+
+## 2) Standar Integrasi API ML
+
+### 2.1 Konfigurasi Endpoint
+
+Seluruh endpoint ML didefinisikan di `config/services.php → services.ml`:
+
+```php
+'ml' => [
+    'base_url' => env('ML_API_BASE_URL'),
+    'endpoints' => [
+        'motif'           => '/motif/scan',
+        'jenis'           => '/tulis/scan',
+        'search_batik'    => '/cbir/search',
+        'search_warna'    => '/color/search',
+        'pewarnaan_palet' => '/recolor/palette',
+        'pewarnaan_prompt'=> '/recolor/prompt',
+        'text_to_image'   => '/generate/text2img',
+        'inference'       => '/inference',
+        'blend'           => '/blend',
+        'blend_cbir'      => '/blend-from-cbir',
+        'reset'           => '/reset',
+        'session'         => '/session',
+        'health'          => '/health',
+    ],
+],
 ```
 
-Dengan pola ini, komponen JS/Blade tidak perlu tahu format mentah dari masing-masing API ML.
+### 2.2 Kontrak Response (Normalisasi)
 
-## 2.3 Pola implementasi backend fitur ML baru
+Klasifikasi (image → text):
+```json
+{ "success": true, "result": { "label": "...", "confidence": 0.99, "description": "..." } }
+```
 
-Saat menambah menu ML baru:
+Image result (image → image):
+```json
+{ "success": true, "image_b64": "<base64>" }
+```
 
-1. Tambah endpoint config di `services.ml.endpoints`.
-2. Tambah method di controller (atau service) yang:
-  - validasi input,
-  - panggil API eksternal,
-  - normalisasi output ke format internal.
-3. Tambah route web/API internal di `routes/web.php`.
-4. Hubungkan halaman Blade ke route internal.
+Search result (image → grid):
+```json
+{ "success": true, "results": [{ "name": "...", "image_url": "...", "similarity_score": 0.89 }] }
+```
 
----
+Error:
+```json
+{ "success": false, "message": "Pesan error" }
+```
 
-## 3) Standar Desain UI Untuk Menu ML
+### 2.3 Pola Implementasi Fitur ML Baru
 
-Gunakan pola komponen yang sama agar desain konsisten:
-
-- Komponen utama: `x-ml-detector` di `resources/views/components/ml-detector.blade.php`
-- Dukungan saat ini:
-  - input `image` / `text`
-  - output `text` / `image`
-  - upload file + camera + webcam
-  - live inference overlay pada webcam
-  - tombol scan terintegrasi
-
-### Checklist desain halaman fitur ML
-
-- Hero section (judul, deskripsi singkat fitur).
-- CTA section yang memanggil komponen `x-ml-detector`.
-- Info edukasi singkat (cara kerja / tips input).
-- Warna, spacing, radius, icon mengikuti gaya halaman `deteksi-motif` dan `deteksi-jenis`.
-
-Referensi halaman yang sudah jadi:
-
-- `resources/views/pages/deteksi-motif.blade.php`
-- `resources/views/pages/deteksi-jenis.blade.php`
+1. Tambah endpoint di `config/services.php`
+2. Buat controller extends `BaseMLController`
+3. Tambah route di `routes/features.php`
+4. Buat view di `resources/views/pages/features/`
+5. Gunakan `$this->mlUrl('key')` untuk URL, `$this->handleImageDetection()` untuk deteksi standar
 
 ---
 
-## 4) Peta File Untuk Menu ML Yang Belum Dikerjakan
+## 3) Standar Desain UI
 
-Bagian ini menjadi template implementasi berulang untuk setiap menu ML:
+### Komponen Reusable
 
-## 4.1 Frontend
+- **Deteksi**: Gunakan `<x-ml-detector>` untuk fitur input image → output text
+- **Fashionpedia**: Gunakan `shared/batik-app.blade.php` layout untuk workflow multi-phase
+- **Batik Panel**: Gunakan `shared/batik-panel.blade.php` untuk panel pilih motif
 
-- Halaman fitur:
-  - `resources/views/pages/<nama-fitur>.blade.php`
-- Gunakan komponen:
-  - `resources/views/components/ml-detector.blade.php`
-- Script shared:
-  - `public/js/ml-detector.js`
+### Checklist Halaman Fitur ML
 
-## 4.2 Backend
+- [ ] Hero section (judul, badge status, deskripsi)
+- [ ] CTA section dengan trigger komponen
+- [ ] Info edukasi / cara kerja (3-column grid)
+- [ ] Responsive design
+- [ ] Warna, spacing, icon mengikuti `deteksi-motif.blade.php`
 
-- Route:
-  - `routes/web.php`
-- Controller method:
-  - disarankan di `app/Http/Controllers/MLController.php` (atau service terpisah jika method bertambah banyak)
-- Middleware akses:
-  - `menu.access` (auth+role ketat), atau
-  - `menu.access_or_guest` (guest boleh, user login tetap difilter menu flagging)
+---
 
-## 4.3 Admin/monitoring (jika perlu)
+## 4) JavaScript — Modular Architecture
 
-- Controller:
-  - `app/Http/Controllers/Admin/MonitorAiController.php`
-- View:
-  - `resources/views/admin/monitor-ai.blade.php`
+Frontend fitur Terapkan/Rekomendasi Batik menggunakan **12 modul JS** di `public/js/batik-app/`:
+
+| Modul | Tanggung Jawab |
+|-------|---------------|
+| `constants.js` | Warna & label bagian pakaian |
+| `state.js` | State management |
+| `helpers.js` | Utility functions |
+| `fashion-upload.js` | Upload gambar fashion |
+| `inference.js` | Analisis fashion → ML API |
+| `canvas.js` | Fashion canvas rendering |
+| `parts-list.js` | Sidebar bagian pakaian |
+| `batik-panel.js` | Panel pilih & atur motif |
+| `blend.js` | Blend API call |
+| `workspace-controls.js` | Reset, finish, back, save |
+| `webcam.js` | Akses kamera |
+| `main.js` | Orchestrator |
+
+Lihat `docs/JS_MODULES_GUIDE.md` untuk dokumentasi lengkap.
 
 ---
 
 ## 5) Progress terhadap `blueprint.txt`
 
-Status dikelompokkan menjadi:
-
-- `DONE`: sudah tersedia dan berjalan dasar.
-- `PARTIAL`: sudah ada fondasi/template, tapi belum full sesuai target blueprint.
-- `TODO`: belum diimplementasi.
-
-
-| Area Blueprint                         | Status  | Catatan                                                                                   |
-| -------------------------------------- | ------- | ----------------------------------------------------------------------------------------- |
-| Galeri Batik (lihat gambar/detail)     | DONE    | Halaman galeri publik tersedia (`/galeri`, `/galeri/{batik}`)                             |
-| Like gambar + rekomendasi setelah like | PARTIAL | Like sudah ada; rekomendasi route ada, validasi end-to-end tergantung API ML/gallery flow |
-| Deteksi Motif Batik                    | DONE    | Halaman + popup + API internal + integrasi endpoint ML selesai                            |
-| Deteksi Jenis Batik                    | DONE    | Halaman + popup + API internal + integrasi endpoint ML selesai                            |
-| Pencarian Batik (similar image)        | TODO    | Belum ada halaman/controller/route khusus                                                 |
-| Pencarian by Warna Dominan             | TODO    | Belum ada halaman/controller/route khusus                                                 |
-| Rekomendasi by Fashion                 | TODO    | Belum ada halaman/controller/route khusus                                                 |
-| Pewarnaan by Palet Warna               | TODO    | Belum ada halaman/controller/route khusus                                                 |
-| Pewarnaan by Prompt                    | TODO    | Belum ada halaman/controller/route khusus                                                 |
-| Terapkan Batik                         | TODO    | Belum ada halaman/controller/route khusus                                                 |
-| Text to Image Batik                    | TODO    | Belum ada halaman/controller/route khusus                                                 |
-| Login email/password                   | DONE    | Tersedia                                                                                  |
-| Login Google                           | DONE    | Tersedia                                                                                  |
-| Register                               | DONE    | Tersedia                                                                                  |
-| Remember Me                            | DONE    | Tersedia di login flow                                                                    |
-| Lupa Password                          | TODO    | Belum terlihat route/flow reset password                                                  |
-| Profil user                            | DONE    | Halaman/profile update tersedia                                                           |
-| Admin Dashboard                        | DONE    | Tersedia dan menu sesuai akses                                                            |
-| Kelola User                            | DONE    | Resource admin tersedia                                                                   |
-| Kelola Role + flagging menu            | DONE    | Resource admin tersedia, middleware menu.access sudah aktif                               |
-| Kelola Galeri Batik                    | DONE    | Resource admin + upload images tersedia                                                   |
-| Kelola Konten Global Landing           | DONE    | Admin landing content tersedia                                                            |
-| Monitor Model AI (health table)        | DONE    | Implementasi + auto-refresh sudah ada                                                     |
-
+| Area Blueprint | Status | Catatan |
+|---------------|--------|---------|
+| Galeri Batik (lihat/detail) | ✅ DONE | `/galeri`, `/galeri/{batik}` |
+| Like gambar + rekomendasi | 🔄 PARTIAL | Like DONE; recommend stub siap integrasi ML |
+| Deteksi Motif Batik | ✅ DONE | Halaman + popup + API ML |
+| Deteksi Jenis Batik | ✅ DONE | Halaman + popup + API ML |
+| Pencarian Batik (similar) | 🔄 PARTIAL | Controller + view stub, API ML belum |
+| Pencarian by Warna Dominan | 🔄 PARTIAL | Controller + view stub, API ML belum |
+| Rekomendasi by Fashion | ✅ DONE | CBIR + workspace + blend |
+| Pewarnaan by Palet Warna | 🔄 PARTIAL | Controller + view stub, API ML belum |
+| Pewarnaan by Prompt | 🔄 PARTIAL | Controller + view stub, API ML belum |
+| Terapkan Batik | ✅ DONE | Full workflow: inference → blend |
+| Text to Image Batik | 🔄 PARTIAL | Controller + view stub, API ML belum |
+| Login email/password | ✅ DONE | |
+| Login Google | ✅ DONE | |
+| Register | ✅ DONE | |
+| Remember Me | ✅ DONE | |
+| Lupa Password | 🔄 TODO | Belum ada flow reset password |
+| Profil user | ✅ DONE | |
+| Admin Dashboard | ✅ DONE | |
+| Kelola User | ✅ DONE | |
+| Kelola Role + flagging | ✅ DONE | |
+| Kelola Galeri Batik | ✅ DONE | |
+| Kelola Konten Landing | ✅ DONE | |
+| Monitor Model AI | ✅ DONE | Health table + auto-refresh |
 
 ---
 
-## 6) Rencana Eksekusi Menu ML yang Belum (Direkomendasikan)
+## 6) Rencana Eksekusi Menu ML yang Belum
 
-Urutan prioritas agar cepat deliver:
+Untuk fitur yang masih TODO/PARTIAL, ikuti pola:
 
-1. **Pencarian Batik (similar image)**
-2. **Pencarian by Warna Dominan**
-3. **Rekomendasi by Fashion**
-4. **Pewarnaan by Prompt**
-5. **Pewarnaan by Palet Warna**
-6. **Terapkan Batik**
-7. **Text-to-Image Batik**
-
-Untuk tiap fitur, ulangi pola:
-
-1. Tambah endpoint config di `services.ml.endpoints`.
-2. Tambah route internal (`routes/web.php`).
-3. Tambah method backend (normalisasi response).
-4. Buat halaman `resources/views/pages/<fitur>.blade.php`.
-5. Pakai `x-ml-detector` (atau extend komponen jika output grid/list khusus).
-6. Tambah card/entry di `resources/views/pages/features.blade.php`.
+1. **Koordinasi dengan tim ML** — pastikan endpoint tersedia (lihat `docs/ML_API_STRUCTURE_PLAN.md`)
+2. **Implementasi backend** — uncomment/implement method di controller yang sudah ada
+3. **Desain UI** — ikuti pola `deteksi-motif.blade.php` untuk fitur deteksi, atau buat custom untuk fitur search/grid
+4. **Aktifkan route** — uncomment route POST di `routes/features.php`
+5. **Testing** — test endpoint secara isolated, lalu test full flow
 
 ---
 
-## 7) Catatan Implementasi Penting
+## 7) Referensi Dokumentasi
 
-- Untuk fitur dengan output **list gambar** (mis. pencarian similar), komponen result saat ini perlu ditambah varian `outputType="gallery"` atau render custom section.
-- Untuk fitur gabungan **input image + text** (contoh fashion/prompt), komponen `x-ml-detector` sudah punya fondasi, tapi butuh penambahan mode input campuran.
-- Jika jumlah method di `MLController` makin banyak, refactor ke service layer disarankan:
-  - contoh: `app/Services/MLGatewayService.php`
-  - controller hanya fokus validasi request + return response.
-
----
-
-## 8) Referensi Endpoint Health
-
-- Health API model yang saat ini dipakai:
-  - [https://galeridigital-batikmalang.id/api/health](https://galeridigital-batikmalang.id/api/health)
-
+| Dokumen | Path | Deskripsi |
+|---------|------|-----------|
+| Blueprint | `blueprint.txt` | Spesifikasi kebutuhan aplikasi |
+| ML API Plan | `docs/ML_API_STRUCTURE_PLAN.md` | Arsitektur API ML yang direkomendasikan |
+| JS Modules | `docs/JS_MODULES_GUIDE.md` | Panduan modul JavaScript frontend |
+| Blending API | `docs/PLANNING_BATIK_BLENDING_API.md` | Detail teknis blending API |
+| CBIR API | `docs/PLANNING_CBIR_API.md` | Detail teknis CBIR API |

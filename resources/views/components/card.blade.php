@@ -11,7 +11,7 @@
     {{-- Image --}}
     <div class="relative overflow-hidden aspect-video bg-gray-800">
         @if ($image)
-            <img src="{{ $image }}" alt="{{ $title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            <img src="{{ $image }}" alt="{{ $title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
         @else
             <div class="flex items-center justify-center w-full h-full text-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">

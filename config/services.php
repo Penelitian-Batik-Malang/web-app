@@ -41,22 +41,40 @@ return [
         'redirect'      => env('GOOGLE_REDIRECT_URI', 'http://localhost:8000/auth/google/callback'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | ML API Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Konfigurasi terpusat untuk seluruh endpoint Machine Learning API.
+    | Semua fitur ML menggunakan config ini melalui BaseMLController.
+    |
+    | Cara kerja:
+    |   - Controller memanggil: $this->mlUrl('endpoint_key', '/default-path')
+    |   - Hasilnya: {base_url}/{endpoint_path}
+    |
+    | Untuk override di .env, gunakan key yang sesuai, contoh:
+    |   ML_API_BASE_URL=https://api.example.com
+    |   ML_API_MOTIF_PATH=/v2/motif/scan
+    |
+    | @see app/Http/Controllers/Features/BaseMLController.php
+    | @see docs/ML_API_STRUCTURE_PLAN.md
+    |
+    */
     'ml' => [
-        // Base URL layanan ML (tanpa trailing slash).
-        // Default diarahkan ke endpoint produksi yang kamu sebutkan.
-        'base_url' => env('ML_API_BASE_URL', 'https://galeridigital-batikmalang.id/api'),
-        'endpoints' => [
-            // Path endpoint scan motif batik.
-            'motif' => env('ML_API_MOTIF_PATH', '/motif/scan'),
-            // Path endpoint scan jenis batik (tulis/cap).
-            'jenis' => env('ML_API_JENIS_PATH', '/tulis/scan'),
-            // Path endpoint health model AI.
-            'health' => env('ML_API_HEALTH_PATH', '/health'),
-            // Path endpoint extract palette dari gambar.
-            'palette_extract' => env('ML_API_PALETTE_EXTRACT_PATH', '/palette/extract'),
-            // Path endpoint recolor gambar batik.
-            'recolor' => env('ML_API_RECOLOR_PATH', '/recolor'),
-        ],
+        // ── Batik Service (Python 3.9, PyTorch) — Port 8001 ──────────
+        // Endpoint: /detection/motif, /detection/type, /search/general
+        'batik_url'  => env('ML_BATIK_URL', 'http://127.0.0.1:8001'),
+
+        // ── Fashion Service (Python 3.7, TF 1.15) — Port 8002 ────────
+        // Endpoint: /fashion/segment, /fashion/blend-manual, /fashion/blend-cbir, etc.
+        'fashion_url' => env('ML_FASHION_URL', 'http://127.0.0.1:8002'),
+
+        // ── S3 Object Storage ─────────────────────────────────────────
+        // Base URL bucket batik-signature-gdrive (galeri utama)
+        's3_batik_base'   => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/' . env('IDC_S3_BATIK_BUCKET', 'batik-signature-gdrive'),
+        // Base URL bucket color-dominant-batik (hasil CBIR warna fashion)
+        's3_cbir_base'    => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/color-dominant-batik',
     ],
 
 ];

@@ -49,10 +49,10 @@
     </div>
 
     {{-- Main Content Grid --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         @forelse($batiks as $batik)
             @php
-                $imageUrl = $batik->mainImage ? Storage::url($batik->mainImage->image_path) : 'https://placehold.co/600x400/1f2937/a8a29e?text=Visual+Terkunci';
+                $imageUrl = $batik->mainImage ? $batik->mainImage->full_url : 'https://placehold.co/600x400/1f2937/a8a29e?text=Visual+Terkunci';
             @endphp
             <x-card
                 title="{{ $batik->name }}"
@@ -69,5 +69,12 @@
             </div>
         @endforelse
     </div>
+
+    {{-- Pagination --}}
+    @if($batiks->hasPages())
+        <div class="flex justify-center pt-6">
+            {{ $batiks->withQueryString()->links() }}
+        </div>
+    @endif
 </div>
 @endsection
