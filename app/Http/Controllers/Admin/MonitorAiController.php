@@ -10,37 +10,62 @@ class MonitorAiController extends Controller
 {
     public function index()
     {
-        $baseUrl = rtrim((string) config('services.ml.base_url', ''), '/');
-        $healthPath = (string) (config('services.ml.endpoints.health') ?? '/health');
+        $services = [
+            'batik' => [
+                'name' => 'Batik Service',
+                'url' => rtrim((string) config('services.ml.batik_url', ''), '/health'),
+            ],
+            'fashion' => [
+                'name' => 'Fashion Service',
+                'url' => rtrim((string) config('services.ml.fashion_url', ''), '/health'),
+            ],
+        ];
 
-        $health = null;
-        $errorMessage = null;
+        $results = [];
+        $errorMessages = [];
 
-        if (empty($baseUrl)) {
-            $errorMessage = 'ML_API_BASE_URL belum dikonfigurasi.';
-        } else {
-            $url = $baseUrl . '/' . ltrim($healthPath, '/');
+        foreach ($services as $key => $service) {
+            if (empty($service['url'])) {
+                $results[$key] = null;
+                $errorMessages[$key] = "URL untuk {$service['name']} belum dikonfigurasi.";
+                continue;
+            }
+
+            $url = $service['url'] . '/health';
 
             try {
-                $response = Http::timeout(15)->acceptJson()->get($url);
+                $response = Http::timeout(10)->acceptJson()->get($url);
                 if ($response->successful()) {
                     $data = $response->json();
-
-                    $health = [
+                    $results[$key] = [
+                        'name' => $service['name'],
                         'memory_usage_mb' => $data['memory_usage_mb'] ?? null,
-                        'message' => $data['message'] ?? '-',
-                        'success' => (bool) ($data['success'] ?? false),
+                        'message' => $data['status'] ?? $data['message'] ?? '-',
+                        'success' => (isset($data['status']) && $data['status'] === 'ok') || (bool)($data['success'] ?? false),
                         'timestamp' => $data['timestamp'] ?? null,
                     ];
                 } else {
-                    $errorMessage = 'Gagal mengambil health model. HTTP ' . $response->status() . '.';
+                    $results[$key] = [
+                        'name' => $service['name'],
+                        'success' => false,
+                        'message' => 'HTTP ' . $response->status(),
+                    ];
+                    $errorMessages[$key] = "Gagal mengambil health {$service['name']}. HTTP " . $response->status() . ".";
                 }
             } catch (\Throwable $e) {
-                Log::error('Monitor AI health error: ' . $e->getMessage());
-                $errorMessage = 'Tidak dapat menghubungi layanan health model.';
+                Log::error("Monitor AI health error ({$service['name']}): " . $e->getMessage());
+                $results[$key] = [
+                    'name' => $service['name'],
+                    'success' => false,
+                    'message' => 'Connection Error',
+                ];
+                $errorMessages[$key] = "Tidak dapat menghubungi {$service['name']}.";
             }
         }
 
-        return view('admin.monitor-ai', compact('health', 'errorMessage'));
+        return view('admin.monitor-ai', [
+            'services' => $results,
+            'errorMessages' => $errorMessages
+        ]);
     }
 }
