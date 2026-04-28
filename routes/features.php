@@ -4,47 +4,14 @@
  * routes/features.php — Semua route fitur ML Batik
  * =========================================================================
  *
- * File ini mendefinisikan seluruh route yang berkaitan dengan fitur-fitur
- * Machine Learning pada aplikasi Galeri Digital Batik. Di-include dari
- * routes/web.php agar routing terpisah dan mudah di-maintain.
- *
- * ARSITEKTUR:
- *   Setiap fitur ML memiliki:
- *   - Controller  : app/Http/Controllers/Features/<NamaFitur>Controller.php
- *   - View        : resources/views/pages/features/<nama-fitur>.blade.php
- *   - Config      : config/services.php → services.ml.endpoints.<key>
+ * Arsitektur microservice:
+ *   - Batik Service  (port 8001): deteksi motif, deteksi jenis, pencarian CBIR
+ *   - Fashion Service (port 8002): segmentasi, blending, session management
  *
  * KONVENSI PENAMAAN ROUTE:
- *   - Route halaman : <fitur>.<sub>           (e.g. deteksi.motif, pencarian.batik)
- *   - Route API     : api.<fitur>.<aksi>      (e.g. api.detect.motif, api.search.batik)
+ *   - Route halaman : <fitur>.<sub>           (e.g. deteksi.motif)
+ *   - Route API     : api.<fitur>.<aksi>      (e.g. api.detect.motif)
  *
- * MIDDLEWARE:
- *   - menu.access_or_guest:<slug>  → Guest boleh akses, user login dicek flagging menu
- *   - menu.access:<slug>           → Hanya user login dengan akses menu yang sesuai
- *
- * KATEGORI FITUR (sesuai UI halaman /fitur):
- *   ┌─────────────────────────────────────────────────────────────────┐
- *   │ DETEKSI & ANALISIS                                             │
- *   │   [DONE] Deteksi Motif Batik    → DeteksiMotifController       │
- *   │   [DONE] Deteksi Jenis Batik    → DeteksiJenisController       │
- *   ├─────────────────────────────────────────────────────────────────┤
- *   │ PENCARIAN BATIK                                                │
- *   │   [TODO] Pencarian Umum         → PencarianBatikController     │
- *   │   [TODO] Pencarian Warna        → PencarianWarnaController     │
- *   │   [DONE] Rekomendasi by Fashion → RekomendasiBatikController   │
- *   ├─────────────────────────────────────────────────────────────────┤
- *   │ KREASI & GENERASI                                              │
- *   │   [TODO] Pewarnaan by Palet     → PewarnaanPaletController     │
- *   │   [TODO] Pewarnaan by Prompt    → PewarnaanPromptController    │
- *   │   [DONE] Terapkan Batik         → TerapkanBatikController      │
- *   │   [TODO] Text to Image Batik    → TextToImageController        │
- *   ├─────────────────────────────────────────────────────────────────┤
- *   │ SHARED (dipakai bersama terapkan-batik & rekomendasi-batik)    │
- *   │   SharedMLController: inference, reset, session                │
- *   └─────────────────────────────────────────────────────────────────┘
- *
- * @see config/services.php       — Konfigurasi endpoint ML API
- * @see docs/ML_API_STRUCTURE_PLAN.md — Arsitektur API ML
  * =========================================================================
  */
 
@@ -66,18 +33,23 @@ Route::get('/sample-fashion/{filename}', [SharedMLController::class, 'serveSampl
     ->where('filename', '[^/]+\.(jpg|jpeg|png|webp|gif)');
 
 // ── [DONE] Deteksi Motif Batik ────────────────────────────────────────────────
+// Batik Service: POST /detection/motif | GET /detection/motif/labels
 Route::middleware('menu.access_or_guest:deteksi-motif')->group(function () {
     Route::get('/deteksi/motif', [DeteksiMotifController::class, 'show'])->name('deteksi.motif');
     Route::post('/api/detect/motif', [DeteksiMotifController::class, 'detect'])->name('api.detect.motif');
+    Route::get('/api/detect/motif/labels', [DeteksiMotifController::class, 'labels'])->name('api.detect.motif.labels');
 });
 
 // ── [DONE] Deteksi Jenis Batik ────────────────────────────────────────────────
+// Batik Service: POST /detection/type | GET /detection/type/labels
 Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
     Route::get('/deteksi/jenis', [DeteksiJenisController::class, 'show'])->name('deteksi.jenis');
     Route::post('/api/detect/jenis', [DeteksiJenisController::class, 'detect'])->name('api.detect.jenis');
+    Route::get('/api/detect/jenis/labels', [DeteksiJenisController::class, 'labels'])->name('api.detect.jenis.labels');
 });
 
-// ── [DONE] Shared Fashionpedia Session (terapkan-batik | rekomendasi-batik) ───
+// ── [DONE] Shared Fashion Service Session (terapkan-batik | rekomendasi-batik) ─
+// Fashion Service: POST /fashion/segment | POST /fashion/reset-session | GET /fashion/session/{id}
 Route::middleware('menu.access_or_guest:terapkan-batik,rekomendasi-batik')->group(function () {
     Route::post('/api/inference', [SharedMLController::class, 'inference'])->name('api.inference');
     Route::post('/api/reset', [SharedMLController::class, 'reset'])->name('api.reset');
@@ -85,23 +57,24 @@ Route::middleware('menu.access_or_guest:terapkan-batik,rekomendasi-batik')->grou
 });
 
 // ── [DONE] Terapkan Batik ─────────────────────────────────────────────────────
+// Fashion Service: POST /fashion/blend-manual
 Route::middleware('menu.access_or_guest:terapkan-batik')->group(function () {
     Route::get('/terapkan-batik', [TerapkanBatikController::class, 'show'])->name('terapkan.batik');
-    Route::post('/api/detect/mask', [TerapkanBatikController::class, 'detectMask'])->name('api.detect.mask');
-    Route::post('/api/apply-batik', [TerapkanBatikController::class, 'applyBatik'])->name('api.apply.batik');
     Route::post('/api/blend', [TerapkanBatikController::class, 'blend'])->name('api.blend');
 });
 
 // ── [DONE] Rekomendasi Batik ──────────────────────────────────────────────────
+// Fashion Service: POST /fashion/blend-cbir
 Route::middleware('menu.access_or_guest:rekomendasi-batik')->group(function () {
     Route::get('/rekomendasi-batik', [RekomendasiBatikController::class, 'show'])->name('rekomendasi.batik');
     Route::post('/api/blend-from-cbir', [RekomendasiBatikController::class, 'blendFromCbir'])->name('api.blend.cbir');
 });
 
-// ── [TODO] Pencarian Batik (CBIR) ─────────────────────────────────────────────
+// ── [DONE] Pencarian Batik (CBIR) ─────────────────────────────────────────────
+// Batik Service: POST /search/general
 Route::middleware('menu.access_or_guest:pencarian-batik')->group(function () {
     Route::get('/pencarian-batik', [PencarianBatikController::class, 'show'])->name('pencarian.batik');
-    // TODO: Route::post('/api/search/batik', [PencarianBatikController::class, 'search'])->name('api.search.batik');
+    Route::post('/api/search/batik', [PencarianBatikController::class, 'search'])->name('api.search.batik');
 });
 
 // ── [TODO] Pencarian by Warna Dominan ────────────────────────────────────────

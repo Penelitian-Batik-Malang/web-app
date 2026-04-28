@@ -198,81 +198,131 @@ class GalleryController extends Controller
     {
         $image = BatikImage::findOrFail($id);
 
-        // ── Konfigurasi ML API ────────────────────────────────────────
-        $baseUrl   = rtrim((string) config('services.ml.base_url', ''), '/');
-        $endpoint  = config('services.ml.endpoints.search_batik', '/cbir/search');
+        // ── Konfigurasi Batik Service ─────────────────────────────────
+        $batikUrl = rtrim((string) config('services.ml.batik_url', ''), '/');
 
-        // Guard: jika ML API belum dikonfigurasi, kembalikan fallback
-        if (empty($baseUrl)) {
+        if (empty($batikUrl)) {
             return response()->json([
-                'success' => false,
-                'message' => 'Model AI endpoint belum terhubung. Rekomendasi akan tersedia setelah API ML dikonfigurasi.',
-                'recommendations' => []
+                'success'         => false,
+                'message'         => 'Batik Service belum terhubung. Konfigurasi ML_BATIK_URL di .env.',
+                'recommendations' => [],
             ], 501);
         }
 
-        // ── Integrasi ML API ──────────────────────────────────────────
-        // TODO: Uncomment dan sesuaikan ketika endpoint ML API tersedia.
-        //
-        // try {
-        //     $imagePath = storage_path('app/public/' . ltrim($image->image_path, '/'));
-        //
-        //     if (!file_exists($imagePath)) {
-        //         return response()->json([
-        //             'success' => false,
-        //             'message' => 'File gambar tidak ditemukan di server.',
-        //             'recommendations' => []
-        //         ], 404);
-        //     }
-        //
-        //     $url = $baseUrl . '/' . ltrim($endpoint, '/');
-        //     $response = Http::timeout(30)
-        //         ->attach('image', file_get_contents($imagePath), basename($imagePath))
-        //         ->post($url);
-        //
-        //     if ($response->successful()) {
-        //         $data = $response->json();
-        //         $recommendations = collect($data['results'] ?? [])
-        //             ->map(fn ($item) => [
-        //                 'name'             => $item['name'] ?? $item['label'] ?? 'Batik Serupa',
-        //                 'image_url'        => $item['image_url'] ?? $item['thumbnail_url'] ?? '',
-        //                 'type'             => $item['type'] ?? '',
-        //                 'similarity_score' => $item['similarity_score'] ?? $item['score'] ?? 0,
-        //             ])
-        //             ->values()
-        //             ->all();
-        //
-        //         return response()->json([
-        //             'success' => true,
-        //             'recommendations' => $recommendations
-        //         ]);
-        //     }
-        //
-        //     Log::warning('ML Recommend API response error', [
-        //         'status' => $response->status(),
-        //         'body'   => $response->body(),
-        //     ]);
-        //
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Model AI tidak memberikan respons yang valid.',
-        //         'recommendations' => []
-        //     ], $response->status());
-        //
-        // } catch (\Throwable $e) {
-        //     Log::error('ML Recommend Error: ' . $e->getMessage());
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Gagal menghubungi server Model AI untuk rekomendasi.',
-        //         'recommendations' => []
-        //     ], 500);
-        // }
+        // ── Fetch gambar yang di-like dari S3 ─────────────────────────
+        // Gambar tersimpan di S3, kita ambil biner-nya lalu kirim ke ML API
+        try {
+            $imageUrl = $image->full_url;
+            $imgResp  = Http::timeout(20)->get($imageUrl);
 
-        // ── Fallback saat API belum tersedia ──────────────────────────
-        return response()->json([
-            'success' => false,
-            'message' => 'Preferensi Anda telah tercatat. Rekomendasi visual akan muncul setelah model AI terhubung.',
-            'recommendations' => []
-        ], 501);
+            if (!$imgResp->successful()) {
+                return response()->json([
+                    'success'         => false,
+                    'message'         => 'Gagal mengambil gambar dari S3 untuk dianalisis.',
+                    'recommendations' => [],
+                ], 500);
+            }
+
+            $imgBinary  = $imgResp->body();
+            $imgMime    = $imgResp->header('Content-Type', 'image/jpeg');
+            $imgExt     = str_contains($imgMime, 'png') ? 'png' : 'jpg';
+            $imgFilename = 'liked_image.' . $imgExt;
+
+        } catch (\Throwable $e) {
+            Log::error('Recommend - S3 fetch failed: ' . $e->getMessage());
+            return response()->json([
+                'success'         => false,
+                'message'         => 'Gagal mengambil gambar dari storage.',
+                'recommendations' => [],
+            ], 500);
+        }
+
+        // ── Kirim ke Batik Service /search/general ────────────────────
+        try {
+            $mlUrl    = $batikUrl . '/search/general';
+            $response = Http::timeout(60)
+                ->attach('file', $imgBinary, $imgFilename)
+                ->post($mlUrl);
+
+            if (!$response->successful()) {
+                Log::warning('ML Recommend API error', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                ]);
+                return response()->json([
+                    'success'         => false,
+                    'message'         => 'Model AI tidak memberikan respons yang valid.',
+                    'recommendations' => [],
+                ], $response->status());
+            }
+
+            $data       = $response->json();
+            $s3Base     = rtrim((string) config('services.ml.s3_batik_base', 'https://is3.cloudhost.id/batik-signature-gdrive'), '/');
+
+            $recommendations = collect($data['results'] ?? [])
+                ->map(function ($item) use ($s3Base) {
+                    $path      = ltrim(str_replace('\\', '/', $item['path_s3'] ?? ''), '/');
+                    $label     = $item['label'] ?? '';
+                    $imageUrl  = $s3Base . '/' . $path;
+                    $galeriUrl = $this->findGaleriUrlByLabel($label);
+
+                    return [
+                        'name'       => $label,
+                        'image_url'  => $imageUrl,
+                        'type'       => '',
+                        'similarity' => round(($item['similarity'] ?? 0) * 100, 1),
+                        'galeri_url' => $galeriUrl,
+                    ];
+                })
+                ->values()
+                ->all();
+
+            return response()->json([
+                'success'         => true,
+                'recommendations' => $recommendations,
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('ML Recommend Error: ' . $e->getMessage());
+            return response()->json([
+                'success'         => false,
+                'message'         => 'Gagal menghubungi Batik Service untuk rekomendasi.',
+                'recommendations' => [],
+            ], 500);
+        }
+    }
+
+    /**
+     * Temukan URL galeri detail untuk label motif dari hasil CBIR.
+     *
+     * Label dari ML API bisa berbeda format dengan nama batik di DB,
+     * misalnya "adiluhung" vs "Adi Luhung" atau "Topeng Gandring Wirasena"
+     * Gunakan pencarian fuzzy (LIKE) case-insensitive.
+     *
+     * @param  string  $label  Label dari ML API (nama folder S3)
+     * @return string|null
+     */
+    private function findGaleriUrlByLabel(string $label): ?string
+    {
+        if (empty($label)) return null;
+
+        // Normalisasi: lowercase, ganti underscore/dash dengan spasi
+        $normalized = strtolower(str_replace(['_', '-'], ' ', $label));
+
+        $batik = \App\Models\Batik::where('is_active', true)
+            ->whereRaw('LOWER(REPLACE(REPLACE(name, "_", " "), "-", " ")) LIKE ?', ["%{$normalized}%"])
+            ->first();
+
+        // Fallback: kata pertama saja
+        if (!$batik) {
+            $firstWord = explode(' ', $normalized)[0];
+            if (strlen($firstWord) >= 3) {
+                $batik = \App\Models\Batik::where('is_active', true)
+                    ->whereRaw('LOWER(name) LIKE ?', ["%{$firstWord}%"])
+                    ->first();
+            }
+        }
+
+        return $batik ? route('galeri.show', $batik->id) : null;
     }
 }

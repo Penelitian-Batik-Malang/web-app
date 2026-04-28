@@ -141,25 +141,40 @@ function renderCbirGrid(container, items, onSelect) {
     container.innerHTML = '';
     if (!items || !items.length) return;
     items.forEach(item => {
+        const galeriIcon = item.galeri_url
+            ? `<span class="absolute top-1 right-1 bg-black/60 backdrop-blur-sm text-white text-[8px] px-1 py-0.5 rounded-full z-10"><i class="bi bi-box-arrow-up-right"></i></span>`
+            : '';
+        const thumbSrc = item.thumbnail_b64 || item.image_url || '';
+
         const div = document.createElement('div');
-        div.className = 'cbir-grid-item relative bg-gray-800 border border-gray-700 rounded-xl overflow-hidden text-left flex flex-col';
-        div.dataset.filename = item.filename;
-        const thumbSrc = item.thumbnail_b64 || '';
+        div.className = 'cbir-grid-item relative bg-gray-800 border border-gray-700 rounded-xl overflow-hidden text-left flex flex-col hover:border-primary/50 transition-colors';
+        div.dataset.filename = item.filename || item.image_url || '';
+
         div.innerHTML = `
             <div class="relative w-full overflow-hidden bg-gray-900" style="padding-bottom:100%">
                 ${thumbSrc
                     ? `<img src="${thumbSrc}" class="absolute inset-0 w-full h-full object-cover" loading="lazy">`
                     : `<div class="absolute inset-0 flex items-center justify-center text-gray-600"><i class="bi bi-image text-2xl"></i></div>`
                 }
+                ${galeriIcon}
                 <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 py-1">
                     <p class="text-white text-[9px] font-semibold leading-tight truncate">${item.label}</p>
                 </div>
             </div>
             <div class="p-1.5 w-full">
                 <p class="text-[10px] font-semibold text-gray-300 truncate leading-tight" title="${item.label}">${item.label}</p>
-                <p class="text-[9px] text-gray-600 mt-0.5">#${item.rank} · ${item.jarak.toFixed(2)}</p>
+                <p class="text-[9px] text-gray-600 mt-0.5">#${item.rank} · ${item.jarak !== undefined ? item.jarak.toFixed(2) : ''}</p>
             </div>
         `;
+
+        // Klik: jika ada galeri_url, buka di tab baru; jika ada onSelect, panggil callback
+        div.addEventListener('click', (e) => {
+            if (item.galeri_url) {
+                window.open(item.galeri_url, '_blank');
+            }
+            if (onSelect) onSelect(item);
+        });
+
         container.appendChild(div);
     });
 }

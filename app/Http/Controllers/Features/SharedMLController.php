@@ -1,26 +1,18 @@
 <?php
 /**
  * =========================================================================
- * SharedMLController — Shared Fashionpedia Session Management
+ * SharedMLController — Shared Fashion Service Session Management
  * =========================================================================
  *
- * Controller ini mengelola session Fashionpedia API yang digunakan
- * BERSAMA oleh dua fitur:
+ * Controller ini mengelola session Fashion Service (port 8002) yang
+ * digunakan BERSAMA oleh:
  *   1. Terapkan Batik (TerapkanBatikController)
  *   2. Rekomendasi Batik (RekomendasiBatikController)
  *
- * Kedua fitur tersebut menggunakan alur yang sama:
- *   Upload fashion → Inference (deteksi bagian pakaian) → Workspace
- *
- * TANGGUNG JAWAB:
- *   - inference()   : Deteksi bagian pakaian via Fashionpedia API
- *   - reset()       : Reset session ke gambar original
- *   - getSession()  : Ambil info session yang aktif
- *
- * CATATAN:
- *   - serveSampleFashion() sekarang ada di BaseMLController
- *   - Method di sini tidak spesifik ke mode terapkan/rekomendasi
- *   - Session ID dikelola oleh ML API, bukan Laravel
+ * Endpoint Fashion Service yang digunakan:
+ *   POST /fashion/segment          → inference + CBIR warna
+ *   POST /fashion/reset-session    → reset ke gambar original
+ *   GET  /fashion/session/{id}     → status session
  *
  * @see TerapkanBatikController     — Fitur terapkan batik ke pakaian
  * @see RekomendasiBatikController  — Fitur rekomendasi batik dari CBIR
@@ -39,20 +31,15 @@ class SharedMLController extends BaseMLController
     /**
      * Deteksi bagian pakaian dari citra fashion via Fashionpedia.
      *
-     * POST /api/inference
+     * POST /api/inference → Fashion Service POST /fashion/segment
      *
-     * Menerima gambar fashion dari frontend, mengirim ke ML API
-     * endpoint /inference, dan mengembalikan:
-     *   - session_id : ID unik session untuk blend selanjutnya
-     *   - parts      : Daftar bagian pakaian terdeteksi (bbox + mask)
-     *   - cbir       : Data rekomendasi CBIR (khusus mode rekomendasi)
-     *   - image_size : Dimensi gambar yang diproses
+     * Response berisi:
+     *   - session_id  : UUID session
+     *   - parts       : Bagian pakaian terdeteksi (bbox + mask b64)
+     *   - cbir        : Rekomendasi CBIR warna (top_5, top_10, top_15)
+     *   - image_size  : Dimensi gambar
      *
-     * Dipakai bersama oleh:
-     *   - Terapkan Batik  → setelah inference, langsung ke workspace
-     *   - Rekomendasi     → setelah inference, tampilkan CBIR dulu
-     *
-     * @param  \Illuminate\Http\Request  $request  Request dengan file 'image'
+     * @param  Request  $request  Request dengan file 'image'
      * @return \Illuminate\Http\JsonResponse
      */
     public function inference(Request $request)
@@ -61,18 +48,18 @@ class SharedMLController extends BaseMLController
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
         ]);
 
-        if (!$this->isMLAvailable()) {
+        if (!$this->isFashionAvailable()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Fashionpedia API belum terhubung.',
+                'message' => 'Fashion Service belum terhubung. Konfigurasi ML_FASHION_URL di .env.',
             ], 503);
         }
 
-        $url = $this->mlUrl('inference', '/inference');
+        $url = $this->fashionServiceUrl('/fashion/segment');
 
         try {
             $http = $this->attachFile(
-                Http::timeout(120)->accept('application/json'),
+                Http::timeout(600)->accept('application/json'),
                 'image',
                 $request->file('image')
             );
@@ -84,7 +71,8 @@ class SharedMLController extends BaseMLController
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mendeteksi bagian fashion.',
+                'message' => 'Gagal mendeteksi bagian fashion (HTTP ' . $response->status() . ').',
+                'detail'  => $response->body(),
             ], $response->status());
 
         } catch (\Throwable $e) {
@@ -97,14 +85,11 @@ class SharedMLController extends BaseMLController
     }
 
     /**
-     * Reset session Fashionpedia ke gambar original.
+     * Reset session Fashion Service ke gambar original.
      *
-     * POST /api/reset
+     * POST /api/reset → Fashion Service POST /fashion/reset-session
      *
-     * Mengembalikan semua blend yang sudah diterapkan ke gambar asli.
-     * Digunakan ketika user ingin mulai ulang tanpa upload ulang.
-     *
-     * @param  \Illuminate\Http\Request  $request  Request dengan 'session_id'
+     * @param  Request  $request  Request dengan 'session_id'
      * @return \Illuminate\Http\JsonResponse
      */
     public function reset(Request $request)
@@ -113,11 +98,11 @@ class SharedMLController extends BaseMLController
             'session_id' => 'required|string',
         ]);
 
-        if (!$this->isMLAvailable()) {
+        if (!$this->isFashionAvailable()) {
             return $this->notConfiguredResponse();
         }
 
-        $url = $this->mlUrl('reset', '/reset');
+        $url = $this->fashionServiceUrl('/fashion/reset-session');
 
         try {
             $response = Http::timeout(30)
@@ -130,36 +115,33 @@ class SharedMLController extends BaseMLController
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mereset gambar.',
+                'message' => 'Gagal mereset gambar (HTTP ' . $response->status() . ').',
             ], $response->status());
 
         } catch (\Throwable $e) {
-            Log::error('Fashionpedia Reset Error: ' . $e->getMessage());
+            Log::error('Fashion Reset Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menghubungi Fashionpedia API.',
+                'message' => 'Gagal menghubungi Fashion Service.',
             ], 500);
         }
     }
 
     /**
-     * Ambil info session Fashionpedia yang aktif.
+     * Ambil info session Fashion Service yang aktif.
      *
-     * GET /api/session/{sessionId}
-     *
-     * Mengambil state session saat ini dari ML API, termasuk
-     * gambar terkini dan daftar blend yang sudah diterapkan.
+     * GET /api/session/{sessionId} → Fashion Service GET /fashion/session/{id}
      *
      * @param  string  $sessionId  UUID session dari inference
      * @return \Illuminate\Http\JsonResponse
      */
     public function getSession(string $sessionId)
     {
-        if (!$this->isMLAvailable()) {
+        if (!$this->isFashionAvailable()) {
             return $this->notConfiguredResponse();
         }
 
-        $url = $this->mlUrl('session', '/session') . '/' . $sessionId;
+        $url = $this->fashionServiceUrl('/fashion/session/' . $sessionId);
 
         try {
             $response = Http::timeout(30)->get($url);
@@ -174,10 +156,10 @@ class SharedMLController extends BaseMLController
             ], $response->status());
 
         } catch (\Throwable $e) {
-            Log::error('Fashionpedia Session Error: ' . $e->getMessage());
+            Log::error('Fashion Session Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menghubungi Fashionpedia API.',
+                'message' => 'Gagal menghubungi Fashion Service.',
             ], 500);
         }
     }

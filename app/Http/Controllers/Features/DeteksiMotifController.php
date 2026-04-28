@@ -9,19 +9,19 @@
  *
  * @status  DONE
  * @menu    deteksi-motif
- * @see     config/services.php → services.ml.endpoints.motif
  *
  * Alur kerja:
  *   1. User membuka halaman /deteksi/motif
- *   2. User mengunggah gambar via komponen <x-ml-detector>
- *   3. Frontend memanggil POST /api/detect/motif (AJAX)
- *   4. Controller memanggil ML API endpoint /motif/scan
- *   5. Response dinormalisasi: { label, confidence, description }
- *   6. Frontend menampilkan hasil di modal
+ *   2. Halaman fetch GET /api/detect/motif/labels → daftar motif dinamis
+ *   3. User mengunggah gambar via komponen <x-ml-detector>
+ *   4. Frontend memanggil POST /api/detect/motif (AJAX)
+ *   5. Controller memanggil Batik Service POST /detection/motif
+ *   6. Response dinormalisasi: { label, confidence, description }
+ *   7. Frontend menampilkan hasil di modal
  *
- * Motif yang didukung:
- *   Sido Mukti, Parang, Kawung, Banji, Ceplok, Truntum,
- *   Sekar Jagad, Balai Kota (bertambah seiring model update)
+ * Endpoints Batik Service (port 8001):
+ *   POST /detection/motif          → klasifikasi motif
+ *   GET  /detection/motif/labels   → daftar label yang didukung
  *
  * @see resources/views/pages/features/deteksi-motif.blade.php — View
  * @see resources/views/components/ml-detector.blade.php — Komponen UI
@@ -48,15 +48,27 @@ class DeteksiMotifController extends BaseMLController
     /**
      * Proses deteksi motif batik dari gambar yang diunggah.
      *
-     * Menggunakan flow standar handleImageDetection() dari BaseMLController
-     * yang menangani validasi, API call, dan normalisasi response.
+     * Memanggil Batik Service POST /detection/motif.
+     * Field yang dikirim: `file` (multipart/form-data).
      *
      * @param  \Illuminate\Http\Request  $request  Request dengan file 'image'
      * @return \Illuminate\Http\JsonResponse  { success, result: { label, confidence, description } }
      */
     public function detect(Request $request)
     {
-        $path = $this->endpoints['motif'] ?? '/motif/scan';
-        return $this->handleImageDetection($request, $path);
+        return $this->handleImageDetection($request, '/detection/motif');
+    }
+
+    /**
+     * Ambil daftar label motif yang didukung oleh model.
+     *
+     * Memanggil Batik Service GET /detection/motif/labels.
+     * Digunakan oleh view untuk menampilkan grid motif secara dinamis.
+     *
+     * @return \Illuminate\Http\JsonResponse  Array label, misal: ["Kawung", "Parang", ...]
+     */
+    public function labels()
+    {
+        return $this->labelsFromBatikService('/detection/motif/labels');
     }
 }

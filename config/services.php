@@ -62,51 +62,19 @@ return [
     |
     */
     'ml' => [
-        // Base URL layanan ML (tanpa trailing slash).
-        'base_url' => env('ML_API_BASE_URL', 'http://127.0.0.1:5000'),
+        // ── Batik Service (Python 3.9, PyTorch) — Port 8001 ──────────
+        // Endpoint: /detection/motif, /detection/type, /search/general
+        'batik_url'  => env('ML_BATIK_URL', 'http://127.0.0.1:8001'),
 
-        'endpoints' => [
+        // ── Fashion Service (Python 3.7, TF 1.15) — Port 8002 ────────
+        // Endpoint: /fashion/segment, /fashion/blend-manual, /fashion/blend-cbir, etc.
+        'fashion_url' => env('ML_FASHION_URL', 'http://127.0.0.1:8002'),
 
-            // ── Deteksi & Analisis ────────────────────────────────────
-            // Scan motif batik (klasifikasi nama motif)
-            'motif'           => env('ML_API_MOTIF_PATH', '/motif/scan'),
-            // Scan jenis batik (tulis / cap)
-            'jenis'           => env('ML_API_JENIS_PATH', '/tulis/scan'),
-
-            // ── Pencarian Batik ───────────────────────────────────────
-            // CBIR pencarian batik serupa berdasarkan gambar
-            'search_batik'    => env('ML_API_SEARCH_BATIK_PATH', '/cbir/search'),
-            // Pencarian batik berdasarkan warna dominan
-            'search_warna'    => env('ML_API_SEARCH_WARNA_PATH', '/color/search'),
-
-            // ── Kreasi & Generasi ─────────────────────────────────────
-            // Pewarnaan ulang batik menggunakan palet warna
-            'pewarnaan_palet' => env('ML_API_PEWARNAAN_PALET_PATH', '/recolor/palette'),
-            // Pewarnaan ulang batik menggunakan prompt teks
-            'pewarnaan_prompt'=> env('ML_API_PEWARNAAN_PROMPT_PATH', '/recolor/prompt'),
-            // Generate motif batik dari deskripsi teks
-            'text_to_image'   => env('ML_API_TEXT_TO_IMAGE_PATH', '/generate/text2img'),
-
-            // ── Terapkan Batik & Rekomendasi (Fashionpedia) ───────────
-            // Deteksi bagian pakaian dari citra fashion
-            'inference'       => env('ML_API_INFERENCE_PATH', '/inference'),
-            // Terapkan (blend) motif batik ke segmen pakaian
-            'blend'           => env('ML_API_BLEND_PATH', '/blend'),
-            // Blend menggunakan batik dari hasil CBIR (filename server-side)
-            'blend_cbir'      => env('ML_API_BLEND_CBIR_PATH', '/blend-from-cbir'),
-            // Reset session ke gambar original
-            'reset'           => env('ML_API_RESET_PATH', '/reset'),
-            // Ambil info session yang aktif
-            'session'         => env('ML_API_SESSION_PATH', '/session'),
-
-            // ── Utilitas ──────────────────────────────────────────────
-            // Deteksi mask fashion (legacy, digantikan inference)
-            'fashion_mask'    => env('ML_API_FASHION_MASK_PATH', '/fashion-mask'),
-            // Terapkan batik langsung (legacy, digantikan blend)
-            'apply_batik'     => env('ML_API_APPLY_BATIK_PATH', '/apply-batik'),
-            // Health check model AI
-            'health'          => env('ML_API_HEALTH_PATH', '/health'),
-        ],
+        // ── S3 Object Storage ─────────────────────────────────────────
+        // Base URL bucket batik-signature-gdrive (galeri utama)
+        's3_batik_base'   => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/' . env('IDC_S3_BATIK_BUCKET', 'batik-signature-gdrive'),
+        // Base URL bucket color-dominant-batik (hasil CBIR warna fashion)
+        's3_cbir_base'    => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/color-dominant-batik',
     ],
 
 ];

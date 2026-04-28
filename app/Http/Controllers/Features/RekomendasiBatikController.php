@@ -4,36 +4,16 @@
  * RekomendasiBatikController — Rekomendasi Batik by Fashion (CBIR)
  * =========================================================================
  *
- * Fitur ini menganalisis warna dominan pakaian pada citra fashion
- * dan merekomendasikan motif batik yang palet warnanya senada,
- * menggunakan Content-Based Image Retrieval (CBIR) dengan ruang
- * warna CIELAB + K-Means clustering.
+ * Endpoint Fashion Service (port 8002):
+ *   POST /fashion/blend-cbir  → blend batik dari URL S3 rekomendasi
  *
- * @status  DONE
- * @menu    rekomendasi-batik
+ * Input blend-cbir:
+ *   - session_id     : UUID dari /fashion/segment
+ *   - part           : nama segmen pakaian
+ *   - instance_index : index instance
+ *   - batik_filename : URL lengkap S3 dari cbir.top_k[n].filename
  *
- * Alur kerja lengkap:
- *   1. Upload    → User unggah/pilih gambar fashion
- *   2. Inference → SharedMLController::inference() → deteksi pakaian + CBIR
- *   3. CBIR      → Tampilkan fase rekomendasi (warna dominan + grid batik)
- *   4. Apply     → User bisa lanjut ke workspace untuk terapkan rekomendasi
- *   5. Panel     → User pilih batik rekomendasi, atur posisi, blend
- *   6. Result    → Gambar fashion dengan batik rekomendasi yang diterapkan
- *
- * Perbedaan dengan TerapkanBatik:
- *   - Terapkan  : User langsung ke workspace, pilih batik manual dari galeri
- *   - Rekomendasi: User dapat rekomendasi CBIR dulu, baru ke workspace
- *
- * Endpoints yang digunakan:
- *   - inference      : POST /api/inference      (SharedMLController)
- *   - blend_cbir     : POST /api/blend-from-cbir (method blendFromCbir())
- *   - blend          : POST /api/blend           (TerapkanBatikController)
- *   - reset          : POST /api/reset           (SharedMLController)
- *
- * @see SharedMLController                 — Shared session management
- * @see TerapkanBatikController            — Fitur serupa tanpa CBIR
- * @see config/services.php                — Endpoint configuration
- * @see resources/views/pages/features/rekomendasi-batik.blade.php — View
+ * @see SharedMLController  — inference, reset, getSession
  * =========================================================================
  */
 
@@ -52,6 +32,18 @@ class RekomendasiBatikController extends BaseMLController
         ]);
     }
 
+    /**
+     * Blend batik dari URL S3 rekomendasi ke segmen pakaian.
+     *
+     * POST /api/blend-from-cbir → Fashion Service POST /fashion/blend-cbir
+     *
+     * batik_filename adalah URL lengkap S3 dari kolom filename di
+     * cbir.top_k hasil /fashion/segment — Fashion Service akan
+     * mengunduh gambar langsung dari URL tersebut.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\JsonResponse  { image_b64: "base64 JPEG" }
+     */
     public function blendFromCbir(Request $request)
     {
         $request->validate([
@@ -61,14 +53,14 @@ class RekomendasiBatikController extends BaseMLController
             'batik_filename' => 'required|string',
         ]);
 
-        if (!$this->isMLAvailable()) {
+        if (!$this->isFashionAvailable()) {
             return $this->notConfiguredResponse();
         }
 
-        $url = $this->mlUrl('blend_cbir', '/blend-from-cbir');
+        $url = $this->fashionServiceUrl('/fashion/blend-cbir');
 
         try {
-            $response = Http::timeout(60)
+            $response = Http::timeout(120)
                 ->asMultipart()
                 ->post($url, [
                     'session_id'     => $request->input('session_id'),
@@ -83,11 +75,12 @@ class RekomendasiBatikController extends BaseMLController
 
             return response()->json([
                 'success' => false,
-                'message' => 'API error ' . $response->status(),
+                'message' => 'Fashion Service error ' . $response->status(),
+                'detail'  => $response->body(),
             ], $response->status());
 
         } catch (\Throwable $e) {
-            Log::error('Fashionpedia Blend CBIR Error: ' . $e->getMessage());
+            Log::error('Fashion Blend CBIR Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Blend CBIR error: ' . $e->getMessage(),
