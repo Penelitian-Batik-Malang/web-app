@@ -150,4 +150,14 @@
     </div>
     @endif
 </div>
+
+<x-color-search-modal
+    id="color-search-modal"
+    :palette-endpoint="route('api.search.color-palette')"
+    :recommendation-endpoint="route('api.search.color-recommendation')"
+/>
 @endsection
+
+@push('scripts')
+<script src="{{ asset('js/color-search-modal.js') }}"></script>
+@endpush

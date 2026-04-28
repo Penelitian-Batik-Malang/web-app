@@ -77,4 +77,9 @@ return [
         's3_cbir_base'    => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/color-dominant-batik',
     ],
 
+    'retrieval' => [
+        // Base URL service retrieval warna (FastAPI).
+        'base_url' => env('RETRIEVAL_API_BASE_URL', env('ML_API_BASE_URL', 'http://127.0.0.1:8001')),
+    ],
+
 ];
