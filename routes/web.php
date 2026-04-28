@@ -30,11 +30,11 @@ Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
 });
 
 Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
-    Route::get('/pewarnaan/palet', [App\Http\Controllers\PewarnaanPalletNetController::class, 'showPalet'])->name('pewarnaan.palet');
-    Route::post('/pewarnaan/palet/proses', [App\Http\Controllers\PewarnaanPalletNetController::class, 'processPalette'])->name('pewarnaan.palet.proses');
-    Route::post('/api/colorize/palet', [App\Http\Controllers\PewarnaanPalletNetController::class, 'colorize'])->name('api.colorize.palet');
-    Route::get('/pewarnaan/output-gambar', [App\Http\Controllers\PewarnaanPalletNetController::class, 'showOutput'])->name('pewarnaan.output');
-    Route::post('/api/save-results', [App\Http\Controllers\PewarnaanPalletNetController::class, 'saveResults'])->name('api.save.results');
+    Route::get('/pewarnaan/palet', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'show'])->name('pewarnaan.palet');
+    Route::post('/pewarnaan/palet/proses', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'processPalette'])->name('pewarnaan.palet.proses');
+    Route::post('/api/colorize/palet', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'colorize'])->name('api.colorize.palet');
+    Route::get('/pewarnaan/output-gambar', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'showOutput'])->name('pewarnaan.output');
+    Route::post('/api/save-results', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'saveResults'])->name('api.save.results');
 });
 
 

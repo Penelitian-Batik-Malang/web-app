@@ -3,12 +3,33 @@
 @section('title', 'Proses Pewarnaan Pallet')
 
 @section('content')
+{{-- Debug Info (Hidden but available in page source) --}}
+@php
+    $hasKmeans = !empty($palettesKmeans);
+    $hasHistogram = !empty($palettesHistogram);
+    $hasMedian = !empty($paletteMedianCut);
+    $hasAnyPalette = $hasKmeans || $hasHistogram || $hasMedian;
+@endphp
+
 {{-- Meta tags untuk endpoint URLs --}}
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <meta name="api-colorize-url" content="{{ route('api.colorize.palet') }}">
 <meta name="api-save-results-url" content="{{ route('api.save.results') }}">
-<meta name="output-url" content="{{ route('pewarnaan.output') }}">
+<meta name="output-url" content="{{ route('pewarnaan.output') }}">>
 <div class="flex items-center justify-center min-h-screen py-8 px-4">
+    {{-- Debug Banner for Missing Palettes --}}
+    @if(!$hasAnyPalette && $colorImage)
+        <div class="absolute top-4 right-4 bg-red-900/80 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-xs max-w-sm z-50">
+            <p class="font-bold">⚠️ Debug: Palettes Tidak Diextract</p>
+            <ul class="mt-2 space-y-1 text-[10px]">
+                <li>KMeans: {{ count($palettesKmeans ?? []) }} colors</li>
+                <li>Histogram: {{ count($palettesHistogram ?? []) }} colors</li>
+                <li>Median: {{ count($paletteMedianCut ?? []) }} colors</li>
+            </ul>
+            <p class="mt-2 text-[9px]">Cek console browser & storage/logs/laravel.log</p>
+        </div>
+    @endif
+
     {{-- Modal Container --}}
     <div class="bg-gray-900 border border-gray-700 rounded-3xl shadow-2xl w-full max-w-4xl relative">
         

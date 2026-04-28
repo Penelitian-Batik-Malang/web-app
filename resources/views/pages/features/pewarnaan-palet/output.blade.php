@@ -3,6 +3,14 @@
 @section('title', 'Hasil Pewarnaan Pallet')
 
 @section('content')
+<!-- DEBUG: Session Images Status
+  - Has Batik Image: {{ !empty($batikImage) ? 'YES (' . strlen($batikImage) . ' chars)' : 'NO' }}
+  - Has Color Image: {{ !empty($colorImage) ? 'YES (' . strlen($colorImage) . ' chars)' : 'NO' }}
+  - Results Count: {{ count($results ?? []) }}
+  - Batik Image Type: {{ substr($batikImage, 0, 30) ?? 'N/A' }}
+  - Color Image Type: {{ substr($colorImage, 0, 30) ?? 'N/A' }}
+-->
+
 <div class="flex items-center justify-center min-h-screen py-8 px-4">
     <div class="bg-gray-900 border border-gray-700 rounded-3xl shadow-2xl w-full max-w-6xl relative">
         
@@ -23,13 +31,17 @@
                     <div class="flex-1 space-y-4">
                         <h3 class="text-center text-white font-semibold">Gambar Batik Original</h3>
                         <div class="rounded-2xl overflow-hidden border border-amber-700/50 bg-black/50">
-                            @if($batikImage)
+                            @if($batikImage && (strpos($batikImage, 'data:') === 0 || strpos($batikImage, 'http') === 0))
                                 <img src="{{ $batikImage }}" 
                                      alt="Gambar Batik" 
-                                     class="w-full h-auto object-cover max-h-96">
+                                     class="w-full h-auto object-cover max-h-96"
+                                     onerror="this.parentElement.innerHTML='<div class=\"w-full h-80 flex items-center justify-center bg-gray-800 text-gray-600\"><i class=\"bi bi-exclamation-triangle text-5xl\"></i></div>'">
                             @else
                                 <div class="w-full h-80 flex items-center justify-center bg-gray-800 text-gray-600">
-                                    <i class="bi bi-image text-5xl"></i>
+                                    <div class="text-center">
+                                        <i class="bi bi-image text-5xl mb-2 block"></i>
+                                        <p class="text-xs text-gray-500">Gambar tidak tersedia</p>
+                                    </div>
                                 </div>
                             @endif
                         </div>
@@ -38,17 +50,21 @@
                     {{-- Right: Pallet Warna --}}
                     <div class="flex-1 space-y-4">
                         <h3 class="text-center text-white font-semibold">Pallet Warna</h3>
-                        @if($colorImage)
-                            <div class="rounded-2xl overflow-hidden border border-amber-700/50 bg-black/50">
+                        <div class="rounded-2xl overflow-hidden border border-amber-700/50 bg-black/50">
+                            @if($colorImage && (strpos($colorImage, 'data:') === 0 || strpos($colorImage, 'http') === 0))
                                 <img src="{{ $colorImage }}" 
                                      alt="Color palette" 
-                                     class="w-full h-auto object-cover max-h-96">
-                            </div>
-                        @else
-                            <div class="w-full h-80 flex items-center justify-center bg-gray-800 rounded-2xl border border-gray-700">
-                                <i class="bi bi-palette text-5xl text-gray-600"></i>
-                            </div>
-                        @endif
+                                     class="w-full h-auto object-cover max-h-96"
+                                     onerror="this.parentElement.innerHTML='<div class=\"w-full h-80 flex items-center justify-center bg-gray-800 text-gray-600\"><i class=\"bi bi-exclamation-triangle text-5xl\"></i></div>'">
+                            @else
+                                <div class="w-full h-80 flex items-center justify-center bg-gray-800 rounded-2xl border border-gray-700">
+                                    <div class="text-center">
+                                        <i class="bi bi-palette text-5xl text-gray-600 mb-2 block"></i>
+                                        <p class="text-xs text-gray-500">Pallet warna tidak tersedia</p>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
 
@@ -65,7 +81,7 @@
                                 <h4 class="text-white font-semibold text-sm">📊 KMeans</h4>
                             </div>
                             <div class="rounded-2xl overflow-hidden border border-blue-500/50 bg-black/50">
-                                @if($results['kmeans'] ?? null)
+                                @if($results['kmeans']['image_url'] ?? null)
                                     <img 
                                         src="{{ $results['kmeans']['image_url'] }}" 
                                         alt="Hasil KMeans" 
@@ -73,7 +89,10 @@
                                     >
                                 @else
                                     <div class="w-full h-40 flex items-center justify-center bg-gray-800">
-                                        <i class="bi bi-exclamation-triangle text-red-500 text-xl"></i>
+                                        <div class="text-center">
+                                            <i class="bi bi-exclamation-triangle text-red-500 text-xl block mb-2"></i>
+                                            <p class="text-red-400 text-xs">{{ $results['kmeans']['error'] ?? 'Gagal memproses' }}</p>
+                                        </div>
                                     </div>
                                 @endif
                             </div>
@@ -81,7 +100,8 @@
                                 <p>Time: <span class="text-amber-400">{{ $results['kmeans']['processing_time_ms'] ?? '-' }}ms</span></p>
                                 <button 
                                     onclick="downloadImage('{{ $results['kmeans']['image_url'] ?? '' }}', 'kmeans')"
-                                    class="w-full mt-2 bg-blue-700 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded transition-all"
+                                    class="w-full mt-2 bg-blue-700 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded transition-all {{ !($results['kmeans']['image_url'] ?? null) ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                    {{ !($results['kmeans']['image_url'] ?? null) ? 'disabled' : '' }}
                                 >
                                     <i class="bi bi-download"></i> Download
                                 </button>
@@ -95,7 +115,7 @@
                                 <h4 class="text-white font-semibold text-sm">📈 Histogram</h4>
                             </div>
                             <div class="rounded-2xl overflow-hidden border border-green-500/50 bg-black/50">
-                                @if($results['histogram'] ?? null)
+                                @if($results['histogram']['image_url'] ?? null)
                                     <img 
                                         src="{{ $results['histogram']['image_url'] }}" 
                                         alt="Hasil Histogram" 
@@ -103,7 +123,10 @@
                                     >
                                 @else
                                     <div class="w-full h-40 flex items-center justify-center bg-gray-800">
-                                        <i class="bi bi-exclamation-triangle text-red-500 text-xl"></i>
+                                        <div class="text-center">
+                                            <i class="bi bi-exclamation-triangle text-red-500 text-xl block mb-2"></i>
+                                            <p class="text-red-400 text-xs">{{ $results['histogram']['error'] ?? 'Gagal memproses' }}</p>
+                                        </div>
                                     </div>
                                 @endif
                             </div>
@@ -111,7 +134,8 @@
                                 <p>Time: <span class="text-amber-400">{{ $results['histogram']['processing_time_ms'] ?? '-' }}ms</span></p>
                                 <button 
                                     onclick="downloadImage('{{ $results['histogram']['image_url'] ?? '' }}', 'histogram')"
-                                    class="w-full mt-2 bg-green-700 hover:bg-green-600 text-white text-xs py-1 px-2 rounded transition-all"
+                                    class="w-full mt-2 bg-green-700 hover:bg-green-600 text-white text-xs py-1 px-2 rounded transition-all {{ !($results['histogram']['image_url'] ?? null) ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                    {{ !($results['histogram']['image_url'] ?? null) ? 'disabled' : '' }}
                                 >
                                     <i class="bi bi-download"></i> Download
                                 </button>
@@ -125,7 +149,7 @@
                                 <h4 class="text-white font-semibold text-sm">🎨 Median Cut</h4>
                             </div>
                             <div class="rounded-2xl overflow-hidden border border-purple-500/50 bg-black/50">
-                                @if($results['median'] ?? null)
+                                @if($results['median']['image_url'] ?? null)
                                     <img 
                                         src="{{ $results['median']['image_url'] }}" 
                                         alt="Hasil Median Cut" 
@@ -133,7 +157,10 @@
                                     >
                                 @else
                                     <div class="w-full h-40 flex items-center justify-center bg-gray-800">
-                                        <i class="bi bi-exclamation-triangle text-red-500 text-xl"></i>
+                                        <div class="text-center">
+                                            <i class="bi bi-exclamation-triangle text-red-500 text-xl block mb-2"></i>
+                                            <p class="text-red-400 text-xs">{{ $results['median']['error'] ?? 'Gagal memproses' }}</p>
+                                        </div>
                                     </div>
                                 @endif
                             </div>
@@ -141,7 +168,8 @@
                                 <p>Time: <span class="text-amber-400">{{ $results['median']['processing_time_ms'] ?? '-' }}ms</span></p>
                                 <button 
                                     onclick="downloadImage('{{ $results['median']['image_url'] ?? '' }}', 'median')"
-                                    class="w-full mt-2 bg-purple-700 hover:bg-purple-600 text-white text-xs py-1 px-2 rounded transition-all"
+                                    class="w-full mt-2 bg-purple-700 hover:bg-purple-600 text-white text-xs py-1 px-2 rounded transition-all {{ !($results['median']['image_url'] ?? null) ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                    {{ !($results['median']['image_url'] ?? null) ? 'disabled' : '' }}
                                 >
                                     <i class="bi bi-download"></i> Download
                                 </button>
