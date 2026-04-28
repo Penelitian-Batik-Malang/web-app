@@ -64,17 +64,25 @@
         />
     </div>
 
-    {{-- Info Motif yang Didukung --}}
+    {{-- Info Motif yang Didukung — DINAMIS dari API --}}
     <div>
-        <h2 class="text-xl font-bold text-white mb-6 border-b border-gray-800 pb-3">Motif Batik yang Dapat Dideteksi</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            @foreach(['Sido Mukti', 'Parang', 'Kawung', 'Banji', 'Ceplok', 'Truntum', 'Sekar Jagad', 'Balai Kota'] as $motif)
-                <div class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 flex items-center gap-3">
-                    <div class="w-2 h-2 rounded-full bg-primary flex-shrink-0"></div>
-                    <span class="text-gray-300 text-sm font-medium">{{ $motif }}</span>
+        <div class="flex items-center justify-between mb-6 border-b border-gray-800 pb-3">
+            <h2 class="text-xl font-bold text-white">Motif Batik yang Dapat Dideteksi</h2>
+            <span id="motif-label-count" class="text-xs text-gray-500"></span>
+        </div>
+
+        {{-- Loading skeleton --}}
+        <div id="motif-labels-skeleton" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            @foreach(range(1, 8) as $_)
+                <div class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 animate-pulse">
+                    <div class="h-3 bg-gray-800 rounded w-3/4"></div>
                 </div>
             @endforeach
         </div>
+
+        {{-- Grid dinamis dari API --}}
+        <div id="motif-labels-grid" class="hidden grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+
         <p class="text-gray-600 text-xs mt-3 text-center">*Daftar motif diperbarui seiring perkembangan model AI</p>
     </div>
 
@@ -83,4 +91,44 @@
 
 @push('scripts')
 <script src="{{ asset('js/ml-detector.js') }}"></script>
+<script>
+// Fetch daftar motif secara dinamis dari Batik Service
+(async () => {
+    const skeleton = document.getElementById('motif-labels-skeleton');
+    const grid     = document.getElementById('motif-labels-grid');
+    const counter  = document.getElementById('motif-label-count');
+
+    try {
+        const res    = await fetch('{{ route('api.detect.motif.labels') }}', {
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+        });
+        const labels = await res.json();
+
+        if (Array.isArray(labels) && labels.length) {
+            counter.textContent = `${labels.length} motif`;
+            grid.innerHTML = labels.map(motif => `
+                <div class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 flex items-center gap-3 hover:border-primary/40 transition-colors">
+                    <div class="w-2 h-2 rounded-full bg-primary flex-shrink-0"></div>
+                    <span class="text-gray-300 text-sm font-medium">${motif}</span>
+                </div>
+            `).join('');
+            skeleton.classList.add('hidden');
+            grid.classList.remove('hidden');
+            return;
+        }
+    } catch (_) {}
+
+    // Fallback statis jika API tidak tersedia
+    const fallback = ['Sido Mukti', 'Parang', 'Kawung', 'Banji', 'Ceplok', 'Truntum', 'Sekar Jagad', 'Balai Kota'];
+    counter.textContent = `${fallback.length} motif (fallback)`;
+    grid.innerHTML = fallback.map(motif => `
+        <div class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-gray-600 flex-shrink-0"></div>
+            <span class="text-gray-400 text-sm font-medium">${motif}</span>
+        </div>
+    `).join('');
+    skeleton.classList.add('hidden');
+    grid.classList.remove('hidden');
+})();
+</script>
 @endpush

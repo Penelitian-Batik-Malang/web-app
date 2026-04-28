@@ -5,6 +5,7 @@
 
 <!-- Sidebar untuk Desktop dan Tablet -->
 <aside 
+    x-cloak
     x-show="sidebarOpen"
     x-transition:enter="transition ease-out duration-300"
     x-transition:enter-start="-translate-x-full"
@@ -101,6 +102,7 @@
 
 <!-- Overlay untuk Mobile ketika sidebar terbuka -->
 <div 
+    x-cloak
     x-show="sidebarOpen" 
     @click="sidebarOpen = false"
     x-transition:enter="transition-opacity ease-linear duration-300"
