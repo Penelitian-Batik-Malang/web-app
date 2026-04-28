@@ -3,6 +3,11 @@
 @section('title', 'Proses Pewarnaan Pallet')
 
 @section('content')
+{{-- Meta tags untuk endpoint URLs --}}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<meta name="api-colorize-url" content="{{ route('api.colorize.palet') }}">
+<meta name="api-save-results-url" content="{{ route('api.save.results') }}">
+<meta name="output-url" content="{{ route('pewarnaan.output') }}">
 <div class="flex items-center justify-center min-h-screen py-8 px-4">
     {{-- Modal Container --}}
     <div class="bg-gray-900 border border-gray-700 rounded-3xl shadow-2xl w-full max-w-4xl relative">
@@ -64,21 +69,29 @@
                         
                         @if($colorImage && (!empty($palettesKmeans) || !empty($palettesHistogram) || !empty($paletteMedianCut)))
                             <div class="bg-gray-800/50 rounded-xl p-4 space-y-4">
-                                <p class="text-amber-500 text-xs font-semibold mb-3">Warna yang Di-Extract :</p>
+                                <p class="text-amber-500 text-xs font-semibold mb-3">Warna yang Di-Extract : <span class="text-gray-400 text-[9px]">(Klik untuk mengubah)</span></p>
                                 
                                 {{-- KMeans --}}
                                 @if(!empty($palettesKmeans))
                                     <div class="border-l-2 border-blue-500 pl-3">
-                                        <p class="text-amber-500 text-xs font-semibold mb-3"> kmeans</p>
+                                        <p class="text-amber-500 text-xs font-semibold mb-3">kmeans</p>
                                         <div class="flex flex-wrap gap-2">
-                                            @foreach($palettesKmeans as $color)
-                                                <div class="flex items-center gap-1">
+                                            @foreach($palettesKmeans as $index => $color)
+                                                <div class="flex items-center gap-1 group cursor-pointer">
                                                     <div 
-                                                        class="w-6 h-6 rounded border border-gray-500 shadow-sm"
+                                                        class="w-6 h-6 rounded border-2 border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-kmeans-{{ $index }}"
                                                         style="background-color: {{ $color }}"
                                                         title="{{ $color }}"
+                                                        onclick="openColorPicker('kmeans', {{ $index }})"
                                                     ></div>
-                                                    <span class="text-gray-300 text-[9px] font-mono">{{ strtoupper($color) }}</span>
+                                                    <input 
+                                                        type="color" 
+                                                        id="color-kmeans-{{ $index }}" 
+                                                        value="{{ $color }}"
+                                                        class="hidden"
+                                                        onchange="updatePaletteColor('kmeans', {{ $index }}, this.value)"
+                                                    >
+                                                    <span class="text-gray-300 text-[9px] font-mono group-hover:text-amber-400 transition-colors" id="label-kmeans-{{ $index }}">{{ strtoupper($color) }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -90,14 +103,22 @@
                                     <div class="border-l-2 border-green-500 pl-3">
                                         <p class="text-amber-500 text-xs font-semibold mb-3">histogram</p>
                                         <div class="flex flex-wrap gap-2">
-                                            @foreach($palettesHistogram as $color)
-                                                <div class="flex items-center gap-1">
+                                            @foreach($palettesHistogram as $index => $color)
+                                                <div class="flex items-center gap-1 group cursor-pointer">
                                                     <div 
-                                                        class="w-6 h-6 rounded border border-gray-500 shadow-sm"
+                                                        class="w-6 h-6 rounded border-2 border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-histogram-{{ $index }}"
                                                         style="background-color: {{ $color }}"
                                                         title="{{ $color }}"
+                                                        onclick="openColorPicker('histogram', {{ $index }})"
                                                     ></div>
-                                                    <span class="text-gray-300 text-[9px] font-mono">{{ strtoupper($color) }}</span>
+                                                    <input 
+                                                        type="color" 
+                                                        id="color-histogram-{{ $index }}" 
+                                                        value="{{ $color }}"
+                                                        class="hidden"
+                                                        onchange="updatePaletteColor('histogram', {{ $index }}, this.value)"
+                                                    >
+                                                    <span class="text-gray-300 text-[9px] font-mono group-hover:text-amber-400 transition-colors" id="label-histogram-{{ $index }}">{{ strtoupper($color) }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -109,14 +130,22 @@
                                     <div class="border-l-2 border-purple-500 pl-3">
                                         <p class="text-amber-500 text-xs font-semibold mb-3">median cut</p>
                                         <div class="flex flex-wrap gap-2">
-                                            @foreach($paletteMedianCut as $color)
-                                                <div class="flex items-center gap-1">
+                                            @foreach($paletteMedianCut as $index => $color)
+                                                <div class="flex items-center gap-1 group cursor-pointer">
                                                     <div 
-                                                        class="w-6 h-6 rounded border border-gray-500 shadow-sm"
+                                                        class="w-6 h-6 rounded border-2 border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-median-{{ $index }}"
                                                         style="background-color: {{ $color }}"
                                                         title="{{ $color }}"
+                                                        onclick="openColorPicker('median', {{ $index }})"
                                                     ></div>
-                                                    <span class="text-gray-300 text-[9px] font-mono">{{ strtoupper($color) }}</span>
+                                                    <input 
+                                                        type="color" 
+                                                        id="color-median-{{ $index }}" 
+                                                        value="{{ $color }}"
+                                                        class="hidden"
+                                                        onchange="updatePaletteColor('median', {{ $index }}, this.value)"
+                                                    >
+                                                    <span class="text-gray-300 text-[9px] font-mono group-hover:text-amber-400 transition-colors" id="label-median-{{ $index }}">{{ strtoupper($color) }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -133,135 +162,57 @@
 
                 </div>
 
-                {{-- Result Container (Hidden by default) --}}
-                <div id="result-container" class="hidden border-t border-gray-800 pt-8 mt-8">
-                    <h3 class="text-center text-white font-semibold mb-6">Hasil Pewarnaan (3 Metode)</h3>
-                    
-                    {{-- Loading Indicator --}}
-                    <div id="result-loading" class="flex justify-center items-center mb-4">
-                        <div class="flex flex-col items-center gap-2">
-                            <i class="bi bi-hourglass-split animate-spin text-amber-500 text-3xl"></i>
-                            <p class="text-gray-400 text-sm">Memproses 3 metode pewarnaan...</p>
+                {{-- Color Picker Modal --}}
+                <div id="color-picker-modal" class="hidden fixed bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-5 z-40" style="width: 300px;">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <label class="text-white text-sm font-bold">Pilih Warna</label>
+                            <button onclick="closeColorPicker()" class="text-gray-400 hover:text-white transition-colors"><i class="bi bi-x-lg text-lg"></i></button>
                         </div>
-                    </div>
-                    
-                    {{-- 3 Results in Grid --}}
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         
-                        {{-- Result 1: KMeans --}}
-                        <div class="space-y-3">
-                            <div class="flex items-center gap-2 mb-3">
-                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                <h4 class="text-white font-semibold text-sm">📊 KMeans</h4>
-                            </div>
-                            <div class="rounded-2xl overflow-hidden border border-blue-500/50 bg-black/50">
-                                <img 
-                                    id="result-image-kmeans" 
-                                    src="" 
-                                    alt="Hasil KMeans" 
-                                    class="w-full h-auto object-cover hidden"
-                                    onload="handleImageLoad(this, 'kmeans')"
-                                    onerror="handleImageError('kmeans')"
-                                >
-                                <div id="result-loading-kmeans" class="w-full h-40 flex items-center justify-center bg-gray-800">
-                                    <i class="bi bi-hourglass-split animate-spin text-blue-400 text-xl"></i>
-                                </div>
-                                <div id="result-error-kmeans" class="hidden w-full h-40 flex items-center justify-center bg-gray-800">
-                                    <i class="bi bi-exclamation-triangle text-red-500 text-xl"></i>
-                                </div>
-                            </div>
-                            <div class="bg-gray-800/50 rounded-lg p-2 text-[10px] text-gray-300">
-                                <p>Time: <span id="time-kmeans" class="text-amber-400">-</span>ms</p>
+                        {{-- Saturation/Brightness Box --}}
+                        <div id="color-box-container" class="relative w-full h-40 rounded-lg cursor-crosshair overflow-hidden border-2 border-gray-600 shadow-inner">
+                            {{-- Layer 1: Base Color (Hue) --}}
+                            <div id="base-color-layer" class="absolute inset-0" style="background-color: #ff0000;"></div>
+                            {{-- Layer 2: White Gradient (Saturation) --}}
+                            <div class="absolute inset-0" style="background: linear-gradient(to right, #fff, transparent);"></div>
+                            {{-- Layer 3: Black Gradient (Brightness) --}}
+                            <div class="absolute inset-0" style="background: linear-gradient(to top, #000, transparent);"></div>
+                            {{-- Selector Dot --}}
+                            <div id="color-cursor" class="absolute w-4 h-4 border-2 border-white rounded-full shadow-md pointer-events-none" style="left: 0; top: 0; transform: translate(-50%, -50%);"></div>
+                        </div>
+                        
+                        {{-- Hue Slider (Rainbow) --}}
+                        <div>
+                            <input type="range" id="hue-slider" min="0" max="360" value="0" 
+                                class="hue-slider w-full h-3 rounded-lg cursor-pointer" 
+                                oninput="updateHue()">
+                        </div>
+                        
+                        <div class="flex gap-3 items-center">
+                            <div id="color-preview" class="w-12 h-12 rounded-lg border-2 border-gray-600 shadow-inner flex-shrink-0"></div>
+                            <div class="flex-1">
+                                <input type="text" id="color-hex-input" 
+                                    class="w-full bg-gray-900 text-white text-sm font-mono px-3 py-2 rounded-lg border border-gray-700 focus:border-amber-500 outline-none" 
+                                    maxlength="7"
+                                    oninput="updateFromHexInput()">
                             </div>
                         </div>
                         
-                        {{-- Result 2: Histogram --}}
-                        <div class="space-y-3">
-                            <div class="flex items-center gap-2 mb-3">
-                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <h4 class="text-white font-semibold text-sm">📈 Histogram</h4>
-                            </div>
-                            <div class="rounded-2xl overflow-hidden border border-green-500/50 bg-black/50">
-                                <img 
-                                    id="result-image-histogram" 
-                                    src="" 
-                                    alt="Hasil Histogram" 
-                                    class="w-full h-auto object-cover hidden"
-                                    onload="handleImageLoad(this, 'histogram')"
-                                    onerror="handleImageError('histogram')"
-                                >
-                                <div id="result-loading-histogram" class="w-full h-40 flex items-center justify-center bg-gray-800">
-                                    <i class="bi bi-hourglass-split animate-spin text-green-400 text-xl"></i>
-                                </div>
-                                <div id="result-error-histogram" class="hidden w-full h-40 flex items-center justify-center bg-gray-800">
-                                    <i class="bi bi-exclamation-triangle text-red-500 text-xl"></i>
-                                </div>
-                            </div>
-                            <div class="bg-gray-800/50 rounded-lg p-2 text-[10px] text-gray-300">
-                                <p>Time: <span id="time-histogram" class="text-amber-400">-</span>ms</p>
-                            </div>
-                        </div>
-                        
-                        {{-- Result 3: Median Cut --}}
-                        <div class="space-y-3">
-                            <div class="flex items-center gap-2 mb-3">
-                                <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                                <h4 class="text-white font-semibold text-sm">🎨 Median Cut</h4>
-                            </div>
-                            <div class="rounded-2xl overflow-hidden border border-purple-500/50 bg-black/50">
-                                <img 
-                                    id="result-image-median" 
-                                    src="" 
-                                    alt="Hasil Median Cut" 
-                                    class="w-full h-auto object-cover hidden"
-                                    onload="handleImageLoad(this, 'median')"
-                                    onerror="handleImageError('median')"
-                                >
-                                <div id="result-loading-median" class="w-full h-40 flex items-center justify-center bg-gray-800">
-                                    <i class="bi bi-hourglass-split animate-spin text-purple-400 text-xl"></i>
-                                </div>
-                                <div id="result-error-median" class="hidden w-full h-40 flex items-center justify-center bg-gray-800">
-                                    <i class="bi bi-exclamation-triangle text-red-500 text-xl"></i>
-                                </div>
-                            </div>
-                            <div class="bg-gray-800/50 rounded-lg p-2 text-[10px] text-gray-300">
-                                <p>Time: <span id="time-median" class="text-amber-400">-</span>ms</p>
-                            </div>
-                        </div>
-                        
-                    </div>
-                    
-                    {{-- Download Buttons --}}
-                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <button 
-                            onclick="downloadResultImage('kmeans')"
-                            class="bg-blue-700 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm flex items-center justify-center gap-2"
-                        >
-                            <i class="bi bi-download"></i>
-                            KMeans
-                        </button>
-                        <button 
-                            onclick="downloadResultImage('histogram')"
-                            class="bg-green-700 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm flex items-center justify-center gap-2"
-                        >
-                            <i class="bi bi-download"></i>
-                            Histogram
-                        </button>
-                        <button 
-                            onclick="downloadResultImage('median')"
-                            class="bg-purple-700 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm flex items-center justify-center gap-2"
-                        >
-                            <i class="bi bi-download"></i>
-                            Median Cut
+                        <button onclick="applyColorPicker()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg transition-all text-sm">
+                            Terapkan Warna
                         </button>
                     </div>
                 </div>
 
-                {{-- Error Message (Hidden by default) --}}
-                <div id="error-container" class="hidden border-t border-gray-800 pt-8 mt-8">
-                    <div class="bg-red-900/30 border border-red-700 text-red-300 px-6 py-4 rounded-xl">
-                        <p class="text-sm font-semibold mb-2">Terjadi Kesalahan</p>
-                        <p id="error-message" class="text-xs"></p>
+                {{-- Loading Modal (Temporary) --}}
+                <div id="processing-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 rounded-2xl">
+                    <div class="bg-gray-800 border border-gray-700 rounded-2xl p-8 text-center max-w-sm">
+                        <div class="flex justify-center mb-4">
+                            <i class="bi bi-hourglass-split animate-spin text-amber-500 text-4xl"></i>
+                        </div>
+                        <p class="text-white font-semibold mb-2">Memproses Pewarnaan</p>
+                        <p class="text-gray-400 text-sm">Memproses 3 metode pewarnaan...</p>
                     </div>
                 </div>
 
@@ -301,175 +252,62 @@
     .animate-spin {
         animation: spin 1s linear infinite;
     }
+    
+    /* Hue Slider Styling */
+    .hue-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+        border: 1px solid #555;
+        outline: none;
+    }
+    
+    .hue-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid #333;
+        cursor: pointer;
+        box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+    }
+    
+    .hue-slider::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid #333;
+        cursor: pointer;
+        box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+    }
 </style>
 
+<script src="{{ asset('js/pewarnaan-palletnet.js') }}"></script>
 <script>
-    // Store extracted palettes dari backend (3 metode)
-    const palettesKmeans = {!! json_encode($palettesKmeans ?? []) !!};
-    const palettesHistogram = {!! json_encode($palettesHistogram ?? []) !!};
-    const paletteMedianCut = {!! json_encode($paletteMedianCut ?? []) !!};
-    
-    // Store result URLs for each method
-    let resultUrls = {
-        kmeans: '',
-        histogram: '',
-        median: ''
-    };
+    // Initialize PewarnaanPalletNet class dengan data dari server
+    let pewarnaanApp = null;
 
-    function handleImageLoad(imgElement, method) {
-        console.log(`Image loaded: ${method}`);
-        document.getElementById(`result-loading-${method}`).classList.add('hidden');
-        document.getElementById(`result-error-${method}`).classList.add('hidden');
-        imgElement.classList.remove('hidden');
-    }
-
-    function handleImageError(method) {
-        console.error(`Failed to load result image: ${method}`);
-        const loadingId = `result-loading-${method}`;
-        const errorId = `result-error-${method}`;
-        document.getElementById(loadingId).classList.add('hidden');
-        document.getElementById(errorId).classList.remove('hidden');
-    }
-
-    function downloadResultImage(method) {
-        if (!resultUrls[method]) {
-            alert(`URL gambar ${method} tidak tersedia`);
-            return;
-        }
-
-        // Create hidden anchor element
-        const link = document.createElement('a');
-        link.href = resultUrls[method];
-        link.download = `batik-recolor-${method}-${new Date().getTime()}.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    async function processWithPalette(method, palette) {
+    document.addEventListener('DOMContentLoaded', function() {
+        const palettesKmeans = {!! json_encode($palettesKmeans ?? []) !!};
+        const palettesHistogram = {!! json_encode($palettesHistogram ?? []) !!};
+        const paletteMedianCut = {!! json_encode($paletteMedianCut ?? []) !!};
         const batikImage = '{{ $batikImage }}';
         const colorImage = '{{ $colorImage }}';
-        
-        try {
-            const response = await fetch('{{ route("api.colorize.palet") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                },
-                body: JSON.stringify({
-                    batik_image: batikImage,
-                    color_image: colorImage,
-                    palette: palette,
-                    skip_extract: true,
-                    method: method  // untuk tracking di backend
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (!data.success) {
-                throw new Error(data.message || `Gagal memproses pewarnaan ${method}`);
-            }
-            
-            const result = data.result;
-            const resultUrl = result.result_image_url;
-            
-            if (!resultUrl) {
-                throw new Error(`Server tidak mengembalikan URL gambar hasil untuk ${method}`);
-            }
-            
-            console.log(`Result URL (${method}):`, resultUrl);
-            
-            // Store URL for download
-            resultUrls[method] = resultUrl;
-            
-            // Set image src
-            const imgElement = document.getElementById(`result-image-${method}`);
-            imgElement.src = resultUrl;
-            
-            // Update processing time
-            document.getElementById(`time-${method}`).textContent = result.processing_time_ms.toFixed(2);
-            
-            return { success: true, method, result };
-            
-        } catch (error) {
-            console.error(`Process ${method} error:`, error);
-            handleImageError(method);
-            throw error;
-        }
-    }
 
-    async function handleColorize() {
-        const processButton = document.getElementById('process-button');
-        const buttonText = document.getElementById('button-text');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const resultContainer = document.getElementById('result-container');
-        const errorContainer = document.getElementById('error-container');
-        
-        // Disable button
-        processButton.disabled = true;
-        buttonText.textContent = 'Sedang Memproses...';
-        loadingSpinner.classList.remove('hidden');
-        
-        try {
-            const batikImage = '{{ $batikImage }}';
-            const colorImage = '{{ $colorImage }}';
-            
-            if (!batikImage) {
-                throw new Error('Gambar batik sumber tidak ditemukan.');
-            }
-            
-            if (!colorImage) {
-                throw new Error('Tidak ada gambar warna yang diunggah. Silakan upload gambar warna terlebih dahulu.');
-            }
-            
-            // Validate palettes
-            if (palettesKmeans.length === 0 || palettesHistogram.length === 0 || paletteMedianCut.length === 0) {
-                throw new Error('Palette warna tidak lengkap. Silakan upload ulang gambar warna Anda.');
-            }
-            
-            // Show result container dan loading indicators
-            resultContainer.classList.remove('hidden');
-            errorContainer.classList.add('hidden');
-            document.getElementById('result-loading').classList.remove('hidden');
-            
-            // Reset all result loading states
-            ['kmeans', 'histogram', 'median'].forEach(method => {
-                document.getElementById(`result-loading-${method}`).classList.remove('hidden');
-                document.getElementById(`result-error-${method}`).classList.add('hidden');
-                document.getElementById(`result-image-${method}`).classList.add('hidden');
-            });
-            
-            // Process 3 metode secara paralel
-            const results = await Promise.all([
-                processWithPalette('kmeans', palettesKmeans),
-                processWithPalette('histogram', palettesHistogram),
-                processWithPalette('median', paletteMedianCut)
-            ]);
-            
-            console.log('All results processed successfully', results);
-            document.getElementById('result-loading').classList.add('hidden');
-            
-        } catch (error) {
-            console.error('Colorize error:', error);
-            document.getElementById('error-message').textContent = error.message;
-            errorContainer.classList.remove('hidden');
-            resultContainer.classList.add('hidden');
-        } finally {
-            // Re-enable button
-            processButton.disabled = false;
-            buttonText.textContent = 'Proses Gambar';
-            loadingSpinner.classList.add('hidden');
-        }
-    }
+        // Initialize app
+        pewarnaanApp = new PewarnaanPalletNet(palettesKmeans, palettesHistogram, paletteMedianCut);
 
-    // Auto-add CSRF token to all fetch requests
-    document.addEventListener('DOMContentLoaded', function() {
-        const token = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (token) {
-            // Token sudah ada di meta
-        }
+        // Setup global functions untuk inline handlers (onclick)
+        window.openColorPicker = (method, index) => pewarnaanApp.openColorPicker(method, index);
+        window.closeColorPicker = () => pewarnaanApp.closeColorPicker();
+        window.updateHue = () => pewarnaanApp.updateHue();
+        window.updateFromHexInput = () => pewarnaanApp.updateFromHexInput();
+        window.applyColorPicker = () => pewarnaanApp.applyColorPicker();
+        window.updatePaletteColor = (method, index, color) => pewarnaanApp.updatePaletteColor(method, index, color);
+        window.handleColorize = () => pewarnaanApp.handleColorize(batikImage, colorImage);
     });
 </script>
 @endsection

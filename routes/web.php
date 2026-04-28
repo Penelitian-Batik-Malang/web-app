@@ -28,67 +28,11 @@ Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
 });
 
 Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
-    Route::get('/pewarnaan/palet', function () {
-        $batiks = \App\Models\Batik::where('is_active', true)->with('mainImage')->get();
-        return view('pages.pewarnaan-pallet-warna', compact('batiks'));
-    })->name('pewarnaan.palet');
-    
-    Route::post('/pewarnaan/palet/proses', function (\Illuminate\Http\Request $request) {
-        try {
-            // Validasi gambar batik sumber
-            $batikImage = $request->input('batik_image');
-            $colorImage = $request->input('color_image');
-            
-            
-            // Extract palette dari color_image menggunakan API - extract semua 3 metode
-            $palettesKmeans = [];
-            $palettesHistogram = [];
-            $paletteMedianCut = [];
-            $baseUrl = rtrim((string) config('services.ml.base_url', env('ML_API_BASE_URL', '')), '/');
-            
-            if (!empty($baseUrl)) {
-                try {
-                    // Convert base64 ke file content
-                    $colorBase64 = $colorImage;
-                    if (strpos($colorBase64, 'data:image') === 0) {
-                        $colorBase64 = substr($colorBase64, strpos($colorBase64, ',') + 1);
-                    }
-                    $colorImageContent = base64_decode($colorBase64);
-                    
-                    // Call API extract palette dengan method all untuk dapet semua 3 metode
-                    $response = \Illuminate\Support\Facades\Http::timeout(30)
-                        ->attach('image', $colorImageContent, 'color_image.jpg')
-                        ->attach('method', 'all')
-                        ->attach('n_colors', '6')
-                        ->post($baseUrl . '/palette/extract');
-                    
-                    if ($response->successful()) {
-                        $data = $response->json();
-                        // Get semua 3 metode
-                        $palettesKmeans = $data['palettes']['kmeans'] ?? [];
-                        $palettesHistogram = $data['palettes']['histogram'] ?? [];
-                        $paletteMedianCut = $data['palettes']['median_cut'] ?? [];
-                    }
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::warning('Palette extract error: ' . $e->getMessage());
-                    // Jika extract gagal, tetap lanjut tanpa palette
-                }
-            }
-            
-            // Pass gambar dan palettes (semua 3 metode) ke view
-            return view('pages.pewarnaanPalletNet.proses-gambar', compact(
-                'batikImage',
-                'colorImage',
-                'palettesKmeans',
-                'palettesHistogram',
-                'paletteMedianCut'
-            ));
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Error: ' . $e->getMessage()]);
-        }
-    })->name('pewarnaan.palet.proses');
-    
-    Route::post('/api/colorize/palet', [App\Http\Controllers\MLController::class, 'colorizePalet'])->name('api.colorize.palet');
+    Route::get('/pewarnaan/palet', [App\Http\Controllers\PewarnaanPalletNetController::class, 'showPalet'])->name('pewarnaan.palet');
+    Route::post('/pewarnaan/palet/proses', [App\Http\Controllers\PewarnaanPalletNetController::class, 'processPalette'])->name('pewarnaan.palet.proses');
+    Route::post('/api/colorize/palet', [App\Http\Controllers\PewarnaanPalletNetController::class, 'colorize'])->name('api.colorize.palet');
+    Route::get('/pewarnaan/output-gambar', [App\Http\Controllers\PewarnaanPalletNetController::class, 'showOutput'])->name('pewarnaan.output');
+    Route::post('/api/save-results', [App\Http\Controllers\PewarnaanPalletNetController::class, 'saveResults'])->name('api.save.results');
 });
 
 
