@@ -26,18 +26,39 @@ class TerapkanBatikController extends BaseMLController
 
         $batikSamples = Batik::query()
             ->where('is_active', true)
-            ->with('mainImage')
-            ->latest()
-            ->limit(12)
+            ->with('images')
+            ->orderByDesc('id') // Ambil yang terbaru
+            ->limit(60)
             ->get()
             ->map(function ($batik) {
+                $images = $batik->images
+                    ->take(3) // Batasi gambar per motif agar tidak terlalu berat
+                    ->map(function ($img) {
+                        $raw = $img->full_url;
+                        if (!$raw) return null;
+                        
+                        // Gunakan proxy route /storage/batik/ agar tidak 403 (bucket private)
+                        $s3BaseBatik = 'https://is3.cloudhost.id/batik-signature-gdrive/';
+                        if (strpos($raw, $s3BaseBatik) === 0) {
+                            $path = substr($raw, strlen($s3BaseBatik));
+                            return ['url' => route('storage.batik.proxy', ['path' => $path])];
+                        }
+                        
+                        return ['url' => $raw];
+                    })
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                if (empty($images)) return null;
+
                 return [
-                    'name'        => $batik->name,
-                    'description' => $batik->description,
-                    'image_url'   => optional($batik->mainImage)->full_url,
+                    'name'      => $batik->name,
+                    'image_url' => $images[0]['url'],
+                    'images'    => $images,
                 ];
             })
-            ->filter(fn ($item) => !empty($item['image_url']))
+            ->filter()
             ->values();
 
         return view('pages.features.terapkan-batik', [
@@ -45,6 +66,7 @@ class TerapkanBatikController extends BaseMLController
             'batikSamples'   => $batikSamples,
         ]);
     }
+
 
     /**
      * Blend batik dari file upload ke segmen pakaian.

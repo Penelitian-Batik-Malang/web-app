@@ -55,6 +55,39 @@ abstract class BaseMLController extends Controller
         $this->fashionUrl = rtrim((string) config('services.ml.fashion_url', 'http://127.0.0.1:8002'), '/');
     }
 
+    /**
+     * Proxy gambar dari S3 IDCloudHost via server-side — menghindari CORS/canvas-taint.
+     *
+     * GET /img?u=BASE64URL
+     * Hanya memperbolehkan URL dari is3.cloudhost.id (whitelist).
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function proxyBatikImage(\Illuminate\Http\Request $request)
+    {
+        $encoded = (string) $request->query('u', '');
+        if (empty($encoded)) abort(400, 'Missing url parameter');
+
+        $url = base64_decode(strtr($encoded, '-_', '+/'), true);
+        if (!$url || !str_starts_with($url, 'https://is3.cloudhost.id/')) {
+            abort(403, 'URL not whitelisted');
+        }
+
+        try {
+            $resp = \Illuminate\Support\Facades\Http::timeout(15)->get($url);
+            if (!$resp->successful()) abort($resp->status());
+
+            return response($resp->body(), 200, [
+                'Content-Type'                => $resp->header('Content-Type', 'image/jpeg'),
+                'Cache-Control'               => 'public, max-age=86400',
+                'Access-Control-Allow-Origin' => '*',
+            ]);
+        } catch (\Throwable $e) {
+            abort(502, 'Proxy fetch failed: ' . $e->getMessage());
+        }
+    }
+
+
     // ─── Status & URL Helpers ─────────────────────────────────────────
 
     /**
@@ -289,5 +322,64 @@ abstract class BaseMLController extends Controller
             'Content-Type'  => $mime,
             'Cache-Control' => 'public, max-age=86400',
         ]);
+    }
+
+
+    // ─── Gallery Lookup Helpers ───────────────────────────────────────
+
+
+    /**
+     * Temukan record Batik di database berdasarkan label dari ML API.
+     *
+     * Label ML API bisa berbeda format (underscore, dash, lowercase) dari nama di DB.
+     * Gunakan pencarian fuzzy LIKE case-insensitive dengan fallback ke kata pertama.
+     *
+     * @param  string  $label  Label dari ML API (misal: "topeng_gandring_wirasena")
+     * @return \App\Models\Batik|null
+     */
+    protected function findBatikByLabel(string $label): ?\App\Models\Batik
+    {
+        if (empty($label)) return null;
+
+        $normalized = strtolower(str_replace(['_', '-'], ' ', $label));
+
+        $batik = \App\Models\Batik::where('is_active', true)
+            ->with('mainImage')
+            ->whereRaw('LOWER(REPLACE(REPLACE(name, "_", " "), "-", " ")) LIKE ?', ["%{$normalized}%"])
+            ->first();
+
+        if (!$batik) {
+            $firstWord = explode(' ', $normalized)[0];
+            if (strlen($firstWord) >= 3) {
+                $batik = \App\Models\Batik::where('is_active', true)
+                    ->with('mainImage')
+                    ->whereRaw('LOWER(name) LIKE ?', ["%{$firstWord}%"])
+                    ->first();
+            }
+        }
+
+        return $batik;
+    }
+
+    /**
+     * Dapatkan URL galeri detail untuk label motif dari ML API.
+     *
+     * @param  string  $label
+     * @return string|null
+     */
+    protected function findGaleriUrlByLabel(string $label): ?string
+    {
+        $batik = $this->findBatikByLabel($label);
+        return $batik ? route('galeri.show', $batik->id) : null;
+    }
+
+    /**
+     * Generate URL proxy untuk gambar eksternal (S3) agar bisa diakses same-origin.
+     */
+    protected function proxyUrl(string $url): string
+    {
+        if (empty($url)) return '';
+        $encoded = strtr(base64_encode($url), '+/', '-_');
+        return route('img.proxy', ['u' => $encoded]);
     }
 }

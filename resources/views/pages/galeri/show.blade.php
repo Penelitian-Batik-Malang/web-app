@@ -256,32 +256,39 @@
     function renderRekomendasi(items) {
         const grid = document.getElementById('rekomendasi-grid');
         if (!items.length) {
-            grid.innerHTML = `<div class="col-span-full text-center text-gray-500 text-sm py-8">Tidak ada rekomendasi saat ini.</div>`;
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-500 text-sm py-8">Tidak ada rekomendasi saat ini.</div>';
             return;
         }
         grid.innerHTML = items.map(item => {
-            const sim  = item.similarity ? `<span class="text-amber-400">${item.similarity}%</span>` : '';
-            const galeriIcon = item.galeri_url
-                ? `<span class="absolute top-1.5 right-1.5 bg-black/60 backdrop-blur-sm text-white text-[9px] px-1.5 py-0.5 rounded-full"><i class="bi bi-box-arrow-up-right text-[8px]"></i></span>`
-                : '';
-            const wrapOpen  = item.galeri_url ? `<a href="${item.galeri_url}" title="Lihat di Galeri" class="block">` : `<div>`;
-            const wrapClose = item.galeri_url ? `</a>` : `</div>`;
-            return `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-lg group hover:border-amber-700/50 transition-colors">
-                ${wrapOpen}
-                <div class="relative aspect-square overflow-hidden">
-                    <img src="${item.image_url}" loading="lazy"
-                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                         onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-gray-900 flex items-center justify-center\'><i class=\'bi bi-image text-gray-700 text-2xl\'></i></div>'">
-                    ${galeriIcon}
-                </div>
-                <div class="p-2 bg-gray-900/60">
-                    <p class="text-white text-xs font-bold truncate" title="${item.name ?? ''}">${item.name ?? 'Batik Serupa'}</p>
-                    <p class="text-[10px] text-gray-500 mt-0.5">${sim}</p>
-                </div>
-                ${wrapClose}
-            </div>`;
+            const sim        = item.similarity ? item.similarity + '%' : '';
+            const galeriAttr = item.galeri_url ? 'data-galeri="' + item.galeri_url + '"' : '';
+            return '<div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-lg group hover:border-amber-700/50 transition-colors cursor-pointer" ' + galeriAttr + '>'
+                + '<div class="relative aspect-square overflow-hidden img-wrap">'
+                + '<img src="' + item.image_url + '" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">'
+                + (item.galeri_url ? '<span class="absolute top-1.5 right-1.5 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-full"><i class="bi bi-box-arrow-up-right"></i></span>' : '')
+                + '</div>'
+                + '<div class="p-2 bg-gray-900/60">'
+                + '<p class="text-white text-xs font-bold truncate">' + (item.name || 'Batik Serupa') + '</p>'
+                + '<p class="text-[10px] text-amber-400 mt-0.5">' + sim + '</p>'
+                + '</div></div>';
         }).join('');
+
+        // Handle broken images via event delegation (avoids onerror escaping issues)
+        grid.querySelectorAll('img').forEach((img, idx) => {
+            img.addEventListener('error', function() {
+                const item = items[idx];
+                if (item && item.fallback_url && img.src !== item.fallback_url) {
+                    img.src = item.fallback_url;
+                } else {
+                    this.closest('.img-wrap').innerHTML = '<div class="w-full h-full bg-gray-900 flex items-center justify-center"><i class="bi bi-image text-gray-700 text-2xl"></i></div>';
+                }
+            });
+        });
+
+        // Click → open galeri detail
+        grid.querySelectorAll('[data-galeri]').forEach(card => {
+            card.addEventListener('click', () => window.open(card.dataset.galeri, '_blank'));
+        });
     }
 </script>
 @endauth

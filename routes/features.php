@@ -32,6 +32,82 @@ Route::get('/sample-fashion/{filename}', [SharedMLController::class, 'serveSampl
     ->name('sample.fashion')
     ->where('filename', '[^/]+\.(jpg|jpeg|png|webp|gif)');
 
+// ── S3 Image Proxy (same-origin canvas loading, avoids cross-origin taint) ───
+Route::get('/img', [SharedMLController::class, 'proxyBatikImage'])->name('img.proxy');
+
+// ── Proxy gambar batik S3 (Gallery: batik-signature-gdrive) ───────────────────────
+Route::get('/storage/batik/{path}', function (string $path) {
+    try {
+        return \Illuminate\Support\Facades\Storage::disk('s3-batik')->response(
+            ltrim($path, '/'), null, ['Cache-Control' => 'public, max-age=86400']
+        );
+    } catch (\Throwable $e) {
+        abort(404);
+    }
+})->name('storage.batik.proxy')->where('path', '.+');
+
+// ── Proxy gambar AI (Results: galeri-batik-digital) ───────────────────────────────
+Route::get('/storage/ai/{path}', function (string $path) {
+    $disk = \Illuminate\Support\Facades\Storage::disk('s3-ai-results');
+    $path = ltrim($path, '/');
+
+    // 1. Coba path asli
+    if ($disk->exists($path)) {
+        return $disk->response($path, null, ['Cache-Control' => 'public, max-age=86400']);
+    }
+
+    // 2. Coba bersihkan prefix AI dan coba di root augmentasi/augmentasi/
+    $cleanPath = preg_replace('/^(zoom|crops|random_crop|original|rotate|flip|grayscale)\//i', '', $path);
+    
+    // Coba di root augmentasi/augmentasi/
+    $augmentPath = 'augmentasi/augmentasi/' . $path;
+    if ($disk->exists($augmentPath)) {
+        return $disk->response($augmentPath, null, ['Cache-Control' => 'public, max-age=86400']);
+    }
+
+    if ($cleanPath !== $path && $disk->exists($cleanPath)) {
+        return $disk->response($cleanPath, null, ['Cache-Control' => 'public, max-age=86400']);
+    }
+
+    // 3. Coba part terakhir (folder + filename)
+    $parts = explode('/', $path);
+    if (count($parts) >= 3) {
+        $prefix = $parts[0];
+        $file   = $parts[count($parts) - 1];
+        $folder = $parts[count($parts) - 2];
+        $try1 = "augmentasi/augmentasi/$prefix/$folder/$file";
+        $try2 = "augmentasi/augmentasi/$folder/$file";
+        if ($disk->exists($try1)) return $disk->response($try1, null, ['Cache-Control' => 'public, max-age=86400']);
+        if ($disk->exists($try2)) return $disk->response($try2, null, ['Cache-Control' => 'public, max-age=86400']);
+    }
+
+    abort(404);
+})->name('storage.ai.proxy')->where('path', '.+');
+
+// ── Proxy gambar CBIR warna (Smart Fallback untuk folder warna) ──────────────────
+Route::get('/storage/cbir/{path}', function (string $path) {
+    $disk = \Illuminate\Support\Facades\Storage::disk('s3-color-dominant');
+    $path = ltrim($path, '/');
+
+    // 1. Coba path asli
+    if ($disk->exists($path)) {
+        return $disk->response($path, null, ['Cache-Control' => 'public, max-age=86400']);
+    }
+
+    // 2. Jika path hanya filename (v_...), coba cari di folder warna (hijau, merah, dll)
+    if (strpos($path, '/') === false) {
+        $colors = ['hijau', 'merah', 'biru', 'kuning', 'hitam', 'putih', 'coklat', 'abu-abu', 'ungu', 'pink', 'jingga'];
+        foreach ($colors as $color) {
+            $try = $color . '/' . $path;
+            if ($disk->exists($try)) {
+                return $disk->response($try, null, ['Cache-Control' => 'public, max-age=86400']);
+            }
+        }
+    }
+
+    abort(404);
+})->name('storage.cbir.proxy')->where('path', '.+');
+
 // ── [DONE] Deteksi Motif Batik ────────────────────────────────────────────────
 // Batik Service: POST /detection/motif | GET /detection/motif/labels
 Route::middleware('menu.access_or_guest:deteksi-motif')->group(function () {

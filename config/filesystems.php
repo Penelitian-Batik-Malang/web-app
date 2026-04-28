@@ -77,6 +77,23 @@ return [
         | Dipakai oleh: GalleryController, TerapkanBatikController,
         |               RekomendasiBatikController, SyncBatikFromS3 command
         |
+        | Proxy logic: Pilih disk yang sesuai berdasarkan bucket di URL
+        | $s3SignatureBase = 'https://is3.cloudhost.id/batik-signature-gdrive/';
+        | $s3GaleriBase    = 'https://is3.cloudhost.id/galeri-batik-digital/';
+        | $s3ColorBase     = 'https://is3.cloudhost.id/color-dominant-batik/';
+        |
+        | $proxiedImageUrl = $imageUrl;
+        | if ($imageUrl) {
+        |     if (strpos($imageUrl, $s3GaleriBase) === 0 || strpos($imageUrl, $s3SignatureBase) === 0) {
+        |         $baseToUse = strpos($imageUrl, $s3GaleriBase) === 0 ? $s3GaleriBase : $s3SignatureBase;
+        |         $pathProxy = substr($imageUrl, strlen($baseToUse));
+        |         $proxiedImageUrl = route('storage.batik.proxy', ['path' => $pathProxy]);
+        |     } elseif (strpos($imageUrl, $s3ColorBase) === 0) {
+        |         $pathProxy = substr($imageUrl, strlen($s3ColorBase));
+        |         $proxiedImageUrl = route('storage.cbir.proxy', ['path' => $pathProxy]);
+        |     }
+        | }
+        |
         */
         's3-batik' => [
             'driver' => 's3',
@@ -84,6 +101,45 @@ return [
             'secret' => env('IDC_S3_SECRET'),
             'region' => env('IDC_S3_REGION', 'us-east-1'),
             'bucket' => env('IDC_S3_BATIK_BUCKET', 'batik-signature-gdrive'),
+            'endpoint' => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id'),
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
+        /*
+        |----------------------------------------------------------------------
+        | IDCloudHost S3 — AI Results (galeri-batik-digital)
+        |----------------------------------------------------------------------
+        | Bucket khusus hasil pencarian AI (zoom, crops, augmentasi).
+        */
+        's3-ai-results' => [
+            'driver' => 's3',
+            'key'    => env('IDC_S3_KEY'),
+            'secret' => env('IDC_S3_SECRET'),
+            'region' => env('IDC_S3_REGION', 'us-east-1'),
+            'bucket' => 'galeri-batik-digital',
+            'endpoint' => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id'),
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
+        /*
+        |----------------------------------------------------------------------
+        | IDCloudHost S3 — CBIR Warna Fashion (color-dominant-batik)
+        |----------------------------------------------------------------------
+        |
+        | Bucket berisi gambar batik untuk rekomendasi warna dari Fashion Service.
+        | Diakses via proxy route /storage/cbir/{path} agar tidak 403.
+        |
+        */
+        's3-color-dominant' => [
+            'driver' => 's3',
+            'key'    => env('IDC_S3_KEY'),
+            'secret' => env('IDC_S3_SECRET'),
+            'region' => env('IDC_S3_REGION', 'us-east-1'),
+            'bucket' => 'color-dominant-batik',
             'endpoint' => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id'),
             'use_path_style_endpoint' => true,
             'throw' => false,

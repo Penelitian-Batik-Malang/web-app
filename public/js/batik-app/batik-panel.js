@@ -41,6 +41,7 @@ window.BatikApp.BatikPanel.init = function () {
     const panelBatikInput= $('panel-batik-input');
     const panelSearch    = $('panel-search');
     const panelStatus    = $('panel-status');
+    const gallery        = $('panel-batik-gallery');
 
     const batikCanvas = $('batik-crop-canvas');
     if (!batikCanvas) return;
@@ -97,6 +98,16 @@ window.BatikApp.BatikPanel.init = function () {
         panelStatus.textContent = '';
         panelStatus.classList.add('hidden');
         document.querySelectorAll('.panel-sample-batik').forEach(e => e.classList.remove('border-primary'));
+
+        // Reset sub-gallery state setiap panel dibuka
+        const subgallery = $('panel-batik-subgallery');
+        if (subgallery && !subgallery.classList.contains('hidden')) {
+            subgallery.classList.add('hidden');
+            $('panel-batik-gallery')?.classList.remove('hidden');
+            $('panel-toolbar')?.classList.remove('hidden');
+            const subgrid = $('panel-batik-subgrid');
+            if (subgrid) subgrid.innerHTML = '';
+        }
 
         drawBatikCanvas();
         batikPanel.style.display = 'flex';
@@ -320,19 +331,71 @@ window.BatikApp.BatikPanel.init = function () {
         if (file) await setBatikImage(file, null, file.name);
     });
 
+    // ── Drill-down sub-gallery (mode terapkan) ───────────────────────
+
+    function showBatikSubGallery(batikName, images) {
+        const gallery    = $('panel-batik-gallery');
+        const subgallery = $('panel-batik-subgallery');
+        const subgrid    = $('panel-batik-subgrid');
+        const subTitle   = $('panel-sub-title');
+        const toolbar    = $('panel-toolbar');
+        if (!gallery || !subgallery || !subgrid) return;
+
+        gallery.classList.add('hidden');
+        toolbar?.classList.add('hidden');
+        subTitle.textContent = batikName;
+
+        subgrid.innerHTML = '';
+        images.forEach(imgData => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'border border-gray-700 rounded-lg overflow-hidden hover:border-primary transition-colors';
+            const img = document.createElement('img');
+            img.src = imgData.url;
+            img.className = 'w-full h-16 object-cover';
+            img.alt = batikName;
+            img.onerror = () => { img.style.display = 'none'; };
+            btn.appendChild(img);
+            btn.addEventListener('click', async () => {
+                subgrid.querySelectorAll('button').forEach(b => b.classList.remove('border-primary'));
+                btn.classList.add('border-primary');
+                await setBatikImage(null, imgData.url, batikName);
+            });
+            subgrid.appendChild(btn);
+        });
+
+        subgallery.classList.remove('hidden');
+    }
+
+    $('panel-back-btn')?.addEventListener('click', () => {
+        $('panel-batik-subgallery')?.classList.add('hidden');
+        $('panel-batik-gallery')?.classList.remove('hidden');
+        $('panel-toolbar')?.classList.remove('hidden');
+        const subgrid = $('panel-batik-subgrid');
+        if (subgrid) subgrid.innerHTML = '';
+    });
+
     // Galeri batik dari database (mode terapkan)
-    document.querySelectorAll('.panel-sample-batik').forEach(el => {
-        el.addEventListener('click', async () => {
-            try {
+    // Gunakan event delegation agar elemen dinamis tetap bisa di-klik
+    gallery?.addEventListener('click', async (e) => {
+        const el = e.target.closest('.panel-sample-batik');
+        if (!el) return;
+
+        try {
+            const rawName   = el.dataset.name || 'Batik Galeri';
+            const titleName = rawName.replace(/\b\w/g, l => l.toUpperCase());
+            const images    = JSON.parse(el.dataset.images || '[]');
+
+            if (images.length > 1) {
+                showBatikSubGallery(titleName, images);
+            } else {
                 document.querySelectorAll('.panel-sample-batik').forEach(e => e.classList.remove('border-primary'));
                 el.classList.add('border-primary');
-                const file = await urlToFile(el.dataset.url, 'batik.jpg');
-                const rawName = el.dataset.name || 'Batik Galeri';
-                const titleName = rawName.replace(/\b\w/g, l => l.toUpperCase());
-                await setBatikImage(file, el.dataset.url, titleName);
-            } catch (e) { console.error(e); }
-        });
+                await setBatikImage(null, el.dataset.url, titleName);
+            }
+        } catch (err) { console.error('Gallery click error:', err); }
     });
+
 
     // Search/filter batik gallery
     panelSearch?.addEventListener('input', () => {

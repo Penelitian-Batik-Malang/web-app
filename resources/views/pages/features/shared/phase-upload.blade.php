@@ -27,8 +27,8 @@
             <p class="text-white font-semibold mb-3 text-sm">Contoh Fashion:</p>
             <div class="grid grid-cols-3 gap-2" id="fashion-samples">
                 @foreach($fashionSamples as $sample)
-                    <button type="button" class="sample-fashion border border-gray-700 rounded-lg overflow-hidden hover:border-primary transition-colors" data-url="{{ $sample }}">
-                        <img src="{{ $sample }}" class="w-full h-28 object-cover" alt="Fashion sample">
+                    <button type="button" class="sample-fashion border border-gray-700 rounded-lg overflow-hidden hover:border-primary transition-colors h-full" data-url="{{ $sample }}">
+                        <img src="{{ $sample }}" class="w-full h-36 object-cover" alt="Fashion sample">
                     </button>
                 @endforeach
             </div>

@@ -19,8 +19,8 @@
 
 namespace App\Http\Controllers\Features;
 
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class RekomendasiBatikController extends BaseMLController
@@ -60,24 +60,30 @@ class RekomendasiBatikController extends BaseMLController
         $url = $this->fashionServiceUrl('/fashion/blend-cbir');
 
         try {
-            $response = Http::timeout(120)
-                ->asMultipart()
-                ->post($url, [
-                    'session_id'     => $request->input('session_id'),
-                    'part'           => $request->input('part'),
-                    'instance_index' => $request->input('instance_index'),
-                    'batik_filename' => $request->input('batik_filename'),
-                ]);
+            $guzzle     = new GuzzleClient(['timeout' => 120]);
+            $guzzleResp = $guzzle->post($url, [
+                'http_errors' => false,
+                'headers'     => ['Accept' => 'application/json'],
+                'multipart'   => [
+                    ['name' => 'session_id',     'contents' => (string) $request->input('session_id')],
+                    ['name' => 'part',           'contents' => (string) $request->input('part')],
+                    ['name' => 'instance_index', 'contents' => (string) ((int) $request->input('instance_index', 0))],
+                    ['name' => 'batik_filename', 'contents' => (string) $request->input('batik_filename')],
+                ],
+            ]);
 
-            if ($response->successful()) {
-                return response()->json($response->json());
+            $statusCode = $guzzleResp->getStatusCode();
+            $body       = (string) $guzzleResp->getBody();
+            $data       = json_decode($body, true);
+
+            if ($statusCode >= 200 && $statusCode < 300) {
+                return response()->json($data ?? []);
             }
 
             return response()->json([
                 'success' => false,
-                'message' => 'Fashion Service error ' . $response->status(),
-                'detail'  => $response->body(),
-            ], $response->status());
+                'message' => 'Fashion Service error ' . $statusCode . ': ' . $body,
+            ], $statusCode);
 
         } catch (\Throwable $e) {
             Log::error('Fashion Blend CBIR Error: ' . $e->getMessage());

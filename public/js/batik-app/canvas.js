@@ -60,41 +60,37 @@ window.BatikApp.Canvas.init = function () {
             const color = PART_COLORS[part.partName] || [200, 200, 200];
             const isHovered = state.hoveredKey === part.key;
             const isBlended = state.blendedKeys.has(part.key);
-
-            if (isBlended && !isHovered) {
-                // Bagian sudah di-blend: tampilkan tanda centang saja
+            if (isBlended) {
+                // Bagian sudah di-blend: tampilkan tanda centang
                 const b  = part.bbox;
                 const fs = Math.max(14, fashionCanvas.width * 0.035);
-
                 canvasCtx.fillStyle = 'rgba(0,0,0,0.6)';
                 canvasCtx.fillRect(b.x + b.w - fs - 8, b.y - 2, fs + 12, fs + 10);
-
                 canvasCtx.font = `bold ${fs}px sans-serif`;
-                canvasCtx.fillStyle = '#4ade80'; // emerald-400
+                canvasCtx.fillStyle = '#4ade80';
                 canvasCtx.fillText('✓', b.x + b.w - fs, b.y + fs + 2);
-                continue;
             }
 
-            // Buat mask berwarna di canvas sementara
-            const tmp = document.createElement('canvas');
-            tmp.width  = fashionCanvas.width;
-            tmp.height = fashionCanvas.height;
-            const tc = tmp.getContext('2d');
-            tc.drawImage(part.maskImg, 0, 0, fashionCanvas.width, fashionCanvas.height);
-            tc.globalCompositeOperation = 'source-in';
-            tc.fillStyle = toRgba(color, isHovered ? 0.82 : 0.52);
-            tc.fillRect(0, 0, tmp.width, tmp.height);
-
             if (isHovered) {
+                // Buat mask berwarna di canvas sementara hanya saat hover
+                const tmp = document.createElement('canvas');
+                tmp.width  = fashionCanvas.width;
+                tmp.height = fashionCanvas.height;
+                const tc = tmp.getContext('2d');
+                tc.drawImage(part.maskImg, 0, 0, fashionCanvas.width, fashionCanvas.height);
+                tc.globalCompositeOperation = 'source-in';
+                tc.fillStyle = toRgba(color, 0.75); // Opacity hover
+                tc.fillRect(0, 0, tmp.width, tmp.height);
+
                 // Glow effect mengikuti bentuk mask
                 canvasCtx.save();
                 canvasCtx.shadowColor = toHex(color);
                 canvasCtx.shadowBlur  = Math.max(10, fashionCanvas.width * 0.02);
                 canvasCtx.drawImage(tmp, 0, 0);
-                canvasCtx.drawImage(tmp, 0, 0); // dua kali → glow lebih kuat
+                canvasCtx.drawImage(tmp, 0, 0); 
                 canvasCtx.restore();
 
-                // Label dengan background pill
+                // Label
                 const b   = part.bbox;
                 const fs  = Math.max(11, fashionCanvas.width * 0.038);
                 const lbl = part.label + (part.index > 0 ? ` ${part.index + 1}` : '');
@@ -106,8 +102,6 @@ window.BatikApp.Canvas.init = function () {
                 canvasCtx.fillRect(lx - 5, ly - fs, tw + 10, fs + 6);
                 canvasCtx.fillStyle = toHex(color);
                 canvasCtx.fillText(lbl, lx, ly);
-            } else {
-                canvasCtx.drawImage(tmp, 0, 0);
             }
         }
     }

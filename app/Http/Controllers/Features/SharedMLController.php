@@ -66,7 +66,9 @@ class SharedMLController extends BaseMLController
             $response = $http->post($url);
 
             if ($response->successful()) {
-                return response()->json($response->json());
+                $data = $response->json();
+                $data = $this->enrichCbirItems($data);
+                return response()->json($data);
             }
 
             return response()->json([
@@ -82,6 +84,73 @@ class SharedMLController extends BaseMLController
                 'message' => 'Inference error: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Tambahkan image_url dan galeri_url ke setiap item dalam CBIR response.
+     *
+     * Fashion Service mengembalikan thumbnail_b64 = "" (kosong) dan filename = URL S3.
+     * Method ini mengisi image_url dari filename agar JS bisa menampilkan gambar,
+     * dan galeri_url dari lookup label ke database batik.
+     *
+     * @param  array  $data  Response JSON dari Fashion Service
+     * @return array
+     */
+    private function enrichCbirItems(array $data): array
+    {
+        if (empty($data['cbir'])) {
+            return $data;
+        }
+
+        // Proxy fashion_url jika ada agar tidak 403
+        if (!empty($data['fashion_url'])) {
+            $s3Base = 'https://is3.cloudhost.id/color-dominant-batik/';
+            if (strpos($data['fashion_url'], $s3Base) === 0) {
+                $path = substr($data['fashion_url'], strlen($s3Base));
+                $data['fashion_url'] = route('storage.cbir.proxy', ['path' => $path]);
+            }
+        }
+
+        // Kumpulkan unique labels untuk bulk lookup
+        $uniqueLabels = [];
+        foreach (['top_5', 'top_10', 'top_15'] as $tier) {
+            foreach ($data['cbir'][$tier] ?? [] as $item) {
+                if (!empty($item['label'])) {
+                    $uniqueLabels[$item['label']] = null;
+                }
+            }
+        }
+
+        // Lookup galeri URL per label (sekali per label unik)
+        $galeriUrls = [];
+        foreach (array_keys($uniqueLabels) as $label) {
+            $galeriUrls[$label] = $this->findGaleriUrlByLabel($label);
+        }
+
+        // Enrichment: gunakan proxy route /storage/cbir/ agar tidak 403 (bucket private)
+        foreach (['top_5', 'top_10', 'top_15'] as $tier) {
+            if (!isset($data['cbir'][$tier])) continue;
+            $data['cbir'][$tier] = array_map(function ($item) use ($galeriUrls) {
+                // Konversi URL S3 full ke internal proxy route
+                // misal: https://is3.cloudhost.id/color-dominant-batik/hijau/img.jpg
+                // jadi:  /storage/cbir/hijau/img.jpg
+                if (!empty($item['filename'])) {
+                    $s3Base = 'https://is3.cloudhost.id/color-dominant-batik/';
+                    if (strpos($item['filename'], $s3Base) === 0) {
+                        $path = substr($item['filename'], strlen($s3Base));
+                        $item['image_url'] = route('storage.cbir.proxy', ['path' => $path]);
+                    } else {
+                        $item['image_url'] = $item['filename'];
+                    }
+                }
+                
+                // galeri_url: dari lookup label ke DB
+                $item['galeri_url'] = $galeriUrls[$item['label'] ?? ''] ?? null;
+                return $item;
+            }, $data['cbir'][$tier]);
+        }
+
+        return $data;
     }
 
     /**
@@ -161,6 +230,74 @@ class SharedMLController extends BaseMLController
                 'success' => false,
                 'message' => 'Gagal menghubungi Fashion Service.',
             ], 500);
+        }
+    }
+
+    /**
+     * Proxy gambar batik dari S3 (atau URL eksternal lain) untuk menghindari CORS.
+     * Mengambil parameter 'u' (base64 encoded URL).
+     *
+     * GET /img?u={BASE64_URL}
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     */
+    public function proxyBatikImage(Request $request)
+    {
+        $encoded = $request->query('u');
+        if (!$encoded) {
+            return response()->json(['error' => 'Missing URL parameter'], 400);
+        }
+
+        try {
+            // Decode url-safe base64
+            $url = base64_decode(strtr($encoded, '-_', '+/'));
+            if (!$url) {
+                return response()->json(['error' => 'Invalid encoding'], 400);
+            }
+
+            // Cache key based on URL hash
+            $cacheKey = 'img_proxy_' . md5($url);
+            
+            // Check cache (1 day)
+            if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+                $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+                return response($cached['content'])
+                    ->header('Content-Type', $cached['type'])
+                    ->header('Cache-Control', 'public, max-age=86400')
+                    ->header('Access-Control-Allow-Origin', '*');
+            }
+
+            // Fetch image via HTTP (bypass SSL verification for local dev stability)
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                ])
+                ->withoutVerifying()
+                ->get($url);
+
+            if (!$response->successful()) {
+                Log::warning('Proxy Image Failed: ' . $url . ' (HTTP ' . $response->status() . ')');
+                return response()->json(['error' => 'Target URL failed'], $response->status());
+            }
+
+            $contentType = $response->header('Content-Type') ?: 'image/jpeg';
+            $content     = $response->body();
+
+            // Store in cache
+            \Illuminate\Support\Facades\Cache::put($cacheKey, [
+                'content' => $content,
+                'type'    => $contentType
+            ], 86400);
+
+            return response($content)
+                ->header('Content-Type', $contentType)
+                ->header('Cache-Control', 'public, max-age=86400')
+                ->header('Access-Control-Allow-Origin', '*');
+
+        } catch (\Throwable $e) {
+            Log::error('Proxy Image Error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }

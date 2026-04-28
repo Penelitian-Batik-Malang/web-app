@@ -140,38 +140,52 @@
 function renderCbirGrid(container, items, onSelect) {
     container.innerHTML = '';
     if (!items || !items.length) return;
+
     items.forEach(item => {
-        const galeriIcon = item.galeri_url
-            ? `<span class="absolute top-1 right-1 bg-black/60 backdrop-blur-sm text-white text-[8px] px-1 py-0.5 rounded-full z-10"><i class="bi bi-box-arrow-up-right"></i></span>`
-            : '';
-        const thumbSrc = item.thumbnail_b64 || item.image_url || '';
+        const thumbSrc = (item.thumbnail_b64 && item.thumbnail_b64.length > 10 ? item.thumbnail_b64 : null)
+            || item.image_url || item.filename || '';
 
         const div = document.createElement('div');
-        div.className = 'cbir-grid-item relative bg-gray-800 border border-gray-700 rounded-xl overflow-hidden text-left flex flex-col hover:border-primary/50 transition-colors';
+        div.className = 'cbir-grid-item relative bg-gray-800 border border-gray-700 rounded-xl overflow-hidden text-left flex flex-col hover:border-primary/50 transition-colors cursor-pointer';
         div.dataset.filename = item.filename || item.image_url || '';
 
-        div.innerHTML = `
-            <div class="relative w-full overflow-hidden bg-gray-900" style="padding-bottom:100%">
-                ${thumbSrc
-                    ? `<img src="${thumbSrc}" class="absolute inset-0 w-full h-full object-cover" loading="lazy">`
-                    : `<div class="absolute inset-0 flex items-center justify-center text-gray-600"><i class="bi bi-image text-2xl"></i></div>`
-                }
-                ${galeriIcon}
-                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 py-1">
-                    <p class="text-white text-[9px] font-semibold leading-tight truncate">${item.label}</p>
-                </div>
-            </div>
-            <div class="p-1.5 w-full">
-                <p class="text-[10px] font-semibold text-gray-300 truncate leading-tight" title="${item.label}">${item.label}</p>
-                <p class="text-[9px] text-gray-600 mt-0.5">#${item.rank} · ${item.jarak !== undefined ? item.jarak.toFixed(2) : ''}</p>
-            </div>
+        // Image Container
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'relative w-full overflow-hidden bg-gray-900 aspect-square';
+
+        if (thumbSrc) {
+            const img = document.createElement('img');
+            img.src = thumbSrc;
+            img.className = 'absolute inset-0 w-full h-full object-cover';
+            img.loading = 'lazy';
+            img.onerror = () => {
+                imgWrap.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-gray-700"><i class="bi bi-image text-xl"></i></div>';
+            };
+            imgWrap.appendChild(img);
+        } else {
+            imgWrap.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-gray-700"><i class="bi bi-image text-xl"></i></div>';
+        }
+
+        if (item.galeri_url) {
+            const icon = document.createElement('span');
+            icon.className = 'absolute top-1 right-1 bg-black/60 backdrop-blur-sm text-white text-[8px] px-1 py-0.5 rounded-full z-10';
+            icon.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
+            imgWrap.appendChild(icon);
+        }
+
+        // Info Container
+        const info = document.createElement('div');
+        info.className = 'p-1.5 w-full';
+        info.innerHTML = `
+            <p class="text-[10px] font-semibold text-gray-300 truncate leading-tight" title="${item.label}">${item.label}</p>
+            <p class="text-[9px] text-gray-600 mt-0.5">#${item.rank} · ${item.jarak !== undefined ? item.jarak.toFixed(2) : ''}</p>
         `;
 
-        // Klik: jika ada galeri_url, buka di tab baru; jika ada onSelect, panggil callback
-        div.addEventListener('click', (e) => {
-            if (item.galeri_url) {
-                window.open(item.galeri_url, '_blank');
-            }
+        div.appendChild(imgWrap);
+        div.appendChild(info);
+
+        div.addEventListener('click', () => {
+            if (item.galeri_url) window.open(item.galeri_url, '_blank');
             if (onSelect) onSelect(item);
         });
 
@@ -190,16 +204,12 @@ window.showCbirPhase = function(cbir) {
     const extInfo     = document.getElementById('cbir-extraction-info');
     const placeholder = document.getElementById('cbir-analysis-placeholder');
 
-    // Label terjemahan untuk label names garment
     const GARMENT_ID_LABELS = {
         'shirt': 'Kemeja', 't-shirt': 'Kaos', 'sweater': 'Sweater',
         'cardigan': 'Kardigan', 'jacket': 'Jaket', 'vest': 'Rompi',
         'dress': 'Gaun', 'jumpsuit': 'Jumpsuit', 'suit': 'Setelan', 'coat': 'Mantel',
     };
-    const translateLabels = (labels) =>
-        (labels || []).map(l => GARMENT_ID_LABELS[l] || l).join(', ') || '—';
 
-    // Set fashion image preview
     if (state.fashionFile) {
         preview.src = URL.createObjectURL(state.fashionFile);
     }
@@ -209,7 +219,6 @@ window.showCbirPhase = function(cbir) {
 
     let hasAnalysisData = false;
 
-    // ── Info ekstraksi warna: garment_selection ──────────────────────────────
     const gs = cbir?.garment_selection;
     if (gs && extInfo) {
         const selected    = gs.selected_category;
@@ -219,7 +228,6 @@ window.showCbirPhase = function(cbir) {
         const innerLabels = gs.inner_labels  || [];
         const hasAnyLabel = outerLabels.length > 0 || innerLabels.length > 0;
 
-        // Helper: tampilkan / sembunyikan baris garment
         const applyRow = (rowId, badgeId, iconId, pixId, labelsId, labels, pixels, isSelected) => {
             const rowEl    = document.getElementById(rowId);
             const badgeEl  = document.getElementById(badgeId);
@@ -229,7 +237,6 @@ window.showCbirPhase = function(cbir) {
             if (!rowEl) return;
 
             if (!labels.length) {
-                // Sembunyikan baris jika tidak ada garment kategori ini
                 rowEl.classList.add('hidden');
                 return;
             }
@@ -249,7 +256,6 @@ window.showCbirPhase = function(cbir) {
             }
         };
 
-        // Heading hanya muncul jika ada label data
         const garmentHeading = document.getElementById('cbir-garment-heading');
         if (garmentHeading) garmentHeading.classList.toggle('hidden', !hasAnyLabel);
 
@@ -262,7 +268,6 @@ window.showCbirPhase = function(cbir) {
         hasAnalysisData = true;
     }
 
-    // ── Palette dari query_centroids (LAB → visual swatch + angka) ───────────
     if (cbir?.query_centroids?.length && palette) {
         palette.innerHTML = '';
         cbir.query_centroids.forEach((c, i) => {
@@ -274,8 +279,7 @@ window.showCbirPhase = function(cbir) {
             row.className = 'flex items-center gap-3 bg-gray-800/60 border border-gray-700/50 rounded-xl px-3 py-2';
             row.innerHTML = `
                 <div class="w-9 h-9 rounded-lg border-2 border-white/20 shadow-lg shrink-0"
-                     style="background:hsl(${hue},${sat}%,${lig}%)"
-                     title="Warna dominan ${i+1}"></div>
+                     style="background:hsl(${hue},${sat}%,${lig}%)"></div>
                 <div class="flex-1 min-w-0">
                     <p class="text-white text-[10px] font-semibold mb-0.5">Warna Dominan ${i+1}</p>
                     <div class="flex gap-2 flex-wrap">
@@ -297,7 +301,6 @@ window.showCbirPhase = function(cbir) {
         hasAnalysisData = true;
     }
 
-    // Sembunyikan placeholder jika ada data, tampilkan jika tidak ada
     if (placeholder) {
         placeholder.classList.toggle('hidden', hasAnalysisData);
     }
@@ -308,7 +311,7 @@ window.showCbirPhase = function(cbir) {
     } else {
         noData.classList.add('hidden');
         grid.classList.remove('hidden');
-        renderCbirGrid(grid, items, () => {}); // selection not needed here (just preview)
+        renderCbirGrid(grid, items, () => {});
     }
 };
 
@@ -330,12 +333,13 @@ document.getElementById('cbir-back-btn')?.addEventListener('click', () => {
     }
 });
 
+
 // ─── Override openBatikPanel for rekomendasi mode ────────────────────────────
 window.openBatikPanelFunc = function(part) {
     const panelName    = document.getElementById('panel-part-name');
     const panelColor   = document.getElementById('panel-part-color');
     const panelBbox    = document.getElementById('panel-bbox-info');
-    const panelGrid    = document.getElementById('panel-batik-gallery');
+    const panelWrapper = document.getElementById('panel-batik-gallery');
     const panelStatus  = document.getElementById('panel-status');
 
     window.state.selectedPart   = part;
@@ -365,32 +369,59 @@ window.openBatikPanelFunc = function(part) {
 
     const cbir  = window.cbirData || {};
     const items = cbir.top_15 || [];
+    const panelGrid = document.getElementById('panel-batik-grid') || panelWrapper;
     
     panelGrid.innerHTML = '';
     if (!items.length) {
-        panelGrid.innerHTML = '<p class="col-span-3 text-gray-500 text-sm text-center py-6">Tidak ada data rekomendasi.</p>';
+        panelGrid.innerHTML = '<p class="col-span-full text-gray-500 text-sm text-center py-6">Tidak ada data rekomendasi.</p>';
     } else {
         items.forEach(item => {
+            const imgSrc = (item.thumbnail_b64 && item.thumbnail_b64.length > 10 ? item.thumbnail_b64 : null)
+                || item.image_url || item.filename || '';
+            const batikFilename = item.filename || item.image_url || '';
+
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'panel-sample-batik border border-gray-700 rounded-lg overflow-hidden hover:border-primary transition-colors text-left';
-            btn.dataset.url = item.thumbnail_b64 || '';
+            btn.className = 'panel-sample-batik border-2 border-gray-700 rounded-xl overflow-hidden hover:border-primary transition-colors text-left bg-gray-900 hover:bg-gray-800';
+            btn.dataset.url  = imgSrc;
             btn.dataset.name = item.label;
-            btn.innerHTML = `
-                <img src="${item.thumbnail_b64}" class="w-full h-16 object-cover" alt="${item.label}">
-                <p class="text-[10px] text-primary truncate px-1 py-0.5">${item.label}</p>
-                <p class="text-[9px] text-gray-500 px-1 pb-0.5 mt-[-2px]">#${item.rank} · ${item.jarak.toFixed(2)}</p>
-            `;
+            btn.dataset.filename = batikFilename;
+
+            const imgWrap = document.createElement('div');
+            imgWrap.className = 'aspect-square bg-gray-800 overflow-hidden';
+
+            if (imgSrc) {
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.className = 'w-full h-full object-cover hover:scale-110 transition-transform duration-300';
+                img.onerror = () => {
+                    imgWrap.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-700"><i class="bi bi-image text-xl"></i></div>';
+                };
+                imgWrap.appendChild(img);
+            } else {
+                imgWrap.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-700"><i class="bi bi-image text-xl"></i></div>';
+            }
+
+            const label = document.createElement('p');
+            label.className = 'text-xs text-gray-300 truncate px-2 py-1.5 font-medium';
+            label.textContent = item.label;
+
+            btn.appendChild(imgWrap);
+            btn.appendChild(label);
+
             btn.addEventListener('click', async () => {
                 document.querySelectorAll('.panel-sample-batik').forEach(e => e.classList.remove('border-primary'));
                 btn.classList.add('border-primary');
-                
                 document.getElementById('panel-status').classList.add('hidden');
-                
+
                 const titleName = item.label.replace(/\b\w/g, l => l.toUpperCase());
-                
-                if (window.setBatikImage) {
-                    await window.setBatikImage(null, item.thumbnail_b64, 'Rekomendasi: ' + titleName);
+
+                if (window.setBatikImage && imgSrc) {
+                    await window.setBatikImage(null, imgSrc, 'Rekomendasi: ' + titleName);
+                }
+                if (window.BatikApp?.state) {
+                    window.BatikApp.state.currentBatikInfo = window.BatikApp.state.currentBatikInfo || {};
+                    window.BatikApp.state.currentBatikInfo.filename = batikFilename;
                 }
             });
             panelGrid.appendChild(btn);

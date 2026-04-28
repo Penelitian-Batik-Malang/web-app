@@ -1,41 +1,4 @@
 <?php
-/**
- * =========================================================================
- * PencarianBatikController — Pencarian Batik Serupa (CBIR Gambar)
- * =========================================================================
- *
- * Fitur ini memungkinkan user mencari batik yang serupa secara visual
- * menggunakan Content-Based Image Retrieval (CBIR) berbasis ConvNeXt.
- * User mengunggah gambar batik → sistem mengembalikan batik paling mirip.
- *
- * @status  DONE
- * @menu    pencarian-batik
- *
- * Alur kerja:
- *   1. User mengunggah gambar batik referensi
- *   2. Frontend mengirim gambar ke POST /api/search/batik
- *   3. Controller meneruskan ke Batik Service POST /search/general
- *   4. API mengembalikan top-10 batik serupa dengan path_s3 + similarity
- *   5. Controller memetakan path_s3 ke URL S3 publik dan mencari
- *      batik terkait di database galeri untuk link ke detail
- *
- * Response API ML:
- *   {
- *     success: true,
- *     cluster_id: 3,
- *     results: [{ path_s3, label, cluster, similarity }]
- *   }
- *
- * Catatan S3:
- *   - path_s3 adalah relative path di bucket CBIR (features_768_indexed_database.csv)
- *   - Bucket galeri utama: batik-signature-gdrive
- *   - Format path_s3: "NamaFolder/filename.JPG"
- *   - Label = nama folder = nama motif batik (bisa berbeda format dengan DB)
- *
- * @see resources/views/pages/features/pencarian-batik.blade.php — View
- * @see GalleryController::recommend()  — Rekomendasi dari like (flow serupa)
- * =========================================================================
- */
 
 namespace App\Http\Controllers\Features;
 
@@ -46,12 +9,10 @@ use Illuminate\Support\Facades\Log;
 
 class PencarianBatikController extends BaseMLController
 {
-    /**
-     * Base URL S3 untuk bucket batik-signature-gdrive (galeri utama).
-     */
     private function s3BatikBase(): string
     {
-        return rtrim((string) config('services.ml.s3_batik_base', 'https://is3.cloudhost.id/batik-signature-gdrive'), '/');
+        // Gunakan bucket khusus AI results agar tidak campur dengan galeri utama
+        return 'https://is3.cloudhost.id/galeri-batik-digital';
     }
 
     public function show()
@@ -59,115 +20,106 @@ class PencarianBatikController extends BaseMLController
         return view('pages.features.pencarian-batik');
     }
 
-    /**
-     * Cari batik serupa menggunakan CBIR gambar.
-     *
-     * Memanggil Batik Service POST /search/general dengan field `file`.
-     * Mengembalikan grid batik serupa dengan image_url (S3) dan galeri link.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function search(Request $request)
     {
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
-        ]);
+        $request->validate(['image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240']);
 
         if (!$this->isBatikAvailable()) {
             return $this->notConfiguredResponse();
         }
 
-        $url  = $this->batikServiceUrl('/search/general');
         $file = $request->file('image');
 
         try {
             $response = Http::timeout(60)
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-                ->post($url);
+                ->post($this->batikServiceUrl('/search/general'));
 
             if (!$response->successful()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Batik Service gagal merespons (HTTP ' . $response->status() . ').',
-                ], $response->status());
+                return response()->json(['success' => false, 'message' => 'Batik Service error ' . $response->status()], $response->status());
             }
 
-            $data = $response->json();
-
-            if (!($data['success'] ?? false)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $data['message'] ?? 'Pencarian gagal.',
-                ], 400);
-            }
-
-            // Petakan results ke format frontend dengan URL S3 + galeri link
+            $data   = $response->json();
+            Log::info('Batik Search Raw Data:', ['data' => $data]);
             $s3Base = $this->s3BatikBase();
+
             $results = collect($data['results'] ?? [])
                 ->map(function ($item) use ($s3Base) {
-                    $path     = ltrim(str_replace('\\', '/', $item['path_s3'] ?? ''), '/');
-                    $label    = $item['label'] ?? '';
-                    $imageUrl = $s3Base . '/' . $path;
+                    $label = $item['label'] ?? '';
+                    $path  = ltrim(str_replace('\\', '/', $item['path_s3'] ?? ''), '/');
+                    $batik = $this->findBatikByLabel($label);
+
+                    // Prioritaskan gambar asli dari AI (S3 crop) agar hasil terlihat unik
+                    // Fallback ke galeri image jika S3 path tidak ada
+                    $imageUrl = ($s3Base && $path) 
+                        ? $s3Base . '/' . $path 
+                        : (($batik && optional($batik->mainImage)->full_url) ? $batik->mainImage->full_url : null);
+
+                    // Proxy logic: Pilih disk yang sesuai berdasarkan bucket di URL
+                    $s3SignatureBase = 'https://is3.cloudhost.id/batik-signature-gdrive/';
+                    $s3GaleriBase    = 'https://is3.cloudhost.id/galeri-batik-digital/';
+                    $s3ColorBase     = 'https://is3.cloudhost.id/color-dominant-batik/';
+                    
+                    $proxiedImageUrl = $imageUrl;
+                    if ($imageUrl) {
+                        if (strpos($imageUrl, $s3GaleriBase) === 0) {
+                            $pathProxy = substr($imageUrl, strlen($s3GaleriBase));
+                            $proxiedImageUrl = route('storage.ai.proxy', ['path' => $pathProxy]);
+                        } elseif (strpos($imageUrl, $s3SignatureBase) === 0) {
+                            $pathProxy = substr($imageUrl, strlen($s3SignatureBase));
+                            $proxiedImageUrl = route('storage.batik.proxy', ['path' => $pathProxy]);
+                        } elseif (strpos($imageUrl, $s3ColorBase) === 0) {
+                            $pathProxy = substr($imageUrl, strlen($s3ColorBase));
+                            $proxiedImageUrl = route('storage.cbir.proxy', ['path' => $pathProxy]);
+                        }
+                    }
+
+                    // Fallback URL (Gambar asli dari galeri database jika AI path gagal)
+                    $fallbackUrl = ($batik && optional($batik->mainImage)->full_url) ? $batik->mainImage->full_url : null;
+                    if ($fallbackUrl && strpos($fallbackUrl, $s3SignatureBase) === 0) {
+                        $pathProxy = substr($fallbackUrl, strlen($s3SignatureBase));
+                        $fallbackUrl = route('storage.batik.proxy', ['path' => $pathProxy]);
+                    }
 
                     return [
-                        'path_s3'    => $path,
-                        'label'      => $label,
-                        'image_url'  => $imageUrl,
-                        'similarity' => round(($item['similarity'] ?? 0) * 100, 1),
-                        'galeri_url' => $this->findGaleriUrl($label),
+                        'label'        => $label,
+                        'image_url'    => $proxiedImageUrl,
+                        'fallback_url' => $fallbackUrl,
+                        'similarity'   => round(($item['similarity'] ?? 0) * 100, 1),
+                        'galeri_url'   => $batik ? route('galeri.show', $batik->id) : null,
                     ];
                 })
-                ->values()
-                ->all();
+                ->values()->all();
 
             return response()->json([
                 'success'    => true,
                 'cluster_id' => $data['cluster_id'] ?? null,
-                'message'    => $data['message']    ?? '',
                 'results'    => $results,
             ]);
 
         } catch (\Throwable $e) {
             Log::error('PencarianBatik CBIR Error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menghubungi server Model AI: ' . $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
-    /**
-     * Temukan URL galeri detail untuk label motif dari hasil CBIR.
-     *
-     * Label dari ML API bisa berbeda format dengan nama batik di DB,
-     * misalnya "adiluhung" di CBIR vs "Adi Luhung" di galeri.
-     * Gunakan pencarian fuzzy (LIKE) yang case-insensitive.
-     *
-     * @param  string  $label  Label dari ML API (nama folder S3)
-     * @return string|null  URL galeri detail, atau null jika tidak ditemukan
-     */
-    private function findGaleriUrl(string $label): ?string
+    protected function findBatikByLabel(string $label): ?Batik
     {
         if (empty($label)) return null;
+        $n = strtolower(str_replace(['_', '-'], ' ', $label));
 
-        // Normalisasi: hapus underscore/dash, lowercase → "topeng gandring wirasena"
-        $normalized = strtolower(str_replace(['_', '-'], ' ', $label));
-
-        $batik = Batik::where('is_active', true)
-            ->whereRaw('LOWER(REPLACE(REPLACE(name, "_", " "), "-", " ")) LIKE ?', ["%{$normalized}%"])
+        $batik = Batik::where('is_active', true)->with('mainImage')
+            ->whereRaw('LOWER(REPLACE(REPLACE(name,"_"," "),"-"," ")) LIKE ?', ["%{$n}%"])
             ->first();
 
-        // Fallback: cari kata pertama saja
         if (!$batik) {
-            $firstWord = explode(' ', $normalized)[0];
-            if (strlen($firstWord) >= 3) {
-                $batik = Batik::where('is_active', true)
-                    ->whereRaw('LOWER(name) LIKE ?', ["%{$firstWord}%"])
+            $word = explode(' ', $n)[0];
+            if (strlen($word) >= 3) {
+                $batik = Batik::where('is_active', true)->with('mainImage')
+                    ->whereRaw('LOWER(name) LIKE ?', ["%{$word}%"])
                     ->first();
             }
         }
-
-        return $batik ? route('galeri.show', $batik->id) : null;
+        return $batik;
     }
 }

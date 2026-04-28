@@ -36,7 +36,7 @@
             @if(!auth()->check() || auth()->user()->hasMenuAccess('deteksi-jenis'))
             <x-card-features 
                 title="Deteksi Jenis Batik" 
-                description="Klasifikasi jenis batik (tulis/cap) dari citra kain"
+                description="Klasifikasi jenis batik (tulis/cap) dari kain secara otomatis"
                 icon="bi-file-text"
                 iconBgColor="bg-blue-500/10"
                 iconTextColor="text-blue-500"

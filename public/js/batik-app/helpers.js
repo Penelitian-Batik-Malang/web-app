@@ -81,6 +81,8 @@ window.safeJson = window.BatikApp.Helpers.safeJson;
  */
 window.BatikApp.Helpers.loadImage = src => new Promise((res, rej) => {
     const img = new Image();
+    // Penting: Izinkan CORS agar canvas tidak tainted saat load dari S3
+    img.crossOrigin = 'anonymous';
     img.onload = () => res(img);
     img.onerror = rej;
     img.src = src;
