@@ -161,6 +161,8 @@ jobs:
             export IMAGE_NAME="${{ env.IMAGE_NAME }}"
             export IMAGE_TAG=${{ needs.build.outputs.image_tag }}
 
+            docker network inspect batik_network >/dev/null 2>&1 || docker network create batik_network
+
             # Pull image
             docker compose -f "$COMPOSE_FILE" pull app
 
