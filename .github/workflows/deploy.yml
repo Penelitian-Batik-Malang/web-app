@@ -132,12 +132,9 @@ jobs:
 
             cd "$DEPLOY_PATH"
 
-            if [ -f docker-compose.yml ]; then
-              COMPOSE_FILE="docker-compose.yml"
-            elif [ -f compose.yml ]; then
-              COMPOSE_FILE="compose.yml"
-            else
-              echo "docker compose file not found in $DEPLOY_PATH"
+            COMPOSE_FILE="$DEPLOY_PATH/docker-compose.yml"
+            if [ ! -f "$COMPOSE_FILE" ]; then
+              echo "docker-compose.yml not found in $DEPLOY_PATH"
               exit 1
             fi
 
