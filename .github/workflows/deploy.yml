@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ vars.IMAGE_NAME || format('{0}/galeri-batik', github.repository_owner) }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'penelitian-batik-malang/galeri-batik' }}
 
 jobs:
   test:
