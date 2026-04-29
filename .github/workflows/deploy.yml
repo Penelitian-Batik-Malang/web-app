@@ -156,7 +156,9 @@ jobs:
               exit 1
             fi
 
-            # Update docker-compose dengan image tag baru
+            # Export image variables untuk docker-compose
+            export REGISTRY="${{ env.REGISTRY }}"
+            export IMAGE_NAME="${{ env.IMAGE_NAME }}"
             export IMAGE_TAG=${{ needs.build.outputs.image_tag }}
 
             # Pull image
