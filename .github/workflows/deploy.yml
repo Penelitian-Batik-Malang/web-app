@@ -132,7 +132,15 @@ jobs:
 
             # Sync .env for container
             umask 077
-            printf '%s' "${{ secrets.ENV_PROD }}" > .env
+            if [ -w .env ] || { [ ! -e .env ] && [ -w . ]; }; then
+              printf '%s' "${{ secrets.ENV_PROD }}" > .env
+            elif command -v sudo >/dev/null 2>&1; then
+              printf '%s' "${{ secrets.ENV_PROD }}" | sudo tee .env >/dev/null
+              sudo chmod 600 .env
+            else
+              echo "Cannot write .env in /opt/app/laravel. Grant write permission to ${USER} or install/configure sudo."
+              exit 1
+            fi
 
             # Update docker-compose dengan image tag baru
             export IMAGE_TAG=${{ needs.build.outputs.image_tag }}
