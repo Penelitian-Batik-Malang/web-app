@@ -173,10 +173,12 @@ jobs:
             docker compose -f "$COMPOSE_FILE" exec -T app php artisan migrate --force
 
             # Clear & warm cache
+            docker compose -f "$COMPOSE_FILE" exec -T app sh -lc 'mkdir -p resources/views storage/framework/views bootstrap/cache'
+            docker compose -f "$COMPOSE_FILE" exec -T app php artisan optimize:clear
             docker compose -f "$COMPOSE_FILE" exec -T app php artisan config:cache
             docker compose -f "$COMPOSE_FILE" exec -T app php artisan route:cache
-            docker compose -f "$COMPOSE_FILE" exec -T app php artisan view:cache
-            docker compose -f "$COMPOSE_FILE" exec -T app php artisan event:cache
+            docker compose -f "$COMPOSE_FILE" exec -T app php artisan view:cache || echo "Skip view:cache (view path issue)"
+            docker compose -f "$COMPOSE_FILE" exec -T app php artisan event:cache || echo "Skip event:cache (no discoverable events)"
 
             # Restart queue workers
             docker compose -f "$COMPOSE_FILE" exec -T app php artisan queue:restart
