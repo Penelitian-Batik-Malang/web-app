@@ -151,11 +151,21 @@
     @endif
 </div>
 
+@php
+    $paletteEndpoint = \Illuminate\Support\Facades\Route::has('api.search.color-palette')
+        ? route('api.search.color-palette')
+        : url('/api/search/color-palette');
+
+    $recommendationEndpoint = \Illuminate\Support\Facades\Route::has('api.search.color-recommendation')
+        ? route('api.search.color-recommendation')
+        : url('/api/search/color-recommendation');
+@endphp
+
 <x-color-search-modal
     id="color-search-modal"
-    :palette-endpoint="route('api.search.color-palette')"
-    :recommendation-endpoint="route('api.search.color-recommendation')"
-/>
+    :palette-endpoint="$paletteEndpoint"
+    :recommendation-endpoint="$recommendationEndpoint"
+/> 
 @endsection
 
 @push('scripts')
