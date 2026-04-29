@@ -1,4 +1,4 @@
-FROM composer:2.7 AS vendor
+FROM composer:2.7-php8.4 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install \
@@ -16,7 +16,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 RUN apk add --no-cache \
     nginx \
     supervisor \
