@@ -1,5 +1,7 @@
-FROM composer:2.7-php8.4 AS vendor
+FROM php:8.4-cli-alpine AS vendor
 WORKDIR /app
+RUN apk add --no-cache curl git unzip
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 COPY composer.json composer.lock ./
 RUN composer install \
     --no-dev \
