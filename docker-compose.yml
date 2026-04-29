@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/galeri_batik_digital/laravel:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
     container_name: batik_laravel
     restart: unless-stopped
     ports:
