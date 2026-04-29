@@ -43,7 +43,10 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
         intl \
         opcache
 
-RUN pecl install redis && docker-php-ext-enable redis
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
