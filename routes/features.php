@@ -161,7 +161,7 @@ Route::middleware('menu.access_or_guest:pencarian-warna')->group(function () {
 
 // ── [TODO] Pewarnaan by Palet Warna ──────────────────────────────────────────
 Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
-    Route::get('/pewarnaan-palet', [PewarnaanPaletController::class, 'show'])->name('pewarnaan.palet');
+    Route::get('/pewarnaan-palet', [PewarnaanPaletController::class, 'show'])->name('features.pewarnaan.palet');
     // TODO: Route::post('/api/pewarnaan/palet', [PewarnaanPaletController::class, 'process'])->name('api.pewarnaan.palet');
 });
 
