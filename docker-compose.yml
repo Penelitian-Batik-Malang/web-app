@@ -1,14 +1,16 @@
 services:
   app:
-    image: ghcr.io/USERNAME/batik-laravel:${IMAGE_TAG:-latest}
+    image: ghcr.io/galeri_batik_digital/laravel:${IMAGE_TAG:-latest}
     container_name: batik_laravel
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
     environment:
       APP_ENV: production
       APP_KEY: ${APP_KEY}
       DB_HOST: ${DB_HOST}
       DB_PORT: 3306
-      DB_DATABASE: batik_gallery
+      DB_DATABASE: ${DB_DATABASE}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
