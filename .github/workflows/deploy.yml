@@ -125,7 +125,21 @@ jobs:
           script: |
             set -e
 
-            cd /opt/app/laravel
+            DEPLOY_PATH="${{ vars.DEPLOY_PATH }}"
+            if [ -z "$DEPLOY_PATH" ]; then
+              DEPLOY_PATH="/opt/app/laravel"
+            fi
+
+            cd "$DEPLOY_PATH"
+
+            if [ -f docker-compose.yml ]; then
+              COMPOSE_FILE="docker-compose.yml"
+            elif [ -f compose.yml ]; then
+              COMPOSE_FILE="compose.yml"
+            else
+              echo "docker compose file not found in $DEPLOY_PATH"
+              exit 1
+            fi
 
             # Pull image terbaru
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -138,7 +152,7 @@ jobs:
               printf '%s' "${{ secrets.ENV_PROD }}" | sudo tee .env >/dev/null
               sudo chmod 600 .env
             else
-              echo "Cannot write .env in /opt/app/laravel. Grant write permission to ${USER} or install/configure sudo."
+              echo "Cannot write .env in $DEPLOY_PATH. Grant write permission to ${USER} or install/configure sudo."
               exit 1
             fi
 
@@ -146,22 +160,22 @@ jobs:
             export IMAGE_TAG=${{ needs.build.outputs.image_tag }}
 
             # Pull image
-            docker compose pull app
+            docker compose -f "$COMPOSE_FILE" pull app
 
             # Zero-downtime deployment
-            docker compose up -d --no-deps app
+            docker compose -f "$COMPOSE_FILE" up -d --no-deps app
 
             # Jalankan migration
-            docker compose exec -T app php artisan migrate --force
+            docker compose -f "$COMPOSE_FILE" exec -T app php artisan migrate --force
 
             # Clear & warm cache
-            docker compose exec -T app php artisan config:cache
-            docker compose exec -T app php artisan route:cache
-            docker compose exec -T app php artisan view:cache
-            docker compose exec -T app php artisan event:cache
+            docker compose -f "$COMPOSE_FILE" exec -T app php artisan config:cache
+            docker compose -f "$COMPOSE_FILE" exec -T app php artisan route:cache
+            docker compose -f "$COMPOSE_FILE" exec -T app php artisan view:cache
+            docker compose -f "$COMPOSE_FILE" exec -T app php artisan event:cache
 
             # Restart queue workers
-            docker compose exec -T app php artisan queue:restart
+            docker compose -f "$COMPOSE_FILE" exec -T app php artisan queue:restart
 
             # Cleanup image lama
             docker image prune -f
