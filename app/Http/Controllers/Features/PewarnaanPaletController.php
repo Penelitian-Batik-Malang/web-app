@@ -35,6 +35,7 @@ namespace App\Http\Controllers\Features;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Batik;
 
 class PewarnaanPaletController extends BaseMLController
@@ -58,7 +59,7 @@ class PewarnaanPaletController extends BaseMLController
      * Proses gambar batik dan gambar warna, kemudian ekstrak palette
      * 
      * Input:
-     * - batik_image: base64 encoded gambar batik
+     * - batik_id: ID batik yang dipilih (dari radio button)
      * - color_image: base64 encoded gambar warna referensi
      *
      * @return \Illuminate\View\View|RedirectResponse
@@ -67,16 +68,40 @@ class PewarnaanPaletController extends BaseMLController
     {
         try {
             $request->validate([
-                'batik_image' => 'required|string',
+                'batik_id' => 'required|exists:batiks,id',
                 'color_image' => 'required|string',
             ]);
 
-            $batikImage = $request->input('batik_image');
+            $batikId = $request->input('batik_id');
             $colorImage = $request->input('color_image');
 
-            if (empty($batikImage)) {
+            // Fetch batik dari database
+            $batik = Batik::findOrFail($batikId);
+
+            if (!$batik->mainImage || !$batik->mainImage->full_url) {
                 return redirect()->route('pewarnaan.palet')
                     ->withErrors(['error' => 'Gambar batik sumber tidak ditemukan.']);
+            }
+
+            // Fetch batik image dari URL dan convert ke base64
+            $batikImage = $this->fetchAndEncodeImage($batik->mainImage->full_url);
+
+            Log::info('After fetchAndEncodeImage', [
+                'url' => $batik->mainImage->full_url,
+                'batikImage' => [
+                    'empty' => empty($batikImage),
+                    'length' => strlen($batikImage ?? ''),
+                    'preview' => substr($batikImage ?? '', 0, 100),
+                ],
+            ]);
+
+            if (empty($batikImage)) {
+                Log::error('Batik image is empty after fetch', [
+                    'batik_id' => $batikId,
+                    'url' => $batik->mainImage->full_url,
+                ]);
+                return redirect()->route('pewarnaan.palet')
+                    ->withErrors(['error' => 'Gagal mengambil gambar batik dari URL: ' . $batik->mainImage->full_url . '. Cek file storage.log untuk detail error.']);
             }
 
             if (empty($colorImage)) {
@@ -398,6 +423,136 @@ class PewarnaanPaletController extends BaseMLController
         }
 
         return $palettes;
+    }
+
+    /**
+     * Fetch image dari URL dan convert ke base64
+     * 
+     * Strategy:
+     * 1. Cek apakah image ada di cache lokal (batik_cache/)
+     * 2. Jika tidak → HTTP fetch (dengan browser headers)
+     * 3. Jika fetch sukses → auto-cache ke disk untuk next time (bypass Fortinet)
+     * 4. Return base64 data URL
+     * 
+     * @param string $imageUrl URL gambar (S3 atau local)
+     * @return string|null Base64 encoded image atau null jika gagal
+     */
+    private function fetchAndEncodeImage(string $imageUrl): ?string
+    {
+        try {
+            Log::info('fetchAndEncodeImage started', ['imageUrl' => $imageUrl]);
+
+            // STEP 1: Generate cache key dan check local cache
+            $cacheKey = md5($imageUrl);
+            $cachePath = 'batik_cache/' . $cacheKey . '.jpg';
+            
+            if (Storage::disk('public')->exists($cachePath)) {
+                Log::info('Image found in local cache', ['cachePath' => $cachePath]);
+                $imageData = Storage::disk('public')->get($cachePath);
+                
+                if (!empty($imageData)) {
+                    $base64 = base64_encode($imageData);
+                    $dataUrl = 'data:image/jpeg;base64,' . $base64;
+                    Log::info('Image loaded from cache successfully');
+                    return $dataUrl;
+                }
+            }
+
+            // STEP 2: Try to fetch from URL (S3 atau local storage path)
+            Log::info('Image not in cache, attempting HTTP fetch', ['url' => $imageUrl]);
+            
+            // Increase timeout to 120 seconds for large images
+            // Fortinet gateway may throttle connection, need more time
+            $response = Http::timeout(120)
+                ->withoutVerifying()  // Allow self-signed SSL certificates
+                ->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept' => 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                    'Accept-Language' => 'en-US,en;q=0.9',
+                    'Accept-Encoding' => 'gzip, deflate, br',
+                    'Referer' => $this->buildReferer($imageUrl),
+                    'DNT' => '1',
+                    'Connection' => 'keep-alive',
+                    'Upgrade-Insecure-Requests' => '1',
+                ])
+                ->get($imageUrl);
+
+            Log::info('HTTP Response received', [
+                'url' => $imageUrl,
+                'status' => $response->status(),
+                'successful' => $response->successful(),
+            ]);
+
+            if (!$response->successful()) {
+                Log::error('HTTP fetch failed', [
+                    'url' => $imageUrl,
+                    'status' => $response->status(),
+                    'body_preview' => substr($response->body(), 0, 300),
+                ]);
+                return null;
+            }
+
+            $imageData = $response->body();
+            
+            if (empty($imageData)) {
+                Log::error('HTTP response body is empty', ['url' => $imageUrl]);
+                return null;
+            }
+
+            // STEP 3: Cache image ke local disk untuk bypass Fortinet next time
+            try {
+                Storage::disk('public')->put($cachePath, $imageData);
+                Log::info('Image cached to local storage', ['cachePath' => $cachePath]);
+            } catch (\Exception $cacheErr) {
+                Log::warning('Failed to cache image to disk', [
+                    'error' => $cacheErr->getMessage()
+                ]);
+                // Continue anyway, caching failure tidak block processing
+            }
+
+            // STEP 4: Return base64 data URL
+            $base64 = base64_encode($imageData);
+
+            if (empty($base64)) {
+                Log::error('Base64 encoding failed', ['original_size' => strlen($imageData)]);
+                return null;
+            }
+
+            // Determine MIME type
+            $mimeType = 'image/jpeg'; // default
+            if ($contentType = $response->header('content-type')) {
+                $mimeType = explode(';', $contentType)[0];
+            }
+
+            $dataUrl = 'data:' . $mimeType . ';base64,' . $base64;
+
+            Log::info('Image encoded successfully', [
+                'url' => $imageUrl,
+                'size' => strlen($imageData),
+                'cached' => true,
+            ]);
+
+            return $dataUrl;
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching and encoding image', [
+                'url' => $imageUrl,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Build referer header untuk HTTP request
+     */
+    private function buildReferer(string $url): string
+    {
+        $parsed = parse_url($url);
+        if ($parsed && isset($parsed['scheme']) && isset($parsed['host'])) {
+            return $parsed['scheme'] . '://' . $parsed['host'] . '/';
+        }
+        return 'https://localhost/';
     }
 
     /**

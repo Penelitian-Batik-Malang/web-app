@@ -31,9 +31,10 @@
                 @csrf
                 
                 {{-- Section 1: Upload Gambar Batik Sumber --}}
-                {{-- <div class="space-y-4">
+                <div class="space-y-4">
                     <h3 class="text-center text-white font-semibold">Upload Gambar Batik Sumber</h3>
                     
+                    {{-- Batik Upload Area --}}
                     <div
                         id="batik-dropzone"
                         class="border-2 border-dashed border-amber-700/50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors bg-amber-950/20 min-h-40 group mx-auto"
@@ -51,7 +52,8 @@
                     </div>
                     
                     <input type="file" id="batik-file-input" name="batik_source" accept="image/*" class="hidden" onchange="handleBatikFileSelect(this)">
-    
+                    
+                    {{-- Batik File Preview --}}
                     <div id="batik-file-preview" class="hidden bg-gray-800/50 border border-amber-700/30 rounded-xl p-3 flex items-center gap-3">
                         <img id="batik-file-img" src="" alt="preview" class="w-10 h-10 rounded object-cover border border-gray-700">
                         <div class="flex-1">
@@ -63,43 +65,48 @@
                         </button>
                     </div>
                     
+                    {{-- Hidden field untuk batik file base64 --}}
                     <input type="hidden" id="batik-file-base64" name="batik_image">
-                </div> --}}
+                </div>
 
-                {{-- Section 2: Pilih Gambar Batikmu (COMMENTED) --}}
+                {{-- Section 2: Pilih Gambar Batikmu (COMMENTED)
                 <div class="space-y-4">
                     <h3 class="text-center text-white font-semibold">Pilih Gambar Batikmu</h3>
                     
                     <div class="border border-amber-700/60 rounded-2xl p-4 bg-black/40">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             @forelse($batiks as $index => $batik)
-                                @php
-                                    $imageUrl = $batik->mainImage ? $batik->mainImage->full_url : 'https://placehold.co/400x400/1f2937/a8a29e?text=Gambar+Tidak+Tersedia';
-                                @endphp
-                                <div class="group relative">
-                                    <input type="radio" name="batik_id" value="{{ $batik->id }}" 
-                                           id="batik-{{ $batik->id }}" 
-                                           class="peer sr-only" 
-                                           {{ $index === 0 ? 'checked' : '' }}>
+                                <label class="cursor-pointer relative group">
+                                    <input type="radio" name="batik_id" value="{{ $batik->id }}" class="peer sr-only" {{ $index === 0 ? 'checked' : '' }}>
                                     
-                                    <label for="batik-{{ $batik->id }}" 
-                                           class="block cursor-pointer rounded-xl overflow-hidden border-2 border-gray-700 bg-gray-800 
-                                                  group-hover:border-amber-500/50 transition-all duration-300
-                                                  peer-checked:border-amber-500 peer-checked:ring-2 peer-checked:ring-amber-500/30">
+                                    <div class="rounded-xl overflow-hidden border-2 border-gray-700 bg-gray-800 
+                                              group-hover:border-amber-500/50 transition-all duration-300
+                                              peer-checked:border-amber-500 peer-checked:ring-2 peer-checked:ring-amber-500/30">
                                         
-                                        <div class="aspect-square w-full bg-gray-700 relative overflow-hidden">
-                                            <img src="{{ $imageUrl }}" 
-                                                 alt="{{ $batik->name }}" 
-                                                 loading="lazy"
-                                                 class="w-full h-full object-cover transition-transform group-hover:scale-105">
+                                        <div class="aspect-square w-full bg-gray-700 relative">
+                                            @if($batik->mainImage)
+                                                @if(filter_var($batik->mainImage->image_path, FILTER_VALIDATE_URL))
+                                                    <img src="{{ $batik->mainImage->image_path }}" 
+                                                         alt="{{ $batik->name }}" 
+                                                         class="w-full h-full object-cover">
+                                                @else
+                                                    <img src="{{ Storage::url($batik->mainImage->image_path) }}" 
+                                                         alt="{{ $batik->name }}" 
+                                                         class="w-full h-full object-cover">
+                                                @endif
+                                            @else
+                                                <div class="w-full h-full flex items-center justify-center text-gray-600">
+                                                    <i class="bi bi-image text-2xl"></i>
+                                                </div>
+                                            @endif
                                         </div>
                                         
                                         <div class="p-2 bg-gray-900/50">
                                             <p class="text-amber-500 text-xs font-bold truncate">{{ $batik->name }}</p>
                                             <p class="text-gray-500 text-[10px] line-clamp-2">{{ $batik->description ?? '-' }}</p>
                                         </div>
-                                    </label>
-                                </div>
+                                    </div>
+                                </label>
                             @empty
                                 <div class="col-span-3 text-center py-4 text-gray-500 text-sm">
                                     Tidak ada data batik tersedia
@@ -107,7 +114,9 @@
                             @endforelse
                         </div>
                     </div>
-                </div>
+                </div> --}}
+
+                
 
                 {{-- Section 3: Pilih Sumber Warna --}}
                 <div class="space-y-3 border-t border-gray-800 pt-8 mt-4 border-b border-gray-800 pb-8">
@@ -190,5 +199,183 @@
     }
 </style>
 
-@vite('resources/js/pewarnaan-upload.js')
+<script>
+    const fileInput = document.getElementById('color-file-input');
+    const dropzone = document.getElementById('color-dropzone');
+    const filePreview = document.getElementById('file-preview');
+    const pewarnoanForm = document.getElementById('pewarnaan-form');
+
+    const batikFileInput = document.getElementById('batik-file-input');
+    const batikDropzone = document.getElementById('batik-dropzone');
+    const batikFilePreview = document.getElementById('batik-file-preview');
+
+    // Debug: Log form submission
+    pewarnoanForm.addEventListener('submit', function(e) {
+        const colorImageValue = document.getElementById('color-file-base64').value;
+        const batikImageValue = document.getElementById('batik-file-base64').value;
+        
+        console.log('Form submitted', {
+            hasColorImage: colorImageValue ? 'ADA' : 'TIDAK ADA',
+            hasBatikImage: batikImageValue ? 'ADA' : 'TIDAK ADA',
+        });
+        
+        if (!batikImageValue) {
+            e.preventDefault();
+            alert('Upload gambar batik sumber terlebih dahulu!');
+            return false;
+        }
+        
+        if (!colorImageValue) {
+            e.preventDefault();
+            alert('Upload gambar warna terlebih dahulu!');
+            return false;
+        }
+    });
+
+    // ===== BATIK FILE UPLOAD HANDLERS =====
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        batikDropzone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        batikDropzone.addEventListener(eventName, () => {
+            batikDropzone.classList.add('border-primary', 'bg-primary/5');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        batikDropzone.addEventListener(eventName, () => {
+            batikDropzone.classList.remove('border-primary', 'bg-primary/5');
+        }, false);
+    });
+
+    batikDropzone.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            batikFileInput.files = files;
+            handleBatikFileSelect({ files: files });
+        }
+    });
+
+    function handleBatikFileSelect(input) {
+        const file = input.files ? input.files[0] : null;
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File terlalu besar. Maksimal 10MB.');
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            alert('File harus berupa gambar.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('batik-file-img').src = e.target.result;
+            document.getElementById('batik-file-name').textContent = file.name;
+            document.getElementById('batik-file-size').textContent = formatBytes(file.size);
+            document.getElementById('batik-file-base64').value = e.target.result;
+            
+            batikDropzone.classList.add('hidden');
+            batikFilePreview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function resetBatikFile() {
+        batikFileInput.value = '';
+        batikDropzone.classList.remove('hidden');
+        batikFilePreview.classList.add('hidden');
+        document.getElementById('batik-file-base64').value = '';
+    }
+
+    // ===== COLOR FILE UPLOAD HANDLERS =====
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, () => {
+            dropzone.classList.add('border-primary', 'bg-primary/5');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, () => {
+            dropzone.classList.remove('border-primary', 'bg-primary/5');
+        }, false);
+    });
+
+    dropzone.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileSelect({ files: files });
+        }
+    });
+
+    function handleFileSelect(input) {
+        const file = input.files ? input.files[0] : null;
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File terlalu besar. Maksimal 1MB.');
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            alert('File harus berupa gambar.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('file-img').src = e.target.result;
+            document.getElementById('file-name').textContent = file.name;
+            document.getElementById('file-size').textContent = formatBytes(file.size);
+            document.getElementById('color-file-base64').value = e.target.result;
+            
+            dropzone.classList.add('hidden');
+            filePreview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function resetFile() {
+        fileInput.value = '';
+        dropzone.classList.remove('hidden');
+        filePreview.classList.add('hidden');
+        document.getElementById('color-file-base64').value = '';
+    }
+
+    function resetFormAndFile() {
+        document.getElementById('pewarnaan-form').reset();
+        resetBatikFile();
+        resetFile();
+    }
+
+    function formatBytes(bytes) {
+        if (!bytes) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Handle dropdown drag leave properly
+    let dragCounter = 0;
+    batikDropzone.addEventListener('dragenter', () => dragCounter++);
+    batikDropzone.addEventListener('dragleave', () => dragCounter--);
+    dropzone.addEventListener('dragenter', () => dragCounter++);
+    dropzone.addEventListener('dragleave', () => dragCounter--);
+</script>
 @endsection

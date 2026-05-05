@@ -52,7 +52,7 @@ abstract class BaseMLController extends Controller
     public function __construct()
     {
         $this->batikUrl   = rtrim((string) config('services.ml.batik_url',   'http://127.0.0.1:8001'), '/');
-        $this->fashionUrl = rtrim((string) config('services.ml.fashion_url', 'http://127.0.0.1:8002'), '/');
+        $this->fashionUrl = rtrim((string) config('services.ml.fashion_url', 'http://127.0.0.1:5000'), '/');
     }
 
     /**

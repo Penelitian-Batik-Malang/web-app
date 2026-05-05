@@ -13,7 +13,6 @@ class DatabaseSeeder extends Seeder
             MenuSeeder::class,
             UserSeeder::class,
             LandingContentSeeder::class,
-            BatikSeeder::class,
         ]);
     }
 }
