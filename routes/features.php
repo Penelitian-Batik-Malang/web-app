@@ -15,6 +15,7 @@
  * =========================================================================
  */
 
+use App\Http\Controllers\ColorSearchController;
 use App\Http\Controllers\Features\DeteksiMotifController;
 use App\Http\Controllers\Features\DeteksiJenisController;
 use App\Http\Controllers\Features\SharedMLController;
@@ -156,7 +157,10 @@ Route::middleware('menu.access_or_guest:pencarian-batik')->group(function () {
 // ── [TODO] Pencarian by Warna Dominan ────────────────────────────────────────
 Route::middleware('menu.access_or_guest:pencarian-warna')->group(function () {
     Route::get('/pencarian-warna', [PencarianWarnaController::class, 'show'])->name('pencarian.warna');
-    // TODO: Route::post('/api/search/warna', [PencarianWarnaController::class, 'search'])->name('api.search.warna');
+    Route::post('/api/search/color-palette', [ColorSearchController::class, 'getPalette'])
+        ->name('api.search.color-palette');
+    Route::post('/api/search/color-recommendation', [ColorSearchController::class, 'getRecommendation'])
+        ->name('api.search.color-recommendation');
 });
 
 // ── [TODO] Pewarnaan by Palet Warna ──────────────────────────────────────────
