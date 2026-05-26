@@ -122,7 +122,10 @@ class TerapkanBatikController extends BaseMLController
             $guzzle     = new GuzzleClient(['timeout' => 120]);
             $guzzleResp = $guzzle->post($url, [
                 'http_errors' => false,
-                'headers'     => ['Accept' => 'application/json'],
+                'headers'     => [
+                    'Accept'    => 'application/json',
+                    'X-API-Key' => env('ML_API_KEY', 'your-secret-api-key')
+                ],
                 'multipart'   => [
                     ['name' => 'session_id',     'contents' => (string) $request->input('session_id')],
                     ['name' => 'part',           'contents' => (string) $request->input('part')],
@@ -138,9 +141,10 @@ class TerapkanBatikController extends BaseMLController
 
             $statusCode = $guzzleResp->getStatusCode();
             $body       = (string) $guzzleResp->getBody();
-            $data       = json_decode($body, true);
+            $raw       = json_decode($body, true);
 
             if ($statusCode >= 200 && $statusCode < 300) {
+                $data = isset($raw['data']) && isset($raw['status']) ? $raw['data'] : $raw;
                 return response()->json($data ?? []);
             }
 

@@ -255,17 +255,14 @@ window.MLDetector = {
         const label = result.label || 'Tidak Diketahui';
         const confidence = Number(result.confidence || 0);
         const pct = confidence > 1 ? confidence : confidence * 100;
-        const desc = result.description || '-';
 
         const labelEl = document.getElementById(`${id}-result-label`);
         const pctEl = document.getElementById(`${id}-result-pct`);
-        const descEl = document.getElementById(`${id}-result-desc`);
         const card = document.getElementById(`${id}-result-card`);
         const bar = document.getElementById(`${id}-result-bar`);
 
         if (labelEl) labelEl.textContent = label;
         if (pctEl) pctEl.textContent = pct.toFixed(2) + '%';
-        if (descEl) descEl.textContent = desc;
         if (card) card.classList.remove('hidden');
         if (bar) {
             setTimeout(() => {

@@ -89,9 +89,19 @@ window.BatikApp.Webcam.init = function () {
         webcamCanvasEl.getContext('2d').drawImage(webcamVideo, 0, 0);
         webcamCanvasEl.toBlob(blob => {
             if (!blob) return;
-            const setFile = window.BatikApp.FashionUpload?.setFashionFile;
-            if (setFile) {
-                setFile(new File([blob], 'capture.jpg', { type: 'image/jpeg' }));
+            const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+            
+            if (state.webcamTarget === 'batik_panel' && window.BatikApp.BatikPanel?.setBatikImage) {
+                 const reader = new FileReader();
+                 reader.onload = async (e) => {
+                     await window.BatikApp.BatikPanel.setBatikImage(null, e.target.result, file.name);
+                 };
+                 reader.readAsDataURL(file);
+            } else {
+                 const setFile = window.BatikApp.FashionUpload?.setFashionFile;
+                 if (setFile) {
+                     setFile(file);
+                 }
             }
             closeWebcam();
         }, 'image/jpeg', 0.92);

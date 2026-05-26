@@ -59,14 +59,17 @@ class SharedMLController extends BaseMLController
 
         try {
             $http = $this->attachFile(
-                Http::timeout(600)->accept('application/json'),
+                Http::timeout(600)
+                    ->accept('application/json')
+                    ->withHeaders(['X-API-Key' => env('ML_API_KEY', 'your-secret-api-key')]),
                 'image',
                 $request->file('image')
             );
             $response = $http->post($url);
 
             if ($response->successful()) {
-                $data = $response->json();
+                $raw = $response->json();
+                $data = isset($raw['data']) && isset($raw['status']) ? $raw['data'] : $raw;
                 $data = $this->enrichCbirItems($data);
                 return response()->json($data);
             }
@@ -175,11 +178,14 @@ class SharedMLController extends BaseMLController
 
         try {
             $response = Http::timeout(30)
-                ->asJson()
+                ->asForm()
+                ->withHeaders(['X-API-Key' => env('ML_API_KEY', 'your-secret-api-key')])
                 ->post($url, ['session_id' => $request->input('session_id')]);
 
             if ($response->successful()) {
-                return response()->json($response->json());
+                $raw = $response->json();
+                $data = isset($raw['data']) && isset($raw['status']) ? $raw['data'] : $raw;
+                return response()->json($data);
             }
 
             return response()->json([
@@ -213,10 +219,14 @@ class SharedMLController extends BaseMLController
         $url = $this->fashionServiceUrl('/fashion/session/' . $sessionId);
 
         try {
-            $response = Http::timeout(30)->get($url);
+            $response = Http::timeout(30)
+                ->withHeaders(['X-API-Key' => env('ML_API_KEY', 'your-secret-api-key')])
+                ->get($url);
 
             if ($response->successful()) {
-                return response()->json($response->json());
+                $raw = $response->json();
+                $data = isset($raw['data']) && isset($raw['status']) ? $raw['data'] : $raw;
+                return response()->json($data);
             }
 
             return response()->json([

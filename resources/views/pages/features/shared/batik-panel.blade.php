@@ -64,6 +64,9 @@ Elemen penting (ID dipakai oleh JS):
                     <button id="apply-blend-btn" class="flex-1 bg-primary hover:bg-amber-600 text-black font-bold py-2.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1">
                         <i class="bi bi-check2"></i> Terapkan
                     </button>
+                    <button id="reset-part-btn" class="hidden px-4 border border-red-800/80 hover:bg-red-900/50 text-red-400 hover:text-red-200 font-semibold rounded-lg transition-colors" title="Hapus Motif di Area Ini">
+                        <i class="bi bi-eraser text-lg"></i>
+                    </button>
                     <button id="panel-cancel-btn" class="px-5 border border-gray-600 hover:border-gray-500 text-white font-semibold py-2.5 rounded-lg transition-colors">
                         Batal
                     </button>
@@ -75,12 +78,16 @@ Elemen penting (ID dipakai oleh JS):
 
                 @if($mode === 'terapkan')
                     {{-- Toolbar: Upload + Search --}}
-                    <div id="panel-toolbar" class="flex gap-2 px-4 pt-4 pb-3 shrink-0">
+                    <div id="panel-toolbar" class="flex flex-wrap gap-2 px-4 pt-4 pb-3 shrink-0">
                         <button id="panel-upload-btn" class="flex items-center gap-1 text-amber-400 text-sm border border-amber-700/60 rounded-lg py-2 px-3 hover:bg-amber-950/20 transition-colors whitespace-nowrap">
                             <i class="bi bi-upload"></i> Unggah
                         </button>
+                        <button id="panel-camera-btn" class="flex items-center gap-1 text-amber-300 text-sm border border-amber-700/60 rounded-lg py-2 px-3 hover:bg-amber-950/20 transition-colors whitespace-nowrap">
+                            <i class="bi bi-camera-fill"></i> Scan
+                        </button>
                         <input id="panel-batik-input" type="file" accept="image/*" class="hidden">
-                        <div class="flex-1 relative">
+                        <input id="panel-batik-camera-input" type="file" accept="image/*" capture="environment" class="hidden">
+                        <div class="flex-1 relative min-w-[150px]">
                             <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
                             <input id="panel-search" type="text" placeholder="Cari motif batik..."
                                    class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary/60">

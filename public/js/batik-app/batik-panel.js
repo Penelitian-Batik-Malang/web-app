@@ -38,7 +38,9 @@ window.BatikApp.BatikPanel.init = function () {
     const panelCloseBtn  = $('panel-close-btn');
     const panelCancelBtn = $('panel-cancel-btn');
     const panelUploadBtn = $('panel-upload-btn');
+    const panelCameraBtn = $('panel-camera-btn');
     const panelBatikInput= $('panel-batik-input');
+    const panelBatikCameraInput = $('panel-batik-camera-input');
     const panelSearch    = $('panel-search');
     const panelStatus    = $('panel-status');
     const gallery        = $('panel-batik-gallery');
@@ -71,7 +73,21 @@ window.BatikApp.BatikPanel.init = function () {
         }
 
         state.selectedPart = part;
-        state.batikTransform = { scale: 1, offsetX: 0, offsetY: 0, rotation: 0 };
+        
+        // Restore transform jika atribut ini sudah pernah diterapkan batik sebelumnya
+        const existing = state.appliedBatiks.find(x => x.key === part.key);
+        if (existing && existing.transform) {
+            state.batikTransform = { ...existing.transform };
+            document.getElementById('reset-part-btn')?.classList.remove('hidden');
+        } else {
+            // Jika belum, reset transform agar pas dengan dimensi atribut baru
+            state.batikTransform = { scale: 1, offsetX: 0, offsetY: 0, rotation: 0 };
+            document.getElementById('reset-part-btn')?.classList.add('hidden');
+        }
+        
+        // PENTING: state.batikImg dan currentBatikInfo sengaja TIDAK di-reset 
+        // dan TIDAK di-restore dari history agar pilihan motif tersinkronisasi 
+        // secara global untuk semua atribut pakaian.
 
         const color = PART_COLORS[part.partName] || [200, 200, 200];
         panelPartColor.style.background = toRgba(color, 0.9);
@@ -301,8 +317,8 @@ window.BatikApp.BatikPanel.init = function () {
 
     zoomInBtn?.addEventListener('click',  () => { state.batikTransform.scale = Math.min(10, state.batikTransform.scale * 1.2); drawBatikCanvas(); });
     zoomOutBtn?.addEventListener('click', () => { state.batikTransform.scale = Math.max(0.1, state.batikTransform.scale / 1.2); drawBatikCanvas(); });
-    rotateCwBtn?.addEventListener('click',  () => { state.batikTransform.rotation = (state.batikTransform.rotation + 15) % 360; drawBatikCanvas(); });
-    rotateCcwBtn?.addEventListener('click', () => { state.batikTransform.rotation = (state.batikTransform.rotation - 15 + 360) % 360; drawBatikCanvas(); });
+    rotateCwBtn?.addEventListener('click',  () => { state.batikTransform.rotation = (state.batikTransform.rotation + 5) % 360; drawBatikCanvas(); });
+    rotateCcwBtn?.addEventListener('click', () => { state.batikTransform.rotation = (state.batikTransform.rotation - 5 + 360) % 360; drawBatikCanvas(); });
     batikResetBtn?.addEventListener('click', () => { state.batikTransform = { scale: 1, offsetX: 0, offsetY: 0, rotation: 0 }; drawBatikCanvas(); });
 
     // ── Batik Selection ───────────────────────────────────────────
@@ -316,7 +332,8 @@ window.BatikApp.BatikPanel.init = function () {
      */
     const setBatikImage = async (file, src, name) => {
         state.batikImg = await loadImage(src || URL.createObjectURL(file));
-        state.batikTransform = { scale: 1, offsetX: 0, offsetY: 0, rotation: 0 };
+        // Mencegah reset transform agar posisi motif yang sudah diatur tidak hilang (sesuai request)
+        // state.batikTransform = { scale: 1, offsetX: 0, offsetY: 0, rotation: 0 };
         state.currentBatikInfo = { src: src || (file ? URL.createObjectURL(file) : null), name: name || 'Unggahan Custom' };
         drawBatikCanvas();
     };
@@ -328,7 +345,34 @@ window.BatikApp.BatikPanel.init = function () {
     panelUploadBtn?.addEventListener('click', () => panelBatikInput.click());
     panelBatikInput?.addEventListener('change', async () => {
         const file = panelBatikInput.files?.[0];
-        if (file) await setBatikImage(file, null, file.name);
+        if (file) {
+            try {
+                await setBatikImage(file, null, file.name);
+            } catch (err) {
+                console.error("Gagal memuat gambar unggahan:", err);
+            }
+            panelBatikInput.value = ''; // Clear value to allow re-uploading the same file
+        }
+    });
+
+    panelCameraBtn?.addEventListener('click', () => {
+        if (window.BatikApp.Webcam) {
+            window.BatikApp.Webcam.open('batik_panel');
+        } else {
+            panelBatikCameraInput?.click();
+        }
+    });
+
+    panelBatikCameraInput?.addEventListener('change', async () => {
+        const file = panelBatikCameraInput.files?.[0];
+        if (file) {
+            try {
+                await setBatikImage(file, null, file.name);
+            } catch (err) {
+                console.error("Gagal memuat gambar kamera:", err);
+            }
+            panelBatikCameraInput.value = ''; // Clear value
+        }
     });
 
     // ── Drill-down sub-gallery (mode terapkan) ───────────────────────
