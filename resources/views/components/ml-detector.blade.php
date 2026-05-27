@@ -198,7 +198,6 @@
                                     <div id="{{ $id }}-result-bar" class="bg-primary h-2 rounded-full transition-all duration-1000" style="width:0%"></div>
                                 </div>
                             </div>
-                            <p id="{{ $id }}-result-desc" class="text-gray-300 text-sm leading-relaxed"></p>
                         </div>
 
                         {{-- Result image card --}}

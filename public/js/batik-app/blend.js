@@ -33,6 +33,7 @@ window.BatikApp.Blend.init = function () {
 
     const $ = id => document.getElementById(id);
     const applyBlendBtn  = $('apply-blend-btn');
+    const resetPartBtn   = $('reset-part-btn');
     const panelStatus    = $('panel-status');
     const panelPartName  = $('panel-part-name');
     const workspaceStatus = $('workspace-status');
@@ -133,12 +134,16 @@ window.BatikApp.Blend.init = function () {
             if (existing) {
                 existing.batikName = state.currentBatikInfo?.name || 'Batik Custom';
                 existing.batikSrc = state.currentBatikInfo?.src || null;
+                existing.batikImg = state.batikImg;
+                existing.transform = { ...state.batikTransform };
             } else {
                 state.appliedBatiks.push({
                     key: state.selectedPart.key,
                     partLabel: partLabel,
                     batikName: state.currentBatikInfo?.name || 'Batik Custom',
                     batikSrc: state.currentBatikInfo?.src || null,
+                    batikImg: state.batikImg,
+                    transform: { ...state.batikTransform }
                 });
             }
 
@@ -156,7 +161,69 @@ window.BatikApp.Blend.init = function () {
             showErr(err.message || 'Gagal menerapkan batik. Periksa API.');
         } finally {
             applyBlendBtn.disabled = false;
-            applyBlendBtn.innerHTML = '<i class="bi bi-check2 mr-1"></i>Terapkan';
+            applyBlendBtn.innerHTML = '<i class="bi bi-check2"></i> Terapkan';
+        }
+    });
+
+    // ── Reset Part Button Handler ────────────────────────────────
+
+    resetPartBtn?.addEventListener('click', async () => {
+        const showErr = msg => {
+            panelStatus.textContent = msg;
+            panelStatus.classList.remove('hidden');
+        };
+
+        if (!state.sessionId) return;
+        if (!state.selectedPart) return;
+
+        panelStatus.classList.add('hidden');
+        resetPartBtn.disabled = true;
+        
+        try {
+            const fd = new FormData();
+            fd.append('session_id', state.sessionId);
+            fd.append('part', state.selectedPart.partName);
+            fd.append('instance_index', String(state.selectedPart.index));
+            fd.append('_token', helpers.csrf());
+
+            // Use the new /api/reset-part endpoint (add to config or hardcode for now)
+            const route = (config.apiBlendRoute || '').replace('/api/blend', '/api/reset-part');
+            
+            const resp = await fetch(route, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': helpers.csrf(),
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: fd,
+            });
+            const data = await helpers.safeJson(resp);
+            if (!resp.ok || !data.image_b64) {
+                throw new Error(data.message || `HTTP ${resp.status}: Gagal menghapus batik.`);
+            }
+
+            // Update fashion image
+            state.fashionImage = await helpers.loadImage(`data:image/jpeg;base64,${data.image_b64}`);
+            
+            // Hapus dari state
+            state.blendedKeys.delete(state.selectedPart.key);
+            state.appliedBatiks = state.appliedBatiks.filter(x => x.key !== state.selectedPart.key);
+
+            // Re-render
+            if (window.BatikApp.Canvas) await window.BatikApp.Canvas.render();
+            if (window.BatikApp.PartsList) window.BatikApp.PartsList.render();
+
+            if (workspaceStatus) {
+                workspaceStatus.textContent = `✓ Batik dihapus dari ${panelPartName.textContent}.`;
+            }
+            if (window.BatikApp.BatikPanel) window.BatikApp.BatikPanel.close();
+
+        } catch (err) {
+            console.error('[reset-part]', err);
+            showErr(err.message || 'Gagal menghapus batik. Periksa API.');
+        } finally {
+            resetPartBtn.disabled = false;
         }
     });
 };

@@ -138,6 +138,7 @@ Route::middleware('menu.access_or_guest:terapkan-batik,rekomendasi-batik')->grou
 Route::middleware('menu.access_or_guest:terapkan-batik')->group(function () {
     Route::get('/terapkan-batik', [TerapkanBatikController::class, 'show'])->name('terapkan.batik');
     Route::post('/api/blend', [TerapkanBatikController::class, 'blend'])->name('api.blend');
+    Route::post('/api/reset-part', [TerapkanBatikController::class, 'resetPart'])->name('api.reset.part');
 });
 
 // ── [DONE] Rekomendasi Batik ──────────────────────────────────────────────────

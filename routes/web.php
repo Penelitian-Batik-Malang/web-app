@@ -17,14 +17,14 @@ Route::get('/fitur', function () {
 
 Route::middleware('menu.access_or_guest:deteksi-motif')->group(function () {
     Route::get('/deteksi/motif', function () {
-        return view('pages.deteksi-motif');
+        return view('pages.features.deteksi-motif');
     })->name('deteksi.motif');
     Route::post('/api/detect/motif', [App\Http\Controllers\MLController::class, 'detectMotif'])->name('api.detect.motif');
 });
 
 Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
     Route::get('/deteksi/jenis', function () {
-        return view('pages.deteksi-jenis');
+        return view('pages.features.deteksi-jenis');
     })->name('deteksi.jenis');
     Route::post('/api/detect/jenis', [App\Http\Controllers\MLController::class, 'detectJenis'])->name('api.detect.jenis');
 });

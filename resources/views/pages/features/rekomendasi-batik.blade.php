@@ -53,29 +53,17 @@
                             </div>
                         </div>
 
-                        {{-- Garment Comparison: heading + rows hidden by default, JS yang show --}}
+                        {{-- Garment Selection --}}
                         <p id="cbir-garment-heading" class="hidden text-[10px] text-gray-500 font-semibold uppercase tracking-wider pt-0.5">Seleksi Garment</p>
-                        {{-- Outer row --}}
-                        <div id="cbir-garment-outer" class="hidden rounded-xl border p-2.5 text-[10px] transition-all">
+                        <div id="cbir-garment-selected" class="hidden rounded-xl border border-amber-600/60 bg-amber-950/30 shadow-sm p-2.5 text-[10px] transition-all">
                             <div class="flex items-center justify-between mb-1">
                                 <div class="flex items-center gap-1.5">
-                                    <span id="cbir-outer-badge" class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full border">OUTER</span>
-                                    <span id="cbir-outer-selected-icon" class="hidden text-amber-400 text-[10px]">✓ Dipilih</span>
+                                    <span class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full border border-amber-500 text-amber-400 bg-amber-950/50">DIPILIH</span>
+                                    <span class="text-amber-400 text-[10px]">✓</span>
                                 </div>
-                                <span id="cbir-outer-pixels" class="font-mono text-gray-400"></span>
+                                <span id="cbir-selected-pixels" class="font-mono text-gray-400"></span>
                             </div>
-                            <p id="cbir-outer-labels" class="text-gray-300 font-semibold leading-tight"></p>
-                        </div>
-                        {{-- Inner row --}}
-                        <div id="cbir-garment-inner" class="hidden rounded-xl border p-2.5 text-[10px] transition-all">
-                            <div class="flex items-center justify-between mb-1">
-                                <div class="flex items-center gap-1.5">
-                                    <span id="cbir-inner-badge" class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full border">INNER</span>
-                                    <span id="cbir-inner-selected-icon" class="hidden text-amber-400 text-[10px]">✓ Dipilih</span>
-                                </div>
-                                <span id="cbir-inner-pixels" class="font-mono text-gray-400"></span>
-                            </div>
-                            <p id="cbir-inner-labels" class="text-gray-300 font-semibold leading-tight"></p>
+                            <p id="cbir-selected-label" class="text-gray-300 font-semibold leading-tight uppercase"></p>
                         </div>
                     </div>
                 </div>
@@ -219,50 +207,19 @@ window.showCbirPhase = function(cbir) {
 
     let hasAnalysisData = false;
 
-    const gs = cbir?.garment_selection;
-    if (gs && extInfo) {
-        const selected    = gs.selected_category;
-        const outerPx     = gs.outer_pixels  || 0;
-        const innerPx     = gs.inner_pixels  || 0;
-        const outerLabels = gs.outer_labels  || [];
-        const innerLabels = gs.inner_labels  || [];
-        const hasAnyLabel = outerLabels.length > 0 || innerLabels.length > 0;
+    const selectedLabel = cbir?.selected_label;
+    const pixelCount = cbir?.pixel_count || 0;
 
-        const applyRow = (rowId, badgeId, iconId, pixId, labelsId, labels, pixels, isSelected) => {
-            const rowEl    = document.getElementById(rowId);
-            const badgeEl  = document.getElementById(badgeId);
-            const iconEl   = document.getElementById(iconId);
-            const pixEl    = document.getElementById(pixId);
-            const labelsEl = document.getElementById(labelsId);
-            if (!rowEl) return;
-
-            if (!labels.length) {
-                rowEl.classList.add('hidden');
-                return;
-            }
-
-            rowEl.classList.remove('hidden');
-            pixEl.textContent    = pixels.toLocaleString('id-ID') + ' px';
-            labelsEl.textContent = labels.map(l => GARMENT_ID_LABELS[l] || l).join(', ');
-
-            if (isSelected) {
-                rowEl.className   = 'rounded-xl border p-2.5 text-[10px] transition-all border-amber-600/60 bg-amber-950/30 shadow-sm';
-                badgeEl.className = 'text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full border border-amber-500 text-amber-400 bg-amber-950/50';
-                iconEl.classList.remove('hidden');
-            } else {
-                rowEl.className   = 'rounded-xl border p-2.5 text-[10px] transition-all border-gray-700/50 bg-gray-800/40';
-                badgeEl.className = 'text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full border border-gray-600 text-gray-500';
-                iconEl.classList.add('hidden');
-            }
-        };
-
+    if (selectedLabel && extInfo) {
         const garmentHeading = document.getElementById('cbir-garment-heading');
-        if (garmentHeading) garmentHeading.classList.toggle('hidden', !hasAnyLabel);
+        const garmentSelected = document.getElementById('cbir-garment-selected');
+        const pixelsEl = document.getElementById('cbir-selected-pixels');
+        const labelEl = document.getElementById('cbir-selected-label');
 
-        applyRow('cbir-garment-outer', 'cbir-outer-badge', 'cbir-outer-selected-icon',
-                 'cbir-outer-pixels', 'cbir-outer-labels', outerLabels, outerPx, selected === 'outer');
-        applyRow('cbir-garment-inner', 'cbir-inner-badge', 'cbir-inner-selected-icon',
-                 'cbir-inner-pixels', 'cbir-inner-labels', innerLabels, innerPx, selected === 'inner');
+        if (garmentHeading) garmentHeading.classList.remove('hidden');
+        if (garmentSelected) garmentSelected.classList.remove('hidden');
+        if (pixelsEl) pixelsEl.textContent = pixelCount.toLocaleString('id-ID') + ' px';
+        if (labelEl) labelEl.textContent = GARMENT_ID_LABELS[selectedLabel] || selectedLabel;
 
         extInfo.classList.remove('hidden');
         hasAnalysisData = true;
@@ -270,16 +227,18 @@ window.showCbirPhase = function(cbir) {
 
     if (cbir?.query_centroids?.length && palette) {
         palette.innerHTML = '';
-        cbir.query_centroids.forEach((c, i) => {
-            const hue = Math.round(Math.atan2(c[2], c[1]) * (180 / Math.PI) + 360) % 360;
-            const sat = Math.min(100, Math.round(Math.sqrt(c[1]*c[1]+c[2]*c[2]) * 2.5));
-            const lig = Math.min(90, Math.max(20, Math.round(c[0] * 0.8)));
+        // Memastikan kluster warna yang dirender
+        const centroids = cbir.query_centroids.slice(0, 3);
+        
+        centroids.forEach((c, i) => {
+            const rgb = cbir.query_centroids_rgb && cbir.query_centroids_rgb[i] ? cbir.query_centroids_rgb[i] : [200, 200, 200];
+            const rgbColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 
             const row = document.createElement('div');
             row.className = 'flex items-center gap-3 bg-gray-800/60 border border-gray-700/50 rounded-xl px-3 py-2';
             row.innerHTML = `
                 <div class="w-9 h-9 rounded-lg border-2 border-white/20 shadow-lg shrink-0"
-                     style="background:hsl(${hue},${sat}%,${lig}%)"></div>
+                     style="background:${rgbColor}"></div>
                 <div class="flex-1 min-w-0">
                     <p class="text-white text-[10px] font-semibold mb-0.5">Warna Dominan ${i+1}</p>
                     <div class="flex gap-2 flex-wrap">
