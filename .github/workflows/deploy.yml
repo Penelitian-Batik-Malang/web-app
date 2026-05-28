@@ -28,7 +28,7 @@ jobs:
             cd /var/www/web-app
 
             echo "=== [2/10] Aktifkan maintenance mode ==="
-            php8.3 artisan down --retry=60
+            php8.4 artisan down --retry=60
 
             echo "=== [3/10] Pull kode terbaru ==="
             git pull origin main
@@ -47,13 +47,13 @@ jobs:
             rm -rf node_modules
 
             echo "=== [7/10] Jalankan migrasi database ==="
-            php8.3 artisan migrate --force
+            php8.4 artisan migrate --force
 
             echo "=== [8/10] Clear dan rebuild cache ==="
-            php8.3 artisan config:cache
-            php8.3 artisan route:cache
-            php8.3 artisan view:cache
-            php8.3 artisan event:cache
+            php8.4 artisan config:cache
+            php8.4 artisan route:cache
+            php8.4 artisan view:cache
+            php8.4 artisan event:cache
 
             echo "=== [9/10] Set permission storage ==="
             sudo chown -R deployment:www-data /var/www/web-app/storage
@@ -61,6 +61,6 @@ jobs:
             sudo chmod -R 775 /var/www/web-app/bootstrap/cache
 
             echo "=== [10/10] Nonaktifkan maintenance mode ==="
-            php8.3 artisan up
+            php8.4 artisan up
 
             echo "✅ Deployment Laravel selesai!"
