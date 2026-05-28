@@ -609,7 +609,7 @@ window.ColorSearchModal = {
                         title="${palette.name} (${palette.hex})"
                         style="background-color: ${palette.hex};"
                     >
-                        ${selected ? '<i class="bi bi-check-circle-fill absolute right-2 top-2 text-base text-green-500 sm:text-lg"></i>' : ""}
+                        ${selected ? '<span class="absolute right-2 top-2 text-emerald-400"><i class="bi bi-check-circle-fill text-base sm:text-lg"></i></span>' : ""}
                         <span class="absolute bottom-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[11px] font-semibold text-white">${palette.hex}</span>
                     </button>
                 `;

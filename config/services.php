@@ -80,6 +80,7 @@ return [
     'retrieval' => [
         // Base URL service retrieval warna (FastAPI).
         'base_url' => env('RETRIEVAL_API_BASE_URL', env('ML_API_BASE_URL', 'http://127.0.0.1:8001')),
+        'api_key' => env('RETRIEVAL_API_KEY', ''),
     ],
 
 ];

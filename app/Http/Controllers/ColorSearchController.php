@@ -11,19 +11,22 @@ use Illuminate\Http\UploadedFile;
 
 class ColorSearchController extends Controller
 {
-    private const PALETTE_PATH = '/api/get-color-palette';
-    private const RECOMMENDATION_PATH = '/api/get-recommendation';
+    private const PALETTE_PATH = '/api/color-palette-faiss';
+    private const RECOMMENDATION_PATH = '/api/get-recommendation-faiss';
 
     private string $baseUrl;
+    private string $apiKey;
 
     public function __construct()
     {
         $this->baseUrl = rtrim((string) config('services.retrieval.base_url', ''), '/');
+        $this->apiKey = trim((string) config('services.retrieval.api_key', ''));
     }
 
     public function getPalette(Request $request): JsonResponse
     {
         $request->validate([
+            'num_cluster' => 'nullable|integer|in:3,4,5',
             'num_clusters' => 'nullable|integer|in:3,4,5',
         ]);
 
@@ -34,31 +37,51 @@ class ColorSearchController extends Controller
 
         if (empty($this->baseUrl)) {
             return response()->json([
-                'success' => false,
+                'status' => 503,
                 'message' => 'RETRIEVAL_API_BASE_URL belum dikonfigurasi.',
+                'errors' => ['RETRIEVAL_API_BASE_URL belum dikonfigurasi.'],
+                'meta' => null,
+                'result' => null,
             ], 503);
         }
 
-        $numClusters = (int) $request->input('num_clusters', 5);
+        if (empty($this->apiKey)) {
+            return response()->json([
+                'status' => 503,
+                'message' => 'RETRIEVAL_API_KEY belum dikonfigurasi.',
+                'errors' => ['RETRIEVAL_API_KEY belum dikonfigurasi.'],
+                'meta' => null,
+                'result' => null,
+            ], 503);
+        }
+
+        $numCluster = (int) $request->input('num_cluster', $request->input('num_clusters', 5));
 
         try {
-            $url = $this->buildUrl(self::PALETTE_PATH, [
-                'num_clusters' => $numClusters,
-            ]);
+            $url = $this->buildUrl(self::PALETTE_PATH);
 
             $response = Http::timeout(60)
+                ->withHeaders([
+                    'X-API-Key' => $this->apiKey,
+                ])
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-                ->post($url);
+                ->post($url, [
+                    'num_cluster' => $numCluster,
+                ]);
 
             $payload = $response->json();
-            if (!$response->successful()) {
+            if (!$response->successful() || !$this->isSuccessPayload($payload)) {
+                $message = $this->extractApiError($payload, 'Gagal mengambil palette warna.');
                 return response()->json([
-                    'success' => false,
-                    'message' => $payload['detail'] ?? $payload['message'] ?? 'Gagal mengambil palette warna.',
+                    'status' => $response->status(),
+                    'message' => $message,
+                    'errors' => [$message],
+                    'meta' => null,
+                    'result' => null,
                 ], $response->status());
             }
 
-            $rawPalette = $payload['data'] ?? [];
+            $rawPalette = $payload['data']['palette'] ?? [];
             if (!is_array($rawPalette)) {
                 $rawPalette = [];
             }
@@ -89,18 +112,27 @@ class ColorSearchController extends Controller
             }
 
             return response()->json([
-                'success' => true,
+                'status' => 200,
+                'message' => 'Palette extracted',
+                'errors' => [],
+                'meta' => null,
                 'result' => [
-                    'palettes' => $palettes,
-                    'selected_palette_indexes' => array_values(array_map(fn ($item) => $item['index'], $palettes)),
+                    'palette' => $rawPalette,
+                    'selected_palette_indexes' => array_values(array_map(
+                        fn ($item) => (int) ($item['no'] ?? $item['index'] ?? $item['number'] ?? $item['id'] ?? 0),
+                        $rawPalette,
+                    )),
                 ],
             ]);
         } catch (\Throwable $error) {
             Log::error('Color palette proxy error: ' . $error->getMessage());
 
             return response()->json([
-                'success' => false,
+                'status' => 500,
                 'message' => 'Gagal menghubungi service palette.',
+                'errors' => ['Gagal menghubungi service palette.'],
+                'meta' => null,
+                'result' => null,
             ], 500);
         }
     }
@@ -108,10 +140,10 @@ class ColorSearchController extends Controller
     public function getRecommendation(Request $request): JsonResponse
     {
         $request->validate([
+            'num_cluster' => 'nullable|integer|in:3,4,5',
             'num_clusters' => 'nullable|integer|in:3,4,5',
             'top_k' => 'nullable|integer|min:1|max:100',
-            'selected_colors' => 'nullable|array',
-            'selected_colors.*' => 'integer|min:1',
+            'selected_colors' => 'nullable',
         ]);
 
         $file = $this->resolveUploadedImage($request);
@@ -121,41 +153,63 @@ class ColorSearchController extends Controller
 
         if (empty($this->baseUrl)) {
             return response()->json([
-                'success' => false,
+                'status' => 503,
                 'message' => 'RETRIEVAL_API_BASE_URL belum dikonfigurasi.',
+                'errors' => ['RETRIEVAL_API_BASE_URL belum dikonfigurasi.'],
+                'data' => null,
+                'meta' => null,
+                'success' => false,
             ], 503);
         }
 
-        $numClusters = (int) $request->input('num_clusters', 5);
+        if (empty($this->apiKey)) {
+            return response()->json([
+                'status' => 503,
+                'message' => 'RETRIEVAL_API_KEY belum dikonfigurasi.',
+                'errors' => ['RETRIEVAL_API_KEY belum dikonfigurasi.'],
+                'data' => null,
+                'meta' => null,
+                'success' => false,
+            ], 503);
+        }
+
+        $numCluster = (int) $request->input('num_cluster', $request->input('num_clusters', 5));
         $topK = (int) $request->input('top_k', 10);
-        $selectedColors = array_values(array_map('intval', (array) $request->input('selected_colors', [])));
+        $selectedColors = $this->normalizeSelectedColors($request->input('selected_colors', []), $numCluster);
+
+        if ($selectedColors instanceof JsonResponse) {
+            return $selectedColors;
+        }
 
         try {
-            $query = [
-                'num_clusters' => $numClusters,
-                'top_k' => $topK,
-            ];
-
-            foreach ($selectedColors as $color) {
-                $query['selected_colors'][] = $color;
-            }
-
-            $url = $this->buildUrl(self::RECOMMENDATION_PATH, $query);
+            $url = $this->buildUrl(self::RECOMMENDATION_PATH);
 
             $response = Http::timeout(60)
+                ->withHeaders([
+                    'X-API-Key' => $this->apiKey,
+                ])
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-                ->post($url);
+                ->post($url, [
+                    'num_cluster' => $numCluster,
+                    'top_k' => $topK,
+                    'selected_colors' => $selectedColors,
+                ]);
 
             $payload = $response->json();
-            if (!$response->successful()) {
+            if (!$response->successful() || !$this->isSuccessPayload($payload)) {
+                $message = $this->extractApiError($payload, 'Gagal mengambil rekomendasi.');
                 return response()->json([
+                    'status' => $response->status(),
+                    'message' => $message,
+                    'errors' => [$message],
+                    'data' => null,
+                    'meta' => null,
                     'success' => false,
-                    'message' => $payload['detail'] ?? $payload['message'] ?? 'Gagal mengambil rekomendasi.',
                 ], $response->status());
             }
 
             $data = $payload['data'] ?? [];
-            $rows = $data['recommendations'] ?? $data['items'] ?? $data['results'] ?? [];
+            $rows = $data['results'] ?? $data['recommendations'] ?? $data['items'] ?? [];
             if (!is_array($rows)) {
                 $rows = [];
             }
@@ -168,13 +222,22 @@ class ColorSearchController extends Controller
 
                 $recommendations[] = [
                     'id' => (int) ($item['id'] ?? $item['batik_id'] ?? ($position + 1)),
-                    'name' => (string) ($item['name'] ?? $item['batik_name'] ?? $item['title'] ?? 'Batik'),
+                    'name' => (string) ($item['label'] ?? $item['name'] ?? $item['batik_name'] ?? $item['title'] ?? 'Batik'),
                     'image_url' => (string) ($item['image_url'] ?? $item['image'] ?? $item['thumbnail'] ?? 'https://placehold.co/240x180?text=Batik'),
                     'score' => isset($item['score']) ? (float) $item['score'] : null,
+                    'distance' => isset($item['distance']) ? (float) $item['distance'] : null,
                 ];
             }
 
             return response()->json([
+                'status' => 200,
+                'message' => 'Recommendation successful',
+                'data' => [
+                    'results' => $recommendations,
+                    'result_count' => count($recommendations),
+                ],
+                'errors' => [],
+                'meta' => null,
                 'success' => true,
                 'result' => [
                     'recommendations' => $recommendations,
@@ -184,8 +247,12 @@ class ColorSearchController extends Controller
             Log::error('Color recommendation proxy error: ' . $error->getMessage());
 
             return response()->json([
-                'success' => false,
+                'status' => 500,
                 'message' => 'Gagal menghubungi service rekomendasi.',
+                'errors' => ['Gagal menghubungi service rekomendasi.'],
+                'data' => null,
+                'meta' => null,
+                'success' => false,
             ], 500);
         }
     }
@@ -212,16 +279,77 @@ class ColorSearchController extends Controller
         return $url . '?' . implode('&', $segments);
     }
 
+    private function isSuccessPayload(?array $payload): bool
+    {
+        if (!$payload || !isset($payload['status'])) {
+            return false;
+        }
+
+        $status = (int) $payload['status'];
+        return $status >= 200 && $status < 300;
+    }
+
+    private function extractApiError(?array $payload, string $fallbackMessage): string
+    {
+        if (!$payload) {
+            return $fallbackMessage;
+        }
+
+        if (!empty($payload['errors']) && is_array($payload['errors'])) {
+            return (string) ($payload['errors'][0] ?? $fallbackMessage);
+        }
+
+        if (!empty($payload['message']) && is_string($payload['message'])) {
+            return $payload['message'];
+        }
+
+        if (!empty($payload['detail']) && is_string($payload['detail'])) {
+            return $payload['detail'];
+        }
+
+        return $fallbackMessage;
+    }
+
+    private function normalizeSelectedColors(mixed $selectedColors, int $numCluster): string|JsonResponse
+    {
+        if (is_string($selectedColors)) {
+            return $selectedColors;
+        }
+
+        if (!is_array($selectedColors)) {
+            return '';
+        }
+
+        $items = array_values(array_filter(array_map('intval', $selectedColors)));
+        foreach ($items as $value) {
+            if ($value < 1 || $value > $numCluster) {
+                return response()->json([
+                    'status' => 422,
+                    'message' => 'selected_colors di luar rentang jumlah cluster.',
+                    'errors' => ['selected_colors di luar rentang jumlah cluster.'],
+                    'data' => null,
+                    'meta' => null,
+                    'success' => false,
+                ], 422);
+            }
+        }
+
+        return implode(',', $items);
+    }
+
     private function resolveUploadedImage(Request $request): UploadedFile|JsonResponse
     {
-        $file = $request->file('image');
+        $file = $request->file('file') ?: $request->file('image');
         if (!$file) {
             return response()->json([
-                'success' => false,
+                'status' => 422,
                 'message' => 'File gambar wajib diunggah.',
                 'errors' => [
                     'image' => ['File gambar wajib diunggah.'],
                 ],
+                'data' => null,
+                'meta' => null,
+                'success' => false,
             ], 422);
         }
 
@@ -239,11 +367,14 @@ class ColorSearchController extends Controller
             };
 
             return response()->json([
-                'success' => false,
+                'status' => 422,
                 'message' => $message,
                 'errors' => [
                     'image' => [$message],
                 ],
+                'data' => null,
+                'meta' => null,
+                'success' => false,
             ], 422);
         }
 
@@ -259,9 +390,12 @@ class ColorSearchController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'success' => false,
+                'status' => 422,
                 'message' => $validator->errors()->first('image') ?: 'Validasi file gambar gagal.',
                 'errors' => $validator->errors(),
+                'data' => null,
+                'meta' => null,
+                'success' => false,
             ], 422);
         }
 

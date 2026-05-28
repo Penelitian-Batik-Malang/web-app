@@ -30,17 +30,17 @@ class LandingContentSeeder extends Seeder
             ['key' => 'gallery_title', 'value' => 'Galeri Inspirasi Motif', 'type' => 'text'],
             ['key' => 'gallery_subtitle', 'value' => 'Jelajahi keindahan dan makna di balik beberapa motif batik khas Malang.', 'type' => 'text'],
 
-            ['key' => 'gallery_item_1_img', 'value' => 'https://images.unsplash.com/photo-1596766467389-0d29ab6cda23?q=80&w=800&auto=format&fit=crop', 'type' => 'image'],
-            ['key' => 'gallery_item_1_title', 'value' => 'Sido Mukti', 'type' => 'text'],
-            ['key' => 'gallery_item_1_desc', 'value' => 'Melambangkan harapan akan kemuliaan dan kesejahteraan.', 'type' => 'text'],
+            ['key' => 'gallery_item_1_img', 'value' => 'https://is3.cloudhost.id/batik-signature-gdrive/Acha%20Mahakala/IMG_8750.jpg', 'type' => 'image'],
+            ['key' => 'gallery_item_1_title', 'value' => 'Acha Mahakala', 'type' => 'text'],
+            ['key' => 'gallery_item_1_desc', 'value' => 'Motif batik khas yang merepresentasikan karakter visual galeri utama.', 'type' => 'text'],
 
-            ['key' => 'gallery_item_2_img', 'value' => 'https://images.unsplash.com/photo-1626027150117-640a4cf0f235?q=80&w=800&auto=format&fit=crop', 'type' => 'image'],
-            ['key' => 'gallery_item_2_title', 'value' => 'Parang', 'type' => 'text'],
-            ['key' => 'gallery_item_2_desc', 'value' => 'Simbol keberanian dan kekuatan yang berkelanjutan.', 'type' => 'text'],
+            ['key' => 'gallery_item_2_img', 'value' => 'https://is3.cloudhost.id/batik-signature-gdrive/Adi%20Luhung%20Butterfly/2025_01_30_12_15_IMG_1678.jpg', 'type' => 'image'],
+            ['key' => 'gallery_item_2_title', 'value' => 'Adi Luhung Butterfly', 'type' => 'text'],
+            ['key' => 'gallery_item_2_desc', 'value' => 'Salah satu motif yang sudah disiapkan di seed data batik.', 'type' => 'text'],
 
-            ['key' => 'gallery_item_3_img', 'value' => 'https://images.unsplash.com/photo-1588693809628-89c0b11fbab5?q=80&w=800&auto=format&fit=crop', 'type' => 'image'],
-            ['key' => 'gallery_item_3_title', 'value' => 'Kawung', 'type' => 'text'],
-            ['key' => 'gallery_item_3_desc', 'value' => 'Mencerminkan kebijaksanaan dan keseimbangan batin.', 'type' => 'text'],
+            ['key' => 'gallery_item_3_img', 'value' => 'https://is3.cloudhost.id/batik-signature-gdrive/Adi%20Luhung%20Jarit/2025_01_30_13_25_IMG_1839.jpg', 'type' => 'image'],
+            ['key' => 'gallery_item_3_title', 'value' => 'Adi Luhung Jarit', 'type' => 'text'],
+            ['key' => 'gallery_item_3_desc', 'value' => 'Motif lain dari kumpulan batik yang diambil langsung dari S3.', 'type' => 'text'],
         ];
 
         foreach ($contents as $content) {

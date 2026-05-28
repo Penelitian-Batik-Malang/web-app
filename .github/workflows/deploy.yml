@@ -1,121 +1,20 @@
-name: Laravel CI/CD
+name: Deploy Laravel
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'penelitian-batik-malang/galeri-batik' }}
 
 jobs:
-  test:
-    name: Run Tests
-    runs-on: ubuntu-latest
-
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_DATABASE: batik_test
-          MYSQL_ROOT_PASSWORD: secret
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.4"
-          extensions: mbstring, pdo_mysql, redis, gd, zip, intl
-          coverage: xdebug
-
-      - name: Cache Composer
-        uses: actions/cache@v4
-        with:
-          path: vendor
-          key: composer-${{ hashFiles('composer.lock') }}
-
-      - name: Install Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
-      - name: Setup .env
-        run: |
-          cp .env.example .env
-          php artisan key:generate
-          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
-          sed -i 's/DB_DATABASE=.*/DB_DATABASE=batik_test/' .env
-          sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
-          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=secret/' .env
-
-      - name: Run Migrations
-        run: php artisan migrate --force
-
-  build:
-    name: Build Docker Image
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    outputs:
-      image_tag: ${{ steps.meta.outputs.version }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
-      - name: Docker Metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha,prefix=,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and Push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
   deploy:
-    name: Deploy to Production
-    needs: build
+    name: Deploy to VPS
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
@@ -125,62 +24,43 @@ jobs:
           script: |
             set -e
 
-            DEPLOY_PATH="${{ vars.DEPLOY_PATH }}"
-            if [ -z "$DEPLOY_PATH" ]; then
-              DEPLOY_PATH="/opt/app/laravel"
-            fi
+            echo "=== [1/10] Navigasi ke direktori proyek ==="
+            cd /var/www/web-app
 
-            cd "$DEPLOY_PATH"
+            echo "=== [2/10] Aktifkan maintenance mode ==="
+            php8.3 artisan down --retry=60
 
-            COMPOSE_FILE="$DEPLOY_PATH/docker-compose.yml"
-            if [ ! -f "$COMPOSE_FILE" ]; then
-              echo "docker-compose.yml not found in $DEPLOY_PATH"
-              exit 1
-            fi
+            echo "=== [3/10] Pull kode terbaru ==="
+            git pull origin main
 
-            # Pull image terbaru
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "=== [4/10] Tulis file .env dari secret ==="
+            cat > /var/www/web-app/.env << 'ENVEOF'
+            ${{ secrets.ENV_PROD }}
+            ENVEOF
 
-            # Sync .env for container
-            umask 077
-            if [ -w .env ] || { [ ! -e .env ] && [ -w . ]; }; then
-              printf '%s' "${{ secrets.ENV_PROD }}" > .env
-            elif command -v sudo >/dev/null 2>&1; then
-              printf '%s' "${{ secrets.ENV_PROD }}" | sudo tee .env >/dev/null
-              sudo chmod 600 .env
-            else
-              echo "Cannot write .env in $DEPLOY_PATH. Grant write permission to ${USER} or install/configure sudo."
-              exit 1
-            fi
+            echo "=== [5/10] Install dependencies Composer ==="
+            composer install --no-dev --optimize-autoloader --no-interaction
 
-            # Export image variables untuk docker-compose
-            export REGISTRY="${{ env.REGISTRY }}"
-            export IMAGE_NAME="${{ env.IMAGE_NAME }}"
-            export IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+            echo "=== [6/10] Install dependencies Node dan build assets ==="
+            npm ci
+            npm run build
+            rm -rf node_modules
 
-            docker network inspect batik_network >/dev/null 2>&1 || docker network create batik_network
+            echo "=== [7/10] Jalankan migrasi database ==="
+            php8.3 artisan migrate --force
 
-            # Pull image
-            docker compose -f "$COMPOSE_FILE" pull app
+            echo "=== [8/10] Clear dan rebuild cache ==="
+            php8.3 artisan config:cache
+            php8.3 artisan route:cache
+            php8.3 artisan view:cache
+            php8.3 artisan event:cache
 
-            # Zero-downtime deployment
-            docker compose -f "$COMPOSE_FILE" up -d --no-deps app
+            echo "=== [9/10] Set permission storage ==="
+            sudo chown -R deployment:www-data /var/www/web-app/storage
+            sudo chmod -R 775 /var/www/web-app/storage
+            sudo chmod -R 775 /var/www/web-app/bootstrap/cache
 
-            # Jalankan migration
-            docker compose -f "$COMPOSE_FILE" exec -T app php artisan migrate --force
+            echo "=== [10/10] Nonaktifkan maintenance mode ==="
+            php8.3 artisan up
 
-            # Clear & warm cache
-            docker compose -f "$COMPOSE_FILE" exec -T app sh -lc 'mkdir -p resources/views storage/framework/views bootstrap/cache'
-            docker compose -f "$COMPOSE_FILE" exec -T app php artisan optimize:clear
-            docker compose -f "$COMPOSE_FILE" exec -T app php artisan config:cache
-            docker compose -f "$COMPOSE_FILE" exec -T app php artisan route:cache
-            docker compose -f "$COMPOSE_FILE" exec -T app php artisan view:cache || echo "Skip view:cache (view path issue)"
-            docker compose -f "$COMPOSE_FILE" exec -T app php artisan event:cache || echo "Skip event:cache (no discoverable events)"
-
-            # Restart queue workers
-            docker compose -f "$COMPOSE_FILE" exec -T app php artisan queue:restart
-
-            # Cleanup image lama
-            docker image prune -f
-
-            echo "✅ Laravel deployed successfully: $IMAGE_TAG"
+            echo "✅ Deployment Laravel selesai!"

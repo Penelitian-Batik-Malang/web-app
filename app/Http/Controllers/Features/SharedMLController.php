@@ -61,7 +61,7 @@ class SharedMLController extends BaseMLController
             $http = $this->attachFile(
                 Http::timeout(600)
                     ->accept('application/json')
-                    ->withHeaders(['X-API-Key' => env('ML_API_KEY', 'your-secret-api-key')]),
+                    ->withHeaders(['X-API-Key' => env('ML_API_KEY', '')]),
                 'image',
                 $request->file('image')
             );
@@ -179,7 +179,7 @@ class SharedMLController extends BaseMLController
         try {
             $response = Http::timeout(30)
                 ->asForm()
-                ->withHeaders(['X-API-Key' => env('ML_API_KEY', 'your-secret-api-key')])
+                ->withHeaders(['X-API-Key' => env('ML_API_KEY', '')])
                 ->post($url, ['session_id' => $request->input('session_id')]);
 
             if ($response->successful()) {
@@ -220,7 +220,7 @@ class SharedMLController extends BaseMLController
 
         try {
             $response = Http::timeout(30)
-                ->withHeaders(['X-API-Key' => env('ML_API_KEY', 'your-secret-api-key')])
+                ->withHeaders(['X-API-Key' => env('ML_API_KEY', '')])
                 ->get($url);
 
             if ($response->successful()) {
