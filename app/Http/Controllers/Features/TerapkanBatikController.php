@@ -124,7 +124,7 @@ class TerapkanBatikController extends BaseMLController
                 'http_errors' => false,
                 'headers'     => [
                     'Accept'    => 'application/json',
-                    'x-api-key' => $this->apiKey
+                    'X-API-Key' => $this->apiKey
                 ],
                 'multipart'   => [
                     ['name' => 'session_id',     'contents' => (string) $request->input('session_id')],

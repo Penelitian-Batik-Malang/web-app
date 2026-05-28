@@ -85,7 +85,7 @@ class MLController extends Controller
             if (empty($palettes) || !$skipExtract) {
                 // Extract palette dari color_image jika tidak disediakan atau skip_extract false
                 $paletteResponse = Http::timeout(30)
-                    ->withHeaders(['x-api-key' => $this->apiKey])
+                    ->withHeaders(['X-API-Key' => $this->apiKey])
                     ->attach('image', $colorImageContent, 'color_image.jpg')
                     ->attach('method', 'kmeans')
                     ->attach('n_colors', '6')
@@ -116,7 +116,7 @@ class MLController extends Controller
             $paletteJson = json_encode($palettes);
             
             $recolorResponse = Http::timeout(60)
-                ->withHeaders(['x-api-key' => $this->apiKey])
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->attach('image', $batikImageContent, 'batik.jpg')
                 ->attach('palette', $paletteJson)
                 ->attach('white_threshold', '150')
@@ -209,7 +209,7 @@ class MLController extends Controller
         try {
             $url = $this->baseUrl . '/' . ltrim($mlPath, '/');
             $response = Http::timeout(30)
-                ->withHeaders(['x-api-key' => $this->apiKey])
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->attach('image', file_get_contents($request->file('image')->getRealPath()), $request->file('image')->getClientOriginalName())
                 ->post($url);
 

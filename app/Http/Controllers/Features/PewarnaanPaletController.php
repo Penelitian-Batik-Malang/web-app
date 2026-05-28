@@ -365,7 +365,7 @@ class PewarnaanPaletController extends BaseMLController
             // Call API extract palette dengan method "all" untuk mendapatkan 3 metode sekaligus
             // Endpoint: POST /api/palette/extract
             $response = Http::timeout(30)
-                ->withHeaders(['x-api-key' => $this->apiKey])
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->attach('image', $colorImageContent, 'color_image.jpg')
                 ->attach('method', 'all')
                 ->attach('n_colors', '6')
@@ -495,7 +495,7 @@ class PewarnaanPaletController extends BaseMLController
             ]);
             
             $response = Http::timeout(120)
-                ->withHeaders(['x-api-key' => $this->apiKey])
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->attach('image', $imageContent, 'batik.jpg')
                 ->attach('palette', $paletteJson)
                 ->attach('white_threshold', '150')

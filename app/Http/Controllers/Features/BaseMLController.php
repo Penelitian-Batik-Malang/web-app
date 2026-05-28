@@ -190,7 +190,7 @@ abstract class BaseMLController extends Controller
             $file = $request->file('image');
 
             $response = Http::timeout(60)
-                ->withHeaders(['x-api-key' => $this->apiKey])
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->post($url);
 
@@ -243,7 +243,7 @@ abstract class BaseMLController extends Controller
 
         try {
             $response = Http::timeout(10)
-                ->withHeaders(['x-api-key' => $this->apiKey])
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->get($this->batikServiceUrl($path));
             if ($response->successful()) {
                 $raw    = $response->json();
