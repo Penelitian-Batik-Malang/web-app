@@ -42,9 +42,9 @@ jobs:
             composer install --no-dev --optimize-autoloader --no-interaction
 
             echo "=== [6/10] Install dependencies Node dan build assets ==="
-            npm ci
+            rm -rf node_modules package-lock.json
+            npm install
             npm run build
-            rm -rf node_modules
 
             echo "=== [7/10] Jalankan migrasi database ==="
             php8.4 artisan migrate --force
