@@ -38,8 +38,8 @@ class ColorSearchController extends Controller
         if (empty($this->baseUrl)) {
             return response()->json([
                 'status' => 503,
-                'message' => 'RETRIEVAL_API_BASE_URL belum dikonfigurasi.',
-                'errors' => ['RETRIEVAL_API_BASE_URL belum dikonfigurasi.'],
+                'message' => 'ML_URL belum dikonfigurasi.',
+                'errors' => ['ML_URL belum dikonfigurasi.'],
                 'meta' => null,
                 'result' => null,
             ], 503);
@@ -48,8 +48,8 @@ class ColorSearchController extends Controller
         if (empty($this->apiKey)) {
             return response()->json([
                 'status' => 503,
-                'message' => 'RETRIEVAL_API_KEY belum dikonfigurasi.',
-                'errors' => ['RETRIEVAL_API_KEY belum dikonfigurasi.'],
+                'message' => 'ML_API_KEY belum dikonfigurasi.',
+                'errors' => ['ML_API_KEY belum dikonfigurasi.'],
                 'meta' => null,
                 'result' => null,
             ], 503);
@@ -154,8 +154,8 @@ class ColorSearchController extends Controller
         if (empty($this->baseUrl)) {
             return response()->json([
                 'status' => 503,
-                'message' => 'RETRIEVAL_API_BASE_URL belum dikonfigurasi.',
-                'errors' => ['RETRIEVAL_API_BASE_URL belum dikonfigurasi.'],
+                'message' => 'ML_URL belum dikonfigurasi.',
+                'errors' => ['ML_URL belum dikonfigurasi.'],
                 'data' => null,
                 'meta' => null,
                 'success' => false,
@@ -165,8 +165,8 @@ class ColorSearchController extends Controller
         if (empty($this->apiKey)) {
             return response()->json([
                 'status' => 503,
-                'message' => 'RETRIEVAL_API_KEY belum dikonfigurasi.',
-                'errors' => ['RETRIEVAL_API_KEY belum dikonfigurasi.'],
+                'message' => 'ML_API_KEY belum dikonfigurasi.',
+                'errors' => ['ML_API_KEY belum dikonfigurasi.'],
                 'data' => null,
                 'meta' => null,
                 'success' => false,

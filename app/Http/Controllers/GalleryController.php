@@ -88,7 +88,7 @@ class GalleryController extends Controller
     public function recommend($id)
     {
         $image    = BatikImage::findOrFail($id);
-        $batikUrl = rtrim((string) config('services.ml.batik_url', ''), '/');
+        $batikUrl = rtrim((string) config('services.ml.url', ''), '/');
 
         if (empty($batikUrl)) {
             return response()->json(['success' => false, 'recommendations' => []], 501);
@@ -103,6 +103,7 @@ class GalleryController extends Controller
             $mime    = $imgResp->header('Content-Type', 'image/jpeg');
             $ext     = str_contains($mime, 'png') ? 'png' : 'jpg';
             $response = Http::timeout(60)
+                ->withHeaders(['x-api-key' => trim((string) config('services.retrieval.api_key', ''))])
                 ->attach('file', $imgResp->body(), 'liked_image.' . $ext)
                 ->post($batikUrl . '/search/general');
 

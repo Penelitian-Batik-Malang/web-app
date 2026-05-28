@@ -138,7 +138,7 @@ class PewarnaanPaletController extends BaseMLController
                 'method' => 'sometimes|string',
             ]);
 
-            if (empty($this->fashionUrl)) {
+            if (empty($this->mlUrl)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Model AI belum terhubung. ML API Base URL belum dikonfigurasi.',
@@ -166,18 +166,18 @@ class PewarnaanPaletController extends BaseMLController
             $paletteJson = json_encode($paletteHex);
 
             Log::info('Sending recolor request', [
-                'base_url' => $this->fashionUrl,
+                'base_url' => $this->mlUrl,
                 'image_size' => strlen($batikImageContent),
                 'palette_hex' => $paletteJson,
                 'method' => $method,
             ]);
 
             // Try dengan fallback endpoints jika primary gagal
-            $recolorResponse = $this->attemptRecolor($batikImageContent, $paletteHex, $this->fashionUrl);
+            $recolorResponse = $this->attemptRecolor($batikImageContent, $paletteHex, $this->mlUrl);
 
             if (!$recolorResponse) {
                 Log::error('All recolor endpoints failed', [
-                    'base_url' => $this->fashionUrl,
+                    'base_url' => $this->mlUrl,
                     'palette' => $paletteJson,
                 ]);
 
@@ -198,7 +198,7 @@ class PewarnaanPaletController extends BaseMLController
             $resultImageUrl = $result['result_image_url'] ?? null;
             if ($resultImageUrl && !filter_var($resultImageUrl, FILTER_VALIDATE_URL)) {
                 // It's a relative path, prepend base URL
-                $baseUrl = rtrim($this->fashionUrl, '/');
+                $baseUrl = rtrim($this->mlUrl, '/');
                 if (strpos($resultImageUrl, '/uploads') === 0) {
                     $resultImageUrl = $baseUrl . $resultImageUrl;
                 } else {
@@ -353,8 +353,8 @@ class PewarnaanPaletController extends BaseMLController
             'median_cut' => [],
         ];
 
-        if (empty($this->fashionUrl)) {
-            Log::warning('Fashion Service URL tidak dikonfigurasi, skipping palette extraction');
+        if (empty($this->mlUrl)) {
+            Log::warning('ML Service URL tidak dikonfigurasi, skipping palette extraction');
             return $palettes;
         }
 
@@ -365,10 +365,11 @@ class PewarnaanPaletController extends BaseMLController
             // Call API extract palette dengan method "all" untuk mendapatkan 3 metode sekaligus
             // Endpoint: POST /api/palette/extract
             $response = Http::timeout(30)
+                ->withHeaders(['x-api-key' => $this->apiKey])
                 ->attach('image', $colorImageContent, 'color_image.jpg')
                 ->attach('method', 'all')
                 ->attach('n_colors', '6')
-                ->post($this->fashionUrl . '/api/palette/extract');
+                ->post($this->mlUrl . '/palette/extract');
 
             if ($response->successful()) {
                 $data = $response->json();
@@ -494,6 +495,7 @@ class PewarnaanPaletController extends BaseMLController
             ]);
             
             $response = Http::timeout(120)
+                ->withHeaders(['x-api-key' => $this->apiKey])
                 ->attach('image', $imageContent, 'batik.jpg')
                 ->attach('palette', $paletteJson)
                 ->attach('white_threshold', '150')

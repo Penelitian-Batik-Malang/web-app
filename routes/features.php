@@ -113,16 +113,16 @@ Route::get('/storage/cbir/{path}', function (string $path) {
 // Batik Service: POST /detection/motif | GET /detection/motif/labels
 Route::middleware('menu.access_or_guest:deteksi-motif')->group(function () {
     Route::get('/deteksi/motif', [DeteksiMotifController::class, 'show'])->name('deteksi.motif');
-    Route::post('/api/detect/motif', [DeteksiMotifController::class, 'detect'])->name('api.detect.motif');
-    Route::get('/api/detect/motif/labels', [DeteksiMotifController::class, 'labels'])->name('api.detect.motif.labels');
+    Route::post('/api/detection/motif', [DeteksiMotifController::class, 'detect'])->name('api.detect.motif');
+    Route::get('/api/detection/motif/labels', [DeteksiMotifController::class, 'labels'])->name('api.detect.motif.labels');
 });
 
 // ── [DONE] Deteksi Jenis Batik ────────────────────────────────────────────────
 // Batik Service: POST /detection/type | GET /detection/type/labels
 Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
     Route::get('/deteksi/jenis', [DeteksiJenisController::class, 'show'])->name('deteksi.jenis');
-    Route::post('/api/detect/jenis', [DeteksiJenisController::class, 'detect'])->name('api.detect.jenis');
-    Route::get('/api/detect/jenis/labels', [DeteksiJenisController::class, 'labels'])->name('api.detect.jenis.labels');
+    Route::post('/api/detection/type', [DeteksiJenisController::class, 'detect'])->name('api.detect.jenis');
+    Route::get('/api/detection/type/labels', [DeteksiJenisController::class, 'labels'])->name('api.detect.jenis.labels');
 });
 
 // ── [DONE] Shared Fashion Service Session (terapkan-batik | rekomendasi-batik) ─
@@ -152,7 +152,7 @@ Route::middleware('menu.access_or_guest:rekomendasi-batik')->group(function () {
 // Batik Service: POST /search/general
 Route::middleware('menu.access_or_guest:pencarian-batik')->group(function () {
     Route::get('/pencarian-batik', [PencarianBatikController::class, 'show'])->name('pencarian.batik');
-    Route::post('/api/search/batik', [PencarianBatikController::class, 'search'])->name('api.search.batik');
+    Route::post('/api/search/general', [PencarianBatikController::class, 'search'])->name('api.search.batik');
 });
 
 // ── [TODO] Pencarian by Warna Dominan ────────────────────────────────────────

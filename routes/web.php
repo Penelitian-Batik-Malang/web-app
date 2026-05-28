@@ -19,20 +19,21 @@ Route::middleware('menu.access_or_guest:deteksi-motif')->group(function () {
     Route::get('/deteksi/motif', function () {
         return view('pages.features.deteksi-motif');
     })->name('deteksi.motif');
-    Route::post('/api/detect/motif', [App\Http\Controllers\MLController::class, 'detectMotif'])->name('api.detect.motif');
+    Route::post('/api/detection/motif', [App\Http\Controllers\MLController::class, 'detectMotif'])->name('api.detect.motif');
 });
 
 Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
     Route::get('/deteksi/jenis', function () {
         return view('pages.features.deteksi-jenis');
     })->name('deteksi.jenis');
-    Route::post('/api/detect/jenis', [App\Http\Controllers\MLController::class, 'detectJenis'])->name('api.detect.jenis');
+    Route::post('/api/detection/type', [App\Http\Controllers\MLController::class, 'detectJenis'])->name('api.detect.jenis');
 });
 
 Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
     Route::get('/pewarnaan/palet', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'show'])->name('pewarnaan.palet');
     Route::post('/pewarnaan/palet/proses', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'processPalette'])->name('pewarnaan.palet.proses');
-    Route::post('/api/colorize/palet', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'colorize'])->name('api.colorize.palet');
+    // Unified palette extraction endpoint (FAISS) – uses single ML_URL
+    Route::post('/api/color-palette-faiss', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'colorize'])->name('api.colorize.palet');
     Route::get('/pewarnaan/output-gambar', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'showOutput'])->name('pewarnaan.output');
     Route::post('/api/save-results', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'saveResults'])->name('api.save.results');
 });

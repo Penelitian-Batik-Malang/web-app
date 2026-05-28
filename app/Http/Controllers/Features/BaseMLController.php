@@ -35,24 +35,24 @@ use Illuminate\Support\Facades\Log;
 abstract class BaseMLController extends Controller
 {
     /**
-     * Base URL Batik Service (port 8001).
+     * Base URL ML Service (semua endpoint: deteksi, fashion, CBIR, dll.).
      * @var string
      */
-    protected string $batikUrl;
+    protected string $mlUrl;
 
     /**
-     * Base URL Fashion Service (port 8002).
+     * API Key untuk ML Service.
      * @var string
      */
-    protected string $fashionUrl;
+    protected string $apiKey;
 
     /**
-     * Inisialisasi konfigurasi ML API (dual-service).
+     * Inisialisasi konfigurasi ML API (single-service).
      */
     public function __construct()
     {
-        $this->batikUrl   = rtrim((string) config('services.ml.batik_url',   'http://127.0.0.1:8001'), '/');
-        $this->fashionUrl = rtrim((string) config('services.ml.fashion_url', 'http://127.0.0.1:8002'), '/');
+        $this->mlUrl   = rtrim((string) config('services.ml.url', 'http://127.0.0.1:8001/api'), '/');
+        $this->apiKey  = trim((string) config('services.retrieval.api_key', ''));
     }
 
     /**
@@ -91,49 +91,54 @@ abstract class BaseMLController extends Controller
     // ─── Status & URL Helpers ─────────────────────────────────────────
 
     /**
-     * Cek apakah Batik Service tersedia.
-     */
-    protected function isBatikAvailable(): bool
-    {
-        return !empty($this->batikUrl);
-    }
-
-    /**
-     * Cek apakah Fashion Service tersedia.
-     */
-    protected function isFashionAvailable(): bool
-    {
-        return !empty($this->fashionUrl);
-    }
-
-    /**
-     * Alias isMLAvailable → cek batik service (backward compat).
+     * Cek apakah ML Service tersedia.
      */
     protected function isMLAvailable(): bool
     {
-        return $this->isBatikAvailable();
+        return !empty($this->mlUrl);
     }
 
     /**
-     * Bangun URL lengkap untuk Batik Service endpoint.
+     * Alias untuk backward compatibility.
+     */
+    protected function isBatikAvailable(): bool
+    {
+        return $this->isMLAvailable();
+    }
+
+    /**
+     * Alias untuk backward compatibility.
+     */
+    protected function isFashionAvailable(): bool
+    {
+        return $this->isMLAvailable();
+    }
+
+    /**
+     * Bangun URL lengkap untuk ML Service endpoint.
      *
      * @param  string  $path  Path endpoint (misal: '/detection/motif')
      * @return string  URL lengkap
      */
-    protected function batikServiceUrl(string $path): string
+    protected function mlServiceUrl(string $path): string
     {
-        return $this->batikUrl . '/' . ltrim($path, '/');
+        return $this->mlUrl . '/' . ltrim($path, '/');
     }
 
     /**
-     * Bangun URL lengkap untuk Fashion Service endpoint.
-     *
-     * @param  string  $path  Path endpoint (misal: '/fashion/segment')
-     * @return string  URL lengkap
+     * Alias batikServiceUrl — backward compatibility.
+     */
+    protected function batikServiceUrl(string $path): string
+    {
+        return $this->mlServiceUrl($path);
+    }
+
+    /**
+     * Alias fashionServiceUrl — backward compatibility.
      */
     protected function fashionServiceUrl(string $path): string
     {
-        return $this->fashionUrl . '/' . ltrim($path, '/');
+        return $this->mlServiceUrl($path);
     }
 
     // ─── Standard Responses ───────────────────────────────────────────
@@ -145,7 +150,7 @@ abstract class BaseMLController extends Controller
     {
         return response()->json([
             'success' => false,
-            'message' => 'Model AI belum terhubung. Konfigurasi ML_BATIK_URL / ML_FASHION_URL di .env.',
+            'message' => 'Model AI belum terhubung. Konfigurasi ML_URL di .env.',
         ], 503);
     }
 
@@ -175,7 +180,7 @@ abstract class BaseMLController extends Controller
             return response()->json([
                 'success' => false,
                 'stub'    => true,
-                'message' => 'Model AI belum terhubung. Konfigurasi ML_BATIK_URL di .env.',
+                'message' => 'Model AI belum terhubung. Konfigurasi ML_URL di .env.',
                 'result'  => null,
             ], 503);
         }
@@ -185,17 +190,23 @@ abstract class BaseMLController extends Controller
             $file = $request->file('image');
 
             $response = Http::timeout(60)
+                ->withHeaders(['x-api-key' => $this->apiKey])
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->post($url);
 
             if ($response->successful()) {
-                $data = $response->json();
+                $raw  = $response->json();
+
+                // Unwrap FastAPI APIResponse envelope: { status, message, data: {...} }
+                $data = (isset($raw['data']) && is_array($raw['data'])) ? $raw['data'] : $raw;
+
                 return response()->json([
                     'success' => true,
                     'result'  => [
-                        'label'       => $data['label']       ?? $data['class']  ?? $data['result'] ?? 'Tidak Diketahui',
-                        'confidence'  => $data['confidence']  ?? $data['probability'] ?? $data['score'] ?? 0,
-                        'description' => $data['description'] ?? $data['desc']   ?? $data['message'] ?? '-',
+                        // motif_classifier returns 'motif'; tulis_classifier returns 'label'
+                        'label'       => $data['motif']       ?? $data['label']       ?? $data['class']  ?? $data['result'] ?? 'Tidak Diketahui',
+                        'confidence'  => $data['confidence']  ?? $data['probability'] ?? $data['score']  ?? 0,
+                        'description' => $data['description'] ?? $data['desc']        ?? $data['message'] ?? '-',
                     ],
                 ]);
             }
@@ -231,9 +242,14 @@ abstract class BaseMLController extends Controller
         }
 
         try {
-            $response = Http::timeout(10)->get($this->batikServiceUrl($path));
+            $response = Http::timeout(10)
+                ->withHeaders(['x-api-key' => $this->apiKey])
+                ->get($this->batikServiceUrl($path));
             if ($response->successful()) {
-                return response()->json($response->json());
+                $raw    = $response->json();
+                // Unwrap FastAPI APIResponse envelope → return only the data array (flat labels list)
+                $labels = (isset($raw['data']) && is_array($raw['data'])) ? $raw['data'] : $raw;
+                return response()->json($labels);
             }
         } catch (\Exception $e) {
             Log::warning('ML labels fetch failed: ' . $e->getMessage());

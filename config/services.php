@@ -62,25 +62,21 @@ return [
     |
     */
     'ml' => [
-        // ── Batik Service (Python 3.9, PyTorch) — Port 8001 ──────────
-        // Endpoint: /detection/motif, /detection/type, /search/general
-        'batik_url'  => env('ML_BATIK_URL', 'http://127.0.0.1:8001'),
+        // ── Semua ML Service terpusat di SATU URL ─────────────────────
+        // ML_URL harus berisi URL lengkap beserta port.
+        // Contoh lokal      : ML_URL=http://127.0.0.1:8001
+        // Contoh production : ML_URL=http://127.0.0.1:8001 (atau via SSH tunnel)
+        'url' => rtrim(env('ML_URL', 'http://127.0.0.1:8001'), '/') . '/api',
 
-        // ── Fashion Service (Python 3.7, TF 1.15) — Port 8002 ────────
-        // Endpoint: /fashion/segment, /fashion/blend-manual, /fashion/blend-cbir, etc.
-        'fashion_url' => env('ML_FASHION_URL', 'http://127.0.0.1:8002'),
-
-        // ── S3 Object Storage ─────────────────────────────────────────
-        // Base URL bucket batik-signature-gdrive (galeri utama)
-        's3_batik_base'   => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/' . env('IDC_S3_BATIK_BUCKET', 'batik-signature-gdrive'),
-        // Base URL bucket color-dominant-batik (hasil CBIR warna fashion)
-        's3_cbir_base'    => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/color-dominant-batik',
+        // ── S3 Object Storage ──────────────────────────────────
+        's3_batik_base' => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/' . env('IDC_S3_BATIK_BUCKET', 'batik-signature-gdrive'),
+        's3_cbir_base'  => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/color-dominant-batik',
     ],
 
     'retrieval' => [
-        // Base URL service retrieval warna (FastAPI).
-        'base_url' => env('RETRIEVAL_API_BASE_URL', env('ML_API_BASE_URL', 'http://127.0.0.1:8001')),
-        'api_key' => env('RETRIEVAL_API_KEY', ''),
+        // Base URL service retrieval warna (FastAPI) — sama dengan ML_URL.
+        'base_url' => rtrim(env('ML_URL', 'http://127.0.0.1:8001'), '/'),
+        'api_key'  => env('ML_API_KEY', ''),
     ],
 
 ];

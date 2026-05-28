@@ -51,7 +51,7 @@ class SharedMLController extends BaseMLController
         if (!$this->isFashionAvailable()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Fashion Service belum terhubung. Konfigurasi ML_FASHION_URL di .env.',
+                'message' => 'Fashion Service belum terhubung. Konfigurasi ML_URL di .env.',
             ], 503);
         }
 
@@ -61,7 +61,7 @@ class SharedMLController extends BaseMLController
             $http = $this->attachFile(
                 Http::timeout(600)
                     ->accept('application/json')
-                    ->withHeaders(['X-API-Key' => env('ML_API_KEY', '')]),
+                    ->withHeaders(['x-api-key' => $this->apiKey]),
                 'image',
                 $request->file('image')
             );
@@ -179,7 +179,7 @@ class SharedMLController extends BaseMLController
         try {
             $response = Http::timeout(30)
                 ->asForm()
-                ->withHeaders(['X-API-Key' => env('ML_API_KEY', '')])
+                ->withHeaders(['x-api-key' => $this->apiKey])
                 ->post($url, ['session_id' => $request->input('session_id')]);
 
             if ($response->successful()) {
@@ -220,7 +220,7 @@ class SharedMLController extends BaseMLController
 
         try {
             $response = Http::timeout(30)
-                ->withHeaders(['X-API-Key' => env('ML_API_KEY', '')])
+                ->withHeaders(['x-api-key' => $this->apiKey])
                 ->get($url);
 
             if ($response->successful()) {
