@@ -19,8 +19,8 @@ class ColorSearchController extends Controller
 
     public function __construct()
     {
-        $this->baseUrl = rtrim((string) config('services.retrieval.base_url', ''), '/');
-        $this->apiKey = trim((string) config('services.retrieval.api_key', ''));
+        $this->baseUrl = rtrim((string) config('services.ml.base_url', ''), '/');
+        $this->apiKey = trim((string) config('services.ml.api_key', ''));
     }
 
     public function getPalette(Request $request): JsonResponse

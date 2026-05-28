@@ -52,7 +52,7 @@ abstract class BaseMLController extends Controller
     public function __construct()
     {
         $this->mlUrl   = rtrim((string) config('services.ml.url', 'http://127.0.0.1:8001/api'), '/');
-        $this->apiKey  = trim((string) config('services.retrieval.api_key', ''));
+        $this->apiKey  = trim((string) config('services.ml.api_key', ''));
     }
 
     /**

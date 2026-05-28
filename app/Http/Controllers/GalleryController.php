@@ -103,7 +103,7 @@ class GalleryController extends Controller
             $mime    = $imgResp->header('Content-Type', 'image/jpeg');
             $ext     = str_contains($mime, 'png') ? 'png' : 'jpg';
             $response = Http::timeout(60)
-                ->withHeaders(['X-API-Key' => trim((string) config('services.retrieval.api_key', ''))])
+                ->withHeaders(['X-API-Key' => trim((string) config('services.ml.api_key', ''))])
                 ->attach('file', $imgResp->body(), 'liked_image.' . $ext)
                 ->post($batikUrl . '/search/general');
 

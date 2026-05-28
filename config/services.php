@@ -67,16 +67,11 @@ return [
         // Contoh lokal      : ML_URL=http://127.0.0.1:8001
         // Contoh production : ML_URL=http://127.0.0.1:8001 (atau via SSH tunnel)
         'url' => rtrim(env('ML_URL', 'http://127.0.0.1:8001'), '/') . '/api',
+        'api_key' => env('ML_API_KEY', ''),
 
         // ── S3 Object Storage ──────────────────────────────────
         's3_batik_base' => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/' . env('IDC_S3_BATIK_BUCKET', 'batik-signature-gdrive'),
         's3_cbir_base'  => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/color-dominant-batik',
-    ],
-
-    'retrieval' => [
-        // Base URL service retrieval warna (FastAPI) — sama dengan ML_URL.
-        'base_url' => rtrim(env('ML_URL', 'http://127.0.0.1:8001'), '/'),
-        'api_key'  => env('ML_API_KEY', ''),
     ],
 
 ];

@@ -20,7 +20,7 @@ class MLController extends Controller
     {
         $this->baseUrl = rtrim((string) config('services.ml.url', ''), '/');
         $this->endpoints = (array) config('services.ml.endpoints', []);
-        $this->apiKey = trim((string) config('services.retrieval.api_key', ''));
+        $this->apiKey = trim((string) config('services.ml.api_key', ''));
     }
 
     /**
