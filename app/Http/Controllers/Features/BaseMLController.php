@@ -205,6 +205,24 @@ abstract class BaseMLController extends Controller
             $url  = $this->batikServiceUrl($path);
             $file = $request->file('image');
 
+            // ── DEBUG: log sebelum request ke ML API ─────────────────────────
+            Log::debug('BaseMLController: sending request', [
+                'url'         => $url,
+                'api_key_set' => !empty($this->apiKey),
+                'api_key_len' => strlen($this->apiKey),
+                'api_key_val' => substr($this->apiKey, 0, 8) . '...', // first 8 chars only
+                'file_name'   => $file->getClientOriginalName(),
+            ]);
+
+            if (empty($this->apiKey)) {
+                Log::error('BaseMLController: ML_API_KEY is empty — check .env and clear config cache');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Konfigurasi API Key ML tidak ditemukan. Periksa ML_API_KEY di .env.',
+                ], 503);
+            }
+            // ─────────────────────────────────────────────────────────────────
+
             $response = Http::timeout(60)
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->withHeaders(['X-API-Key' => $this->apiKey])
@@ -258,6 +276,10 @@ abstract class BaseMLController extends Controller
         }
 
         try {
+            Log::debug('BaseMLController: fetching labels', [
+                'url'         => $this->batikServiceUrl($path),
+                'api_key_set' => !empty($this->apiKey),
+            ]);
             $response = Http::timeout(10)
                 ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->get($this->batikServiceUrl($path));

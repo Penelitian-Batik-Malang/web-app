@@ -58,6 +58,14 @@ class SharedMLController extends BaseMLController
         $url = $this->fashionServiceUrl('/fashion/segment');
 
         try {
+            // ── DEBUG ───────────────────────────────────────────────────────────────
+            Log::debug('SharedMLController:inference request', [
+                'url'         => $url,
+                'api_key_set' => !empty($this->apiKey),
+                'api_key_len' => strlen($this->apiKey),
+                'api_key_val' => substr($this->apiKey, 0, 8) . '...',
+            ]);
+            // ───────────────────────────────────────────────────────────────
             $http = Http::timeout(600)->accept('application/json');
             $http = $this->attachFile($http, 'image', $request->file('image'));
             $http = $http->withHeaders(['X-API-Key' => $this->apiKey]);
