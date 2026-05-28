@@ -118,26 +118,10 @@ class SharedMLController extends BaseMLController
             }
         }
 
-        // Kumpulkan unique labels untuk bulk lookup
-        $uniqueLabels = [];
-        foreach (['top_5', 'top_10', 'top_15'] as $tier) {
-            foreach ($data['cbir'][$tier] ?? [] as $item) {
-                if (!empty($item['label'])) {
-                    $uniqueLabels[$item['label']] = null;
-                }
-            }
-        }
-
-        // Lookup galeri URL per label (sekali per label unik)
-        $galeriUrls = [];
-        foreach (array_keys($uniqueLabels) as $label) {
-            $galeriUrls[$label] = $this->findGaleriUrlByLabel($label);
-        }
-
         // Enrichment: gunakan proxy route /storage/cbir/ agar tidak 403 (bucket private)
         foreach (['top_5', 'top_10', 'top_15'] as $tier) {
             if (!isset($data['cbir'][$tier])) continue;
-            $data['cbir'][$tier] = array_map(function ($item) use ($galeriUrls) {
+            $data['cbir'][$tier] = array_map(function ($item) {
                 // Konversi URL S3 full ke internal proxy route
                 // misal: https://is3.cloudhost.id/color-dominant-batik/hijau/img.jpg
                 // jadi:  /storage/cbir/hijau/img.jpg
@@ -151,8 +135,8 @@ class SharedMLController extends BaseMLController
                     }
                 }
                 
-                // galeri_url: dari lookup label ke DB
-                $item['galeri_url'] = $galeriUrls[$item['label'] ?? ''] ?? null;
+                // galeri_url dinonaktifkan untuk pencarian warna karena hasil mewakili banyak motif
+                $item['galeri_url'] = null;
                 return $item;
             }, $data['cbir'][$tier]);
         }
