@@ -51,7 +51,7 @@ abstract class BaseMLController extends Controller
      */
     public function __construct()
     {
-        $this->mlUrl   = rtrim((string) config('services.ml.url', 'http://127.0.0.1:8001/api'), '/');
+        $this->mlUrl   = rtrim((string) config('services.ml.url', 'http://127.0.0.1:8001'), '/');
         $this->apiKey  = trim((string) config('services.ml.api_key', ''));
     }
 
@@ -117,12 +117,28 @@ abstract class BaseMLController extends Controller
     /**
      * Bangun URL lengkap untuk ML Service endpoint.
      *
-     * @param  string  $path  Path endpoint (misal: '/detection/motif')
+     * Cukup pass path yang tercantum di config('services.ml.endpoints'),
+     * atau pass path FastAPI langsung (harus dimulai dengan '/api/').
+     *
+     * Contoh:
+     *   $this->mlServiceUrl('/fashion/segment')
+     *   $this->mlServiceUrl('/detection/motif')
+     *
+     * @param  string  $path  Path endpoint (misal: '/fashion/segment')
      * @return string  URL lengkap
      */
     protected function mlServiceUrl(string $path): string
     {
-        return $this->mlUrl . '/' . ltrim($path, '/');
+        // Normalise: buang leading slash
+        $cleanPath = ltrim($path, '/');
+
+        // Jika path belum punya prefix 'api/', tambahkan otomatis.
+        // Path yang sudah ada di endpoints config sudah menyertakan /api.
+        if (!str_starts_with($cleanPath, 'api/')) {
+            $cleanPath = 'api/' . $cleanPath;
+        }
+
+        return $this->mlUrl . '/' . $cleanPath;
     }
 
     /**
@@ -190,8 +206,8 @@ abstract class BaseMLController extends Controller
             $file = $request->file('image');
 
             $response = Http::timeout(60)
-                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->post($url);
 
             if ($response->successful()) {

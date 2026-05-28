@@ -15,19 +15,6 @@ Route::get('/fitur', function () {
     return view('pages.features');
 })->name('fitur');
 
-Route::middleware('menu.access_or_guest:deteksi-motif')->group(function () {
-    Route::get('/deteksi/motif', function () {
-        return view('pages.features.deteksi-motif');
-    })->name('deteksi.motif');
-    Route::post('/api/detection/motif', [App\Http\Controllers\MLController::class, 'detectMotif'])->name('api.detect.motif');
-});
-
-Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
-    Route::get('/deteksi/jenis', function () {
-        return view('pages.features.deteksi-jenis');
-    })->name('deteksi.jenis');
-    Route::post('/api/detection/type', [App\Http\Controllers\MLController::class, 'detectJenis'])->name('api.detect.jenis');
-});
 
 Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
     Route::get('/pewarnaan/palet', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'show'])->name('pewarnaan.palet');

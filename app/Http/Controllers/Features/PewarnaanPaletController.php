@@ -358,45 +358,15 @@ class PewarnaanPaletController extends BaseMLController
             return $palettes;
         }
 
-        try {
-            // Konversi base64 ke binary
-            $colorImageContent = $this->base64ToImageFile($colorImageBase64);
-
-            // Call API extract palette dengan method "all" untuk mendapatkan 3 metode sekaligus
-            // Endpoint: POST /api/palette/extract
-            $response = Http::timeout(30)
-                ->withHeaders(['X-API-Key' => $this->apiKey])
-                ->attach('image', $colorImageContent, 'color_image.jpg')
-                ->attach('method', 'all')
-                ->attach('n_colors', '6')
-                ->post($this->mlUrl . '/palette/extract');
-
-            if ($response->successful()) {
-                $data = $response->json();
-                if (isset($data['palettes'])) {
-                    // Convert RGB format to HEX format for frontend display
-                    $palettes['kmeans'] = $this->convertRgbToHex($data['palettes']['kmeans'] ?? []);
-                    $palettes['histogram'] = $this->convertRgbToHex($data['palettes']['histogram'] ?? []);
-                    $palettes['median_cut'] = $this->convertRgbToHex($data['palettes']['median_cut'] ?? []);
-                }
-
-                Log::info('Palettes extracted successfully', [
-                    'kmeans_count' => count($palettes['kmeans']),
-                    'histogram_count' => count($palettes['histogram']),
-                    'median_cut_count' => count($palettes['median_cut']),
-                ]);
-            } else {
-                Log::warning('Palette extraction failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-            }
-
-        } catch (\Exception $e) {
-            Log::warning('Palette extraction error: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
-        }
+        // ── STUB ───────────────────────────────────────────────────────────────
+        // Endpoint /api/palette/extract BELUM diimplementasikan di FastAPI backend.
+        // Fitur ini menggunakan endpoint berbeda: POST /api/color-palette-faiss
+        // yang dikelola oleh ColorSearchController.
+        //
+        // TODO: Sambungkan ke /api/color-palette-faiss atau implementasikan
+        //       endpoint /api/palette/extract di model-ml jika diperlukan.
+        // ──────────────────────────────────────────────────────────────────────
+        Log::warning('PewarnaanPalet: extractPalettes dipanggil tapi endpoint belum tersedia di FastAPI.');
 
         return $palettes;
     }
@@ -483,48 +453,12 @@ class PewarnaanPaletController extends BaseMLController
      */
     private function attemptRecolor(string $imageContent, array $paletteHex, string $baseUrl)
     {
-        $endpoint = '/api/recolor';
-        $fullUrl = $baseUrl . $endpoint;
-        $paletteJson = json_encode($paletteHex);
-
-        try {
-            Log::info('Attempting recolor', [
-                'endpoint' => $fullUrl,
-                'image_size' => strlen($imageContent),
-                'palette_hex' => $paletteJson,
-            ]);
-            
-            $response = Http::timeout(120)
-                ->withHeaders(['X-API-Key' => $this->apiKey])
-                ->attach('image', $imageContent, 'batik.jpg')
-                ->attach('palette', $paletteJson)
-                ->attach('white_threshold', '150')
-                ->post($fullUrl);
-
-            Log::info('Recolor response received', [
-                'status' => $response->status(),
-                'headers' => $response->headers(),
-                'body' => substr($response->body(), 0, 500),
-            ]);
-
-            if ($response->successful()) {
-                Log::info('Recolor successful', ['endpoint' => $endpoint]);
-                return $response;
-            } else {
-                // Log error response untuk debugging
-                Log::warning('Recolor returned error status', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-                // Still return response jika ada error, biar handler catch
-                return $response;
-            }
-        } catch (\Exception $e) {
-            Log::error('Recolor request exception', [
-                'error' => $e->getMessage(),
-                'endpoint' => $fullUrl,
-            ]);
-            return false;
-        }
+        // ── STUB ────────────────────────────────────────────────────────────────
+        // Endpoint /api/recolor BELUM diimplementasikan di FastAPI (model-ml).
+        // TODO: Tambahkan endpoint POST /api/recolor di model-ml/app/controllers/
+        //       atau arahkan ke /api/color-palette-faiss yang sudah ada.
+        // ───────────────────────────────────────────────────────────────────────
+        Log::warning('PewarnaanPalet: attemptRecolor dipanggil tapi endpoint /api/recolor belum ada di FastAPI.');
+        return false;
     }
 }

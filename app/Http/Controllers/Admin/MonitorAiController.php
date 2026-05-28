@@ -10,14 +10,15 @@ class MonitorAiController extends Controller
 {
     public function index()
     {
+        // services.ml.url adalah base URL murni, misal: http://127.0.0.1:8001
+        // FastAPI health endpoint: GET /api/health  (prefix /api dari api_router)
         $mlBase = rtrim((string) config('services.ml.url', ''), '/');
-        // Hapus suffix '/api' untuk mendapatkan base URL tanpa prefix
-        $baseWithoutApi = preg_replace('#/api$#', '', $mlBase);
 
         $services = [
             'ml' => [
-                'name' => 'ML Service',
-                'url'  => $baseWithoutApi,
+                'name'       => 'ML Service',
+                'url'        => $mlBase,
+                'healthPath' => '/api/health',
             ],
         ];
 
@@ -31,7 +32,7 @@ class MonitorAiController extends Controller
                 continue;
             }
 
-            $url = $service['url'] . '/health';
+            $url = $service['url'] . ($service['healthPath'] ?? '/api/health');
 
             try {
                 $response = Http::timeout(10)->acceptJson()->get($url);

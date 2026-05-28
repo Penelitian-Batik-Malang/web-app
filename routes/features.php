@@ -113,16 +113,18 @@ Route::get('/storage/cbir/{path}', function (string $path) {
 // Batik Service: POST /detection/motif | GET /detection/motif/labels
 Route::middleware('menu.access_or_guest:deteksi-motif')->group(function () {
     Route::get('/deteksi/motif', [DeteksiMotifController::class, 'show'])->name('deteksi.motif');
-    Route::post('/api/detection/motif', [DeteksiMotifController::class, 'detect'])->name('api.detect.motif');
-    Route::get('/api/detection/motif/labels', [DeteksiMotifController::class, 'labels'])->name('api.detect.motif.labels');
+    Route::post('/api/batik/motif', [DeteksiMotifController::class, 'detect'])->name('api.detect.motif');
+    Route::get('/api/batik/motif/labels', [DeteksiMotifController::class, 'labels'])->name('api.detect.motif.labels');
+    // Alias route for backward compatibility
+    Route::get('/api/batik/labels', [DeteksiMotifController::class, 'labels']);
 });
 
 // ── [DONE] Deteksi Jenis Batik ────────────────────────────────────────────────
 // Batik Service: POST /detection/type | GET /detection/type/labels
 Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
     Route::get('/deteksi/jenis', [DeteksiJenisController::class, 'show'])->name('deteksi.jenis');
-    Route::post('/api/detection/type', [DeteksiJenisController::class, 'detect'])->name('api.detect.jenis');
-    Route::get('/api/detection/type/labels', [DeteksiJenisController::class, 'labels'])->name('api.detect.jenis.labels');
+    Route::post('/api/batik/type', [DeteksiJenisController::class, 'detect'])->name('api.detect.jenis');
+    Route::get('/api/batik/type/labels', [DeteksiJenisController::class, 'labels'])->name('api.detect.jenis.labels');
 });
 
 // ── [DONE] Shared Fashion Service Session (terapkan-batik | rekomendasi-batik) ─
