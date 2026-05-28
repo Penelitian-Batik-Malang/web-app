@@ -224,7 +224,12 @@ abstract class BaseMLController extends Controller
             // ─────────────────────────────────────────────────────────────────
 
             $response = Http::timeout(60)
-                ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                ->attach(
+                    'file', 
+                    file_get_contents($file->getRealPath()), 
+                    $file->getClientOriginalName(),
+                    ['Content-Type' => $file->getClientMimeType()]
+                )
                 ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->post($url);
 
@@ -245,9 +250,17 @@ abstract class BaseMLController extends Controller
                 ]);
             }
 
+            // Log raw FastAPI response untuk debugging
+            Log::error('ML API returned non-success', [
+                'url'    => $url,
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Model AI tidak memberikan respons yang valid.',
+                'debug'   => app()->isLocal() ? $response->json() : null,
             ], $response->status());
 
         } catch (\Exception $e) {
