@@ -202,7 +202,7 @@ window.showCbirPhase = function(cbir) {
         preview.src = URL.createObjectURL(state.fashionFile);
     }
 
-    const items = cbir?.top_15 || [];
+    const items = cbir?.top_5 || [];
     if (badge) badge.textContent = `${items.length} rekomendasi`;
 
     let hasAnalysisData = false;
@@ -327,7 +327,7 @@ window.openBatikPanelFunc = function(part) {
     }
 
     const cbir  = window.cbirData || {};
-    const items = cbir.top_15 || [];
+    const items = cbir.top_5 || [];
     const panelGrid = document.getElementById('panel-batik-grid') || panelWrapper;
     
     panelGrid.innerHTML = '';
