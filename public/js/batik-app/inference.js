@@ -63,6 +63,14 @@ window.BatikApp.Inference.init = function () {
                 throw new Error(data.message || 'Gagal menganalisis. Pastikan API aktif.');
             }
 
+            // Cek apakah ada mask/pakaian yang terdeteksi
+            const parts = data.parts || {};
+            const isPartsEmpty = Array.isArray(parts) ? parts.length === 0 : Object.keys(parts).length === 0;
+            if (isPartsEmpty) {
+                alert('Peringatan: Tidak terdeteksi atribut pakaian pada foto ini. Silakan unggah foto lain.');
+                throw new Error('Tidak terdeteksi atribut pakaian pada foto ini.');
+            }
+
             // Simpan CBIR data global (dipakai oleh rekomendasi-batik)
             window.cbirData = data.cbir || {};
 
