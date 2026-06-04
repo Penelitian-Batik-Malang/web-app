@@ -113,73 +113,73 @@ Route::get('/storage/cbir/{path}', function (string $path) {
 // Batik Service: POST /detection/motif | GET /detection/motif/labels
 Route::middleware('menu.access_or_guest:deteksi-motif')->group(function () {
     Route::get('/deteksi/motif', [DeteksiMotifController::class, 'show'])->name('deteksi.motif');
-    Route::post('/api/batik/motif', [DeteksiMotifController::class, 'detect'])->name('api.detect.motif');
-    Route::get('/api/batik/motif/labels', [DeteksiMotifController::class, 'labels'])->name('api.detect.motif.labels');
+    Route::post('/ajax/batik/motif', [DeteksiMotifController::class, 'detect'])->name('api.detect.motif');
+    Route::get('/ajax/batik/motif/labels', [DeteksiMotifController::class, 'labels'])->name('api.detect.motif.labels');
     // Alias route for backward compatibility
-    Route::get('/api/batik/labels', [DeteksiMotifController::class, 'labels']);
+    Route::get('/ajax/batik/labels', [DeteksiMotifController::class, 'labels']);
 });
 
 // ── [DONE] Deteksi Jenis Batik ────────────────────────────────────────────────
 // Batik Service: POST /detection/type | GET /detection/type/labels
 Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
     Route::get('/deteksi/jenis', [DeteksiJenisController::class, 'show'])->name('deteksi.jenis');
-    Route::post('/api/batik/type', [DeteksiJenisController::class, 'detect'])->name('api.detect.jenis');
-    Route::get('/api/batik/type/labels', [DeteksiJenisController::class, 'labels'])->name('api.detect.jenis.labels');
+    Route::post('/ajax/batik/type', [DeteksiJenisController::class, 'detect'])->name('api.detect.jenis');
+    Route::get('/ajax/batik/type/labels', [DeteksiJenisController::class, 'labels'])->name('api.detect.jenis.labels');
 });
 
 // ── [DONE] Shared Fashion Service Session (terapkan-batik | rekomendasi-batik) ─
 // Fashion Service: POST /fashion/segment | POST /fashion/reset-session | GET /fashion/session/{id}
 Route::middleware('menu.access_or_guest:terapkan-batik,rekomendasi-batik')->group(function () {
-    Route::post('/api/inference', [SharedMLController::class, 'inference'])->name('api.inference');
-    Route::post('/api/reset', [SharedMLController::class, 'reset'])->name('api.reset');
-    Route::get('/api/session/{sessionId}', [SharedMLController::class, 'getSession'])->name('api.session');
+    Route::post('/ajax/inference', [SharedMLController::class, 'inference'])->name('api.inference');
+    Route::post('/ajax/reset', [SharedMLController::class, 'reset'])->name('api.reset');
+    Route::get('/ajax/session/{sessionId}', [SharedMLController::class, 'getSession'])->name('api.session');
 });
 
 // ── [DONE] Terapkan Batik ─────────────────────────────────────────────────────
 // Fashion Service: POST /fashion/blend-manual
 Route::middleware('menu.access_or_guest:terapkan-batik')->group(function () {
     Route::get('/terapkan-batik', [TerapkanBatikController::class, 'show'])->name('terapkan.batik');
-    Route::post('/api/blend', [TerapkanBatikController::class, 'blend'])->name('api.blend');
-    Route::post('/api/reset-part', [TerapkanBatikController::class, 'resetPart'])->name('api.reset.part');
+    Route::post('/ajax/blend', [TerapkanBatikController::class, 'blend'])->name('api.blend');
+    Route::post('/ajax/reset-part', [TerapkanBatikController::class, 'resetPart'])->name('api.reset.part');
 });
 
 // ── [DONE] Rekomendasi Batik ──────────────────────────────────────────────────
 // Fashion Service: POST /fashion/blend-cbir
 Route::middleware('menu.access_or_guest:rekomendasi-batik')->group(function () {
     Route::get('/rekomendasi-batik', [RekomendasiBatikController::class, 'show'])->name('rekomendasi.batik');
-    Route::post('/api/blend-from-cbir', [RekomendasiBatikController::class, 'blendFromCbir'])->name('api.blend.cbir');
+    Route::post('/ajax/blend-from-cbir', [RekomendasiBatikController::class, 'blendFromCbir'])->name('api.blend.cbir');
 });
 
 // ── [DONE] Pencarian Batik (CBIR) ─────────────────────────────────────────────
 // Batik Service: POST /search/general
 Route::middleware('menu.access_or_guest:pencarian-batik')->group(function () {
     Route::get('/pencarian-batik', [PencarianBatikController::class, 'show'])->name('pencarian.batik');
-    Route::post('/api/search/general', [PencarianBatikController::class, 'search'])->name('api.search.batik');
+    Route::post('/ajax/search/general', [PencarianBatikController::class, 'search'])->name('api.search.batik');
 });
 
 // ── [TODO] Pencarian by Warna Dominan ────────────────────────────────────────
 Route::middleware('menu.access_or_guest:pencarian-warna')->group(function () {
     Route::get('/pencarian-warna', [PencarianWarnaController::class, 'show'])->name('pencarian.warna');
-    Route::post('/api/search/color-palette', [ColorSearchController::class, 'getPalette'])
+    Route::post('/ajax/search/color-palette', [ColorSearchController::class, 'getPalette'])
         ->name('api.search.color-palette');
-    Route::post('/api/search/color-recommendation', [ColorSearchController::class, 'getRecommendation'])
+    Route::post('/ajax/search/color-recommendation', [ColorSearchController::class, 'getRecommendation'])
         ->name('api.search.color-recommendation');
 });
 
 // ── [TODO] Pewarnaan by Palet Warna ──────────────────────────────────────────
 Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
     Route::get('/pewarnaan-palet', [PewarnaanPaletController::class, 'show'])->name('features.pewarnaan.palet');
-    // TODO: Route::post('/api/pewarnaan/palet', [PewarnaanPaletController::class, 'process'])->name('api.pewarnaan.palet');
+    // TODO: Route::post('/ajax/pewarnaan/palet', [PewarnaanPaletController::class, 'process'])->name('api.pewarnaan.palet');
 });
 
 // ── [TODO] Pewarnaan by Prompt ────────────────────────────────────────────────
 Route::middleware('menu.access_or_guest:pewarnaan-prompt')->group(function () {
     Route::get('/pewarnaan-prompt', [PewarnaanPromptController::class, 'show'])->name('pewarnaan.prompt');
-    // TODO: Route::post('/api/pewarnaan/prompt', [PewarnaanPromptController::class, 'process'])->name('api.pewarnaan.prompt');
+    // TODO: Route::post('/ajax/pewarnaan/prompt', [PewarnaanPromptController::class, 'process'])->name('api.pewarnaan.prompt');
 });
 
 // ── [TODO] Text to Image Batik ────────────────────────────────────────────────
 Route::middleware('menu.access_or_guest:text-to-image')->group(function () {
     Route::get('/text-to-image', [TextToImageController::class, 'show'])->name('text-to-image');
-    // TODO: Route::post('/api/text-to-image', [TextToImageController::class, 'generate'])->name('api.text-to-image');
+    // TODO: Route::post('/ajax/text-to-image', [TextToImageController::class, 'generate'])->name('api.text-to-image');
 });

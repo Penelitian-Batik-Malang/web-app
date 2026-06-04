@@ -55,6 +55,7 @@ window.BatikApp.Inference.init = function () {
                     'X-CSRF-TOKEN': helpers.csrf(),
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-API-Key': config.apiKey || '',
                 },
                 body: fd,
             });

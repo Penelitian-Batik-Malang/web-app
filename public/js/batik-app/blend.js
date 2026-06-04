@@ -116,6 +116,7 @@ window.BatikApp.Blend.init = function () {
                     'X-CSRF-TOKEN': helpers.csrf(),
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-API-Key': config.apiKey || '',
                 },
                 body: fd,
             });
@@ -186,8 +187,8 @@ window.BatikApp.Blend.init = function () {
             fd.append('instance_index', String(state.selectedPart.index));
             fd.append('_token', helpers.csrf());
 
-            // Use the new /api/reset-part endpoint (add to config or hardcode for now)
-            const route = (config.apiBlendRoute || '').replace('/api/blend', '/api/reset-part');
+            // Use the new /ajax/reset-part endpoint (add to config or hardcode for now)
+            const route = (config.apiBlendRoute || '').replace('/ajax/blend', '/ajax/reset-part');
             
             const resp = await fetch(route, {
                 method: 'POST',
@@ -195,6 +196,7 @@ window.BatikApp.Blend.init = function () {
                     'X-CSRF-TOKEN': helpers.csrf(),
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-API-Key': config.apiKey || '',
                 },
                 body: fd,
             });
