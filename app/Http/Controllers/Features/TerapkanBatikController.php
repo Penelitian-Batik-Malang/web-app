@@ -99,6 +99,13 @@ class TerapkanBatikController extends BaseMLController
 
         $url = $this->fashionServiceUrl('/fashion/blend-manual');
 
+        if (empty($this->apiKey)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Konfigurasi API Key ML tidak ditemukan di server.',
+            ], 503);
+        }
+
         try {
             $batikFile     = $request->file('batik');
             $batikRealPath = $batikFile->getRealPath();

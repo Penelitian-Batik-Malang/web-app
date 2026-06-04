@@ -66,9 +66,16 @@ class SharedMLController extends BaseMLController
                 'api_key_val' => substr($this->apiKey, 0, 8) . '...',
             ]);
             // ───────────────────────────────────────────────────────────────
-            $http = Http::timeout(600)->accept('application/json');
+            
+            if (empty($this->apiKey)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Konfigurasi API Key ML tidak ditemukan di server. Periksa ML_API_KEY di .env dan jalankan config:clear.',
+                ], 503);
+            }
+
+            $http = Http::timeout(600)->accept('application/json')->withHeaders(['X-API-Key' => $this->apiKey]);
             $http = $this->attachFile($http, 'image', $request->file('image'));
-            $http = $http->withHeaders(['X-API-Key' => $this->apiKey]);
             $response = $http->post($url);
 
             if ($response->successful()) {
@@ -165,6 +172,13 @@ class SharedMLController extends BaseMLController
         $url = $this->fashionServiceUrl('/fashion/reset-session');
 
         try {
+            if (empty($this->apiKey)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Konfigurasi API Key ML tidak ditemukan di server.',
+                ], 503);
+            }
+
             $response = Http::timeout(30)
                 ->asForm()
                 ->withHeaders(['X-API-Key' => $this->apiKey])
@@ -207,6 +221,13 @@ class SharedMLController extends BaseMLController
         $url = $this->fashionServiceUrl('/fashion/session/' . $sessionId);
 
         try {
+            if (empty($this->apiKey)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Konfigurasi API Key ML tidak ditemukan di server.',
+                ], 503);
+            }
+
             $response = Http::timeout(30)
                 ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->get($url);
