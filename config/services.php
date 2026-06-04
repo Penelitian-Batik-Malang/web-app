@@ -63,13 +63,12 @@ return [
     */
     'ml' => [
         // ── Base URL murni tanpa path /api ─────────────────────────────
-        // Set ML_URL di .env TANPA suffix /api:
-        //   Lokal      : ML_URL=http://127.0.0.1:8001
-        //   Production : ML_URL=http://127.0.0.1:8001  (atau via SSH tunnel)
+        //   Lokal      : RETRIEVAL_API_BASE_URL=http://127.0.0.1:8001
+        //   Production : RETRIEVAL_API_BASE_URL=http://127.0.0.1:8001  (atau via SSH tunnel)
         //
         // Path /api ditambahkan otomatis oleh endpoint mapping di bawah.
-        'url'     => rtrim(env('ML_URL', 'http://127.0.0.1:8001'), '/'),
-        'api_key' => env('ML_API_KEY', ''),
+        'url'     => rtrim(env('RETRIEVAL_API_BASE_URL', 'http://127.0.0.1:8001'), '/'),
+        'api_key' => env('RETRIEVAL_API_KEY', ''),
 
         // ── Endpoint FastAPI terpusat (single source of truth) ──────────
         // Semua path sudah menyertakan prefix /api sesuai FastAPI router.

@@ -84,7 +84,7 @@ Variabel yang dibutuhkan:
         /** @type {string} Route untuk blend motif batik ke segmen */
         apiBlendRoute: "{{ route('api.blend') }}",
         /** @type {string} API Key untuk by-pass / direct proxy Nginx */
-        apiKey: "{{ config('services.ml.api_key', env('ML_API_KEY')) }}",
+        apiKey: "{{ config('services.ml.api_key', env('RETRIEVAL_API_KEY')) }}",
     };
 </script>
 @include('pages.features.shared.scripts')
