@@ -51,8 +51,6 @@ window.BatikApp.BatikPanel.init = function () {
 
     const zoomInBtn      = $('zoom-in-btn');
     const zoomOutBtn     = $('zoom-out-btn');
-    const rotateCwBtn    = $('rotate-cw-btn');
-    const rotateCcwBtn   = $('rotate-ccw-btn');
     const batikResetBtn  = $('batik-reset-transform');
 
     // ── Open/Close Panel ──────────────────────────────────────────
@@ -317,8 +315,6 @@ window.BatikApp.BatikPanel.init = function () {
 
     zoomInBtn?.addEventListener('click',  () => { state.batikTransform.scale = Math.min(10, state.batikTransform.scale * 1.2); drawBatikCanvas(); });
     zoomOutBtn?.addEventListener('click', () => { state.batikTransform.scale = Math.max(0.1, state.batikTransform.scale / 1.2); drawBatikCanvas(); });
-    rotateCwBtn?.addEventListener('click',  () => { state.batikTransform.rotation = (state.batikTransform.rotation + 5) % 360; drawBatikCanvas(); });
-    rotateCcwBtn?.addEventListener('click', () => { state.batikTransform.rotation = (state.batikTransform.rotation - 5 + 360) % 360; drawBatikCanvas(); });
     batikResetBtn?.addEventListener('click', () => { state.batikTransform = { scale: 1, offsetX: 0, offsetY: 0, rotation: 0 }; drawBatikCanvas(); });
 
     // ── Batik Selection ───────────────────────────────────────────

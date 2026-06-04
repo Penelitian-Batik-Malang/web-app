@@ -50,13 +50,11 @@ Elemen penting (ID dipakai oleh JS):
             <div class="w-full lg:w-2/5 flex flex-col border-r border-gray-800 p-4 gap-3 shrink-0">
                 <p class="text-xs text-gray-400">Atur posisi motif — drag untuk geser, scroll untuk zoom:</p>
                 <div class="flex-1 rounded-xl overflow-hidden bg-gray-800 border border-gray-700 flex items-center justify-center" style="min-height:200px;max-height:340px">
-                    <canvas id="batik-crop-canvas" class="block w-full h-full" style="cursor:grab;touch-action:none;max-height:340px"></canvas>
+                    <canvas id="batik-crop-canvas" class="block max-w-full max-h-full object-contain" style="cursor:grab;touch-action:none;max-height:340px"></canvas>
                 </div>
-                <div class="grid grid-cols-5 gap-1.5">
+                <div class="grid grid-cols-3 gap-1.5">
                     <button id="zoom-in-btn"  class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Perbesar"><i class="bi bi-zoom-in"></i></button>
                     <button id="zoom-out-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Perkecil"><i class="bi bi-zoom-out"></i></button>
-                    <button id="rotate-ccw-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Putar kiri"><i class="bi bi-arrow-counterclockwise"></i></button>
-                    <button id="rotate-cw-btn"  class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Putar kanan"><i class="bi bi-arrow-clockwise"></i></button>
                     <button id="batik-reset-transform" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Reset"><i class="bi bi-aspect-ratio"></i></button>
                 </div>
                 <p id="panel-status" class="hidden text-xs text-red-400 mt-1"></p>
