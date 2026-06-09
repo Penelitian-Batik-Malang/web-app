@@ -12,13 +12,10 @@
                     <button id="workspace-zoom-out" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors" title="Zoom Out">
                         <i class="bi bi-zoom-out"></i>
                     </button>
-                    <button id="workspace-zoom-reset" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors" title="Reset Zoom">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
                 </div>
 
                 <div class="relative rounded-xl overflow-hidden bg-gray-800 flex items-center justify-center p-1" id="canvas-container" style="cursor: grab;">
-                    <canvas id="fashion-canvas" class="w-full h-auto block" style="max-height: 65vh; transform-origin: center center; transition: transform 0.1s ease-out;"></canvas>
+                    <canvas id="fashion-canvas" class="max-w-full max-h-[65vh] object-contain block mx-auto" style="transform-origin: center center; transition: transform 0.1s ease-out;"></canvas>
                 </div>
             </div>
         </div>
