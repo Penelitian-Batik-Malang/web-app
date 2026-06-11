@@ -85,29 +85,38 @@ class ColorSearchController extends Controller
             if (!is_array($rawPalette)) {
                 $rawPalette = [];
             }
+            
+            $rawColors = $payload['data']['colors'] ?? [];
+            if (!is_array($rawColors)) {
+                $rawColors = [];
+            }
+            
+            $rawColorNames = $payload['data']['color_names'] ?? [];
+            if (!is_array($rawColorNames)) {
+                $rawColorNames = [];
+            }
 
             $palettes = [];
-            foreach (array_values($rawPalette) as $idx => $item) {
-                if (!is_array($item)) {
-                    continue;
+            foreach (array_values($rawPalette) as $idx => $hex) {
+                $index = $idx + 1;
+                $hexStr = is_string($hex) ? strtoupper($hex) : '#000000';
+                if (!str_starts_with($hexStr, '#')) {
+                    $hexStr = '#' . $hexStr;
                 }
 
-                $index = (int) ($item['no'] ?? $item['index'] ?? $item['number'] ?? $item['id'] ?? ($idx + 1));
-                $hex = strtoupper((string) ($item['palette'] ?? $item['hex'] ?? $item['hex_code'] ?? $item['color_hex'] ?? ''));
-                if (!str_starts_with($hex, '#')) {
-                    $hex = '#' . $hex;
+                if (!preg_match('/^#[0-9A-F]{6}$/', $hexStr)) {
+                    $hexStr = '#000000';
                 }
-
-                // Jika backend tidak mengirim HEX valid, fallback aman ke hitam.
-                if (!preg_match('/^#[0-9A-F]{6}$/', $hex)) {
-                    $hex = '#000000';
-                }
+                
+                $colorInfo = $rawColors[$idx] ?? [];
+                $percentage = isset($colorInfo[3]) ? (float) $colorInfo[3] : null;
+                $colorName = (string) ($rawColorNames[$idx] ?? ('Warna ' . $index));
 
                 $palettes[] = [
-                    'index' => $index,
-                    'name' => (string) ($item['name'] ?? $item['color_name'] ?? ('Warna ' . $index)),
-                    'hex' => $hex,
-                    'percentage' => isset($item['percentage']) ? (float) $item['percentage'] : null,
+                    'no' => $index,
+                    'palette' => $hexStr,
+                    'name' => $colorName,
+                    'percentage' => $percentage,
                 ];
             }
 
@@ -117,11 +126,8 @@ class ColorSearchController extends Controller
                 'errors' => [],
                 'meta' => null,
                 'result' => [
-                    'palette' => $rawPalette,
-                    'selected_palette_indexes' => array_values(array_map(
-                        fn ($item) => (int) ($item['no'] ?? $item['index'] ?? $item['number'] ?? $item['id'] ?? 0),
-                        $rawPalette,
-                    )),
+                    'palette' => $palettes,
+                    'selected_palette_indexes' => array_column($palettes, 'no'),
                 ],
             ]);
         } catch (\Throwable $error) {
@@ -226,6 +232,7 @@ class ColorSearchController extends Controller
                     'image_url' => (string) ($item['image_url'] ?? $item['image'] ?? $item['thumbnail'] ?? 'https://placehold.co/240x180?text=Batik'),
                     'score' => isset($item['score']) ? (float) $item['score'] : null,
                     'distance' => isset($item['distance']) ? (float) $item['distance'] : null,
+                    'color_names_label' => $item['color_names_label'] ?? [],
                 ];
             }
 
