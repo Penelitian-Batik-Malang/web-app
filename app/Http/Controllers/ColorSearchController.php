@@ -180,7 +180,7 @@ class ColorSearchController extends Controller
         }
 
         $numCluster = (int) $request->input('num_cluster', $request->input('num_clusters', 5));
-        $topK = (int) $request->input('top_k', 10);
+        $topK = (int) $request->input('top_k', 15);
         $selectedColors = $this->normalizeSelectedColors($request->input('selected_colors', []), $numCluster);
 
         if ($selectedColors instanceof JsonResponse) {
