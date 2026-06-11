@@ -123,19 +123,7 @@ Langkah implementasi:
                 <div class="space-y-4">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <h2 class="text-xl font-bold text-white">Palet Warna Dominan</h2>
-                        <span class="text-xs text-gray-500">Pilih jumlah palet: 3, 4, atau 5</span>
-                    </div>
-
-                    <div class="rounded-2xl border border-gray-800 bg-gray-900/60 p-4 space-y-3">
-                        <label for="color-search-page-cluster-select" class="text-xs font-semibold text-gray-400">Jumlah palet warna</label>
-                        <select
-                            id="color-search-page-cluster-select"
-                            class="w-full rounded-xl border border-gray-700 bg-gray-900/80 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none"
-                        >
-                            <option class="bg-gray-900 text-white" style="color:#f9fafb; background-color:#111;" value="3">3 warna</option>
-                            <option class="bg-gray-900 text-white" style="color:#f9fafb; background-color:#111;" value="4">4 warna</option>
-                            <option class="bg-gray-900 text-white" style="color:#f9fafb; background-color:#111;" value="5" selected>5 warna</option>
-                        </select>
+                        <span class="text-xs text-gray-500">Maksimal 5 Palet</span>
                     </div>
 
                     <div id="color-search-page-palette-empty" class="flex min-h-[260px] items-center justify-center rounded-2xl border border-gray-800 bg-gray-900/30 p-5 text-center text-sm text-gray-500">

@@ -681,10 +681,7 @@
 
             var html = this.state.palettes
                 .map(function (palette) {
-                    var percent =
-                        typeof palette.percentage === "number"
-                            ? (palette.percentage * 100).toFixed(1) + "%"
-                            : "";
+                    var nameLabel = palette.name ? palette.name.charAt(0).toUpperCase() + palette.name.slice(1) : "";
                     var isSelected =
                         ColorSearchPage.state.selectedPaletteNos.indexOf(
                             palette.no,
@@ -711,9 +708,9 @@
                         '<span class="absolute bottom-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[11px] font-semibold text-white">' +
                         palette.palette +
                         "</span>" +
-                        (percent
+                        (nameLabel
                             ? '<span class="absolute bottom-2 right-2 rounded bg-black/60 px-1.5 py-0.5 text-[11px] font-semibold text-white">' +
-                              percent +
+                              nameLabel +
                               "</span>"
                             : "") +
                         "</button>"
@@ -878,6 +875,16 @@
                         typeof item.distance === "number"
                             ? item.distance.toFixed(4)
                             : "-";
+                            
+                    var colorBadges = "";
+                    if (Array.isArray(item.color_names_label) && item.color_names_label.length > 0) {
+                        colorBadges = '<div class="mt-2 flex flex-wrap gap-1">' + 
+                            item.color_names_label.map(function(c) {
+                                return '<span class="rounded bg-gray-800 px-1.5 py-0.5 text-[10px] text-gray-300">' + c + '</span>';
+                            }).join('') +
+                        '</div>';
+                    }
+
                     return (
                         '<article class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 cs-fade-up" style="animation-delay: ' +
                         Math.min(index * 60, 240) +
@@ -886,7 +893,7 @@
                         imageUrl +
                         '" alt="' +
                         label +
-                        '" class="h-24 w-full object-cover sm:h-28 md:h-32" onerror="this.style.display=\"none\";">' +
+                        '" class="h-24 w-full object-cover sm:h-28 md:h-32" onerror="this.style.display=\'none\';">' +
                         '<div class="p-3">' +
                         '<p class="line-clamp-1 text-xs font-semibold text-white sm:text-sm">' +
                         label +
@@ -894,6 +901,7 @@
                         '<p class="mt-1 text-[11px] text-amber-400">Jarak warna: ' +
                         distance +
                         "</p>" +
+                        colorBadges +
                         "</div>" +
                         "</article>"
                     );
