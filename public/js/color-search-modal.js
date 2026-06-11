@@ -509,7 +509,7 @@ window.ColorSearchModal = {
             const recommendationFormData = new FormData();
             recommendationFormData.append("image", state.file);
             recommendationFormData.append("num_clusters", "5");
-            recommendationFormData.append("top_k", "10");
+            recommendationFormData.append("top_k", "15");
             state.selectedPaletteIndexes.forEach((index) => {
                 recommendationFormData.append(
                     "selected_colors[]",

@@ -242,7 +242,7 @@
             if (video) {
                 try {
                     video.pause();
-                } catch (_e) {}
+                } catch (_e) { }
                 video.srcObject = null;
             }
 
@@ -531,7 +531,7 @@
 
             var csrfToken =
                 document.querySelector('meta[name="csrf-token"]') &&
-                document.querySelector('meta[name="csrf-token"]').content
+                    document.querySelector('meta[name="csrf-token"]').content
                     ? document.querySelector('meta[name="csrf-token"]').content
                     : "";
 
@@ -599,8 +599,8 @@
                 this._notify(
                     "info",
                     "Palet berhasil diambil (" +
-                        this.state.palettes.length +
-                        " warna). Pilih warna yang diinginkan.",
+                    this.state.palettes.length +
+                    " warna). Pilih warna yang diinginkan.",
                 );
                 return true;
             } catch (error) {
@@ -710,8 +710,8 @@
                         "</span>" +
                         (nameLabel
                             ? '<span class="absolute bottom-2 right-2 rounded bg-black/60 px-1.5 py-0.5 text-[11px] font-semibold text-white">' +
-                              nameLabel +
-                              "</span>"
+                            nameLabel +
+                            "</span>"
                             : "") +
                         "</button>"
                     );
@@ -767,7 +767,7 @@
 
             var csrfToken =
                 document.querySelector('meta[name="csrf-token"]') &&
-                document.querySelector('meta[name="csrf-token"]').content
+                    document.querySelector('meta[name="csrf-token"]').content
                     ? document.querySelector('meta[name="csrf-token"]').content
                     : "";
 
@@ -780,7 +780,7 @@
                     "num_cluster",
                     String(this.state.numCluster),
                 );
-                recommendationFormData.append("top_k", "10");
+                recommendationFormData.append("top_k", "15");
                 recommendationFormData.append(
                     "selected_colors",
                     this.state.selectedPaletteNos
@@ -828,8 +828,8 @@
                 this._notify(
                     "info",
                     "Rekomendasi berhasil diambil (" +
-                        this.state.recommendations.length +
-                        " item).",
+                    this.state.recommendations.length +
+                    " item).",
                 );
             } catch (error) {
                 this._notify(
@@ -875,14 +875,14 @@
                         typeof item.distance === "number"
                             ? item.distance.toFixed(4)
                             : "-";
-                            
+
                     var colorBadges = "";
                     if (Array.isArray(item.color_names_label) && item.color_names_label.length > 0) {
-                        colorBadges = '<div class="mt-2 flex flex-wrap gap-1">' + 
-                            item.color_names_label.map(function(c) {
+                        colorBadges = '<div class="mt-2 flex flex-wrap gap-1">' +
+                            item.color_names_label.map(function (c) {
                                 return '<span class="rounded bg-gray-800 px-1.5 py-0.5 text-[10px] text-gray-300">' + c + '</span>';
                             }).join('') +
-                        '</div>';
+                            '</div>';
                     }
 
                     return (
