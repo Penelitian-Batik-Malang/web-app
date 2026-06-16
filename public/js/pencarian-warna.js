@@ -3,7 +3,7 @@
 
     var ColorSearchPage = {
         id: "color-search-page",
-        MAX_INPUT_SIZE: 5 * 1024 * 1024,
+        MAX_INPUT_SIZE: 20 * 1024 * 1024,
         ALERT_TIMEOUT_MS: 4200,
         state: {
             file: null,
@@ -333,7 +333,7 @@
             }
 
             if (file.size > this.MAX_INPUT_SIZE) {
-                this._notify("warning", "Ukuran gambar maksimal 5MB.");
+                this._notify("warning", "Ukuran gambar maksimal 50MB.");
                 return;
             }
 

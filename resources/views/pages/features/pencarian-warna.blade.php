@@ -75,8 +75,7 @@ Langkah implementasi:
                             </div>
                             <div>
                                 <p class="text-base font-semibold text-white">Klik atau seret gambar ke sini</p>
-                                <p class="mt-1 text-xs text-gray-500">JPG, PNG, WEBP. Maks 5MB.</p>
-                            </div>
+                                <p class="mt-1 text-xs text-gray-500">JPG, PNG, WEBP. Maks 20MB.</p>                            </div>
                         </div>
 
                         <img
