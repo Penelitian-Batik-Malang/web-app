@@ -772,6 +772,15 @@
                     : "";
 
             try {
+                // Bersihkan list rekomendasi lama sebelum pindai ulang
+                var sectionEl = document.getElementById(this.id + "-recommend-section");
+                var listEl    = document.getElementById(this.id + "-recommend-list");
+                var countEl   = document.getElementById(this.id + "-recommend-count");
+                if (sectionEl) sectionEl.classList.add("hidden");
+                if (listEl)    listEl.innerHTML = "";
+                if (countEl)   countEl.textContent = "";
+                this.state.recommendations = [];
+
                 this._notify("info", "Mengambil rekomendasi batik...");
 
                 var recommendationFormData = new FormData();
