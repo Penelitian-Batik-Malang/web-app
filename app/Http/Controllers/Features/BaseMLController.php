@@ -437,7 +437,7 @@ abstract class BaseMLController extends Controller
     protected function findGaleriUrlByLabel(string $label): ?string
     {
         $batik = $this->findBatikByLabel($label);
-        return $batik ? route('galeri.show', $batik->id) : null;
+        return $batik ? route('galeri.show', $batik->name) : null;
     }
 
     /**

@@ -20,9 +20,9 @@ Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
     Route::get('/pewarnaan/palet', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'show'])->name('pewarnaan.palet');
     Route::post('/pewarnaan/palet/proses', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'processPalette'])->name('pewarnaan.palet.proses');
     // Unified palette extraction endpoint (FAISS) – uses single ML_URL
-    Route::post('/api/color-palette-faiss', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'colorize'])->name('api.colorize.palet');
+    Route::post('/ajax/color-palette-faiss', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'colorize'])->name('api.colorize.palet');
     Route::get('/pewarnaan/output-gambar', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'showOutput'])->name('pewarnaan.output');
-    Route::post('/api/save-results', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'saveResults'])->name('api.save.results');
+    Route::post('/ajax/save-results', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'saveResults'])->name('api.save.results');
 });
 
 
@@ -87,8 +87,8 @@ Route::get('/galeri/{batik}', [App\Http\Controllers\GalleryController::class, 's
 
 // ── Like & Rekomendasi (wajib login) ─────────────────────────────────────────
 Route::middleware('auth')->group(function () {
-    Route::post('/api/batik-images/{id}/like', [App\Http\Controllers\GalleryController::class, 'toggleLike'])->name('api.batik-images.like');
-    Route::get('/api/batik-images/{id}/recommend', [App\Http\Controllers\GalleryController::class, 'recommend'])->name('api.batik-images.recommend');
+    Route::post('/ajax/batik-images/{id}/like', [App\Http\Controllers\GalleryController::class, 'toggleLike'])->name('api.batik-images.like');
+    Route::get('/ajax/batik-images/{id}/recommend', [App\Http\Controllers\GalleryController::class, 'recommend'])->name('api.batik-images.recommend');
     // Auto-like: guest klik like -> login -> route ini terpanggil -> like applied -> redirect ke detail batik
     Route::get('/galeri/like/{imageId}', [App\Http\Controllers\GalleryController::class, 'autoLike'])->name('galeri.auto-like');
 });

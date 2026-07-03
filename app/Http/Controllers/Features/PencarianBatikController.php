@@ -90,7 +90,7 @@ class PencarianBatikController extends BaseMLController
                         'image_url'    => $proxiedImageUrl,
                         'fallback_url' => $fallbackUrl,
                         'similarity'   => round(($item['similarity'] ?? 0) * 100, 1),
-                        'galeri_url'   => $batik ? route('galeri.show', $batik->id) : null,
+                        'galeri_url'   => $batik ? route('galeri.show', $batik->name) : null,
                     ];
                 })
                 ->values()->all();
