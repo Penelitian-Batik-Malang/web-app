@@ -224,13 +224,13 @@ abstract class BaseMLController extends Controller
             // ─────────────────────────────────────────────────────────────────
 
             $response = Http::timeout(60)
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->attach(
                     'file', 
                     file_get_contents($file->getRealPath()), 
                     $file->getClientOriginalName(),
                     ['Content-Type' => $file->getClientMimeType()]
                 )
-                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->post($url);
 
             if ($response->successful()) {

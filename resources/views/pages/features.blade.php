@@ -48,7 +48,7 @@
     @endif
 
     {{-- PENCARIAN BATIK Section --}}
-    @if($isGuest || $user->hasMenuAccess('pencarian-batik') || $user->hasMenuAccess('pencarian-warna') || $user->hasMenuAccess('rekomendasi-batik'))
+    @if($isGuest || $user->hasMenuAccess('pencarian-batik') || $user->hasMenuAccess('pencarian-warna') || $user->hasMenuAccess('rekomendasi-fashion'))
     <div class="space-y-6 border-b border-secondary pb-10">
         <h2 class="text-xl md:text-2xl font-bold text-secondary uppercase tracking-wider">Pencarian Batik</h2>
         
@@ -78,7 +78,7 @@
             @endif
 
             {{-- Rekomendasi by Fashion --}}
-            @if(!auth()->check() || auth()->user()->hasMenuAccess('rekomendasi-batik'))
+            @if(!auth()->check() || auth()->user()->hasMenuAccess('rekomendasi-fashion'))
             <x-card-features 
                 title="Rekomendasi by Fashion" 
                 description="Rekomendasi batik dari warna dominan citra fashion + terapkan langsung"

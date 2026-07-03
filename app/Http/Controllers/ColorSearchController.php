@@ -61,10 +61,10 @@ class ColorSearchController extends Controller
             $url = $this->buildUrl(self::PALETTE_PATH);
 
             $response = Http::timeout(60)
-                ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->withHeaders([
                     'X-API-Key' => $this->apiKey,
                 ])
+                ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->post($url, [
                     'num_cluster' => $numCluster,
                 ]);
@@ -191,10 +191,10 @@ class ColorSearchController extends Controller
             $url = $this->buildUrl(self::RECOMMENDATION_PATH);
 
             $response = Http::timeout(60)
-                ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->withHeaders([
                     'X-API-Key' => $this->apiKey,
                 ])
+                ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->post($url, [
                     'num_cluster' => $numCluster,
                     'top_k' => $topK,

@@ -34,8 +34,16 @@ class GoogleAuthController extends Controller
                     'email_verified_at' => now(), // Assume verified
                 ]);
             } else {
+                $updates = [];
                 if (!$user->google_id) {
-                    $user->update(['google_id' => $googleUser->getId()]);
+                    $updates['google_id'] = $googleUser->getId();
+                }
+                if (!$user->role_id) {
+                    $userRole = Role::where('name', 'User')->first();
+                    $updates['role_id'] = $userRole->id ?? null;
+                }
+                if (!empty($updates)) {
+                    $user->update($updates);
                 }
             }
 
