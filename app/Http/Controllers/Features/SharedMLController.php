@@ -45,7 +45,7 @@ class SharedMLController extends BaseMLController
     public function inference(Request $request)
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:20480',
         ]);
 
         if (!$this->isFashionAvailable()) {

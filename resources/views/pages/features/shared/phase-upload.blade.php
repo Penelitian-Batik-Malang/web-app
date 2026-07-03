@@ -15,8 +15,8 @@
                         <i class="bi bi-camera-fill"></i> Kamera
                     </button>
                 </div>
-                <input id="fashion-input" type="file" accept=".jpg, .jpeg, .png, image/jpeg, image/png" class="hidden">
-                <input id="fashion-camera-input" type="file" accept=".jpg, .jpeg, .png, image/jpeg, image/png" capture="environment" class="hidden">
+                <input id="fashion-input" type="file" accept=".jpg, .jpeg, .png, .webp, image/jpeg, image/png, image/webp" class="hidden">
+                <input id="fashion-camera-input" type="file" accept=".jpg, .jpeg, .png, .webp, image/jpeg, image/png, image/webp" capture="environment" class="hidden">
             </div>
             <button id="analyze-btn" class="mt-4 w-full bg-primary hover:bg-amber-600 text-black font-bold py-2.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed" disabled>
                 <i class="bi bi-cpu mr-2"></i>Analisis Pakaian

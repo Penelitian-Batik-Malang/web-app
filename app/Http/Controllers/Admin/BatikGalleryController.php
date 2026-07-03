@@ -65,7 +65,7 @@ class BatikGalleryController extends Controller
         $validated['is_active'] = $request->has('is_active');
         $batik = Batik::create($validated);
 
-        return redirect()->route('admin.batiks.edit', $batik->id)->with('success', 'Data batik berhasil dibuat! Silakan tambahkan gambar.');
+        return redirect()->route('admin.batiks.edit', $batik)->with('success', 'Data batik berhasil dibuat! Silakan tambahkan gambar.');
     }
 
     public function edit(Batik $batik)
@@ -112,12 +112,25 @@ class BatikGalleryController extends Controller
     }
 
     /**
+     * Hapus permanen batik dan seluruh gambarnya.
+     */
+    public function destroyPermanent(Batik $batik)
+    {
+        foreach ($batik->images as $image) {
+            $this->deleteImageFile($image);
+            $image->delete();
+        }
+        $batik->delete();
+        return redirect()->route('admin.batiks.index')->with('success', "Motif '{$batik->name}' beserta seluruh gambarnya telah dihapus secara permanen.");
+    }
+
+    /**
      * Upload gambar baru ke batik (disimpan ke local storage).
      */
     public function uploadImage(Request $request, Batik $batik)
     {
         $request->validate([
-            'file' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120'
+            'file' => 'required|image|mimes:jpeg,png,jpg,webp|max:20480'
         ]);
 
         if ($request->file('file')) {

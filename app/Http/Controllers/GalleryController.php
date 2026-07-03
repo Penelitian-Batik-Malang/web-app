@@ -13,8 +13,8 @@ class GalleryController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->input('search', '');
-        $type   = $request->input('type', '');
+        $search = $request->input('cari', '');
+        $type   = $request->input('tipe', '');
 
         $query = Batik::query()
             ->where('is_active', true)
@@ -62,7 +62,7 @@ class GalleryController extends Controller
         $user->likedBatikImages()->syncWithoutDetaching([$imageId]);
 
         return redirect()
-            ->route('galeri.show', $image->batik_id)
+            ->route('galeri.show', $image->batik)
             ->with('like_success', $imageId);
     }
 
@@ -112,7 +112,11 @@ class GalleryController extends Controller
                 return response()->json(['success' => false, 'recommendations' => []], $response->status());
             }
 
-            $data    = $response->json();
+            $raw     = $response->json();
+            Log::info('Gallery Recommend Raw Data:', ['raw' => $raw]);
+
+            // Unwrap FastAPI APIResponse envelope: { status, message, data: { ... } }
+            $data    = (isset($raw['data']) && is_array($raw['data'])) ? $raw['data'] : $raw;
             $s3AiBase   = 'https://is3.cloudhost.id/galeri-batik-digital/';
             $s3SigBase  = 'https://is3.cloudhost.id/batik-signature-gdrive/';
 
@@ -140,7 +144,7 @@ class GalleryController extends Controller
                         'image_url'    => $proxiedImageUrl,
                         'fallback_url' => $fallbackUrl,
                         'similarity'   => round(($item['similarity'] ?? 0) * 100, 1),
-                        'galeri_url'   => $batik ? route('galeri.show', $batik->id) : null,
+                        'galeri_url'   => $batik ? route('galeri.show', $batik) : null,
                     ];
                 })
                 ->values()->all();

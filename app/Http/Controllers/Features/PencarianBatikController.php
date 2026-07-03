@@ -22,7 +22,7 @@ class PencarianBatikController extends BaseMLController
 
     public function search(Request $request)
     {
-        $request->validate(['image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240']);
+        $request->validate(['image' => 'required|image|mimes:jpeg,png,jpg,webp|max:20480']);
 
         if (!$this->isBatikAvailable()) {
             return $this->notConfiguredResponse();
@@ -40,8 +40,11 @@ class PencarianBatikController extends BaseMLController
                 return response()->json(['success' => false, 'message' => 'Batik Service error ' . $response->status()], $response->status());
             }
 
-            $data   = $response->json();
-            Log::info('Batik Search Raw Data:', ['data' => $data]);
+            $raw    = $response->json();
+            Log::info('Batik Search Raw Data:', ['raw' => $raw]);
+
+            // Unwrap FastAPI APIResponse envelope: { status, message, data: { ... } }
+            $data   = (isset($raw['data']) && is_array($raw['data'])) ? $raw['data'] : $raw;
             $s3Base = $this->s3BatikBase();
 
             $results = collect($data['results'] ?? [])

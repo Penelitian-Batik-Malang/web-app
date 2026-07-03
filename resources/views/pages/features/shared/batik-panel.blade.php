@@ -52,9 +52,11 @@ Elemen penting (ID dipakai oleh JS):
                 <div class="flex-1 rounded-xl overflow-hidden bg-gray-800 border border-gray-700 flex items-center justify-center" style="min-height:200px;max-height:340px">
                     <canvas id="batik-crop-canvas" class="block max-w-full max-h-full object-contain" style="cursor:grab;touch-action:none;max-height:340px"></canvas>
                 </div>
-                <div class="grid grid-cols-3 gap-1.5">
+                <div class="grid grid-cols-5 gap-1.5">
                     <button id="zoom-in-btn"  class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Perbesar"><i class="bi bi-zoom-in"></i></button>
                     <button id="zoom-out-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Perkecil"><i class="bi bi-zoom-out"></i></button>
+                    <button id="rotate-left-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Putar Kiri"><i class="bi bi-arrow-counterclockwise"></i></button>
+                    <button id="rotate-right-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Putar Kanan"><i class="bi bi-arrow-clockwise"></i></button>
                     <button id="batik-reset-transform" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Reset"><i class="bi bi-aspect-ratio"></i></button>
                 </div>
                 <p id="panel-status" class="hidden text-xs text-red-400 mt-1"></p>

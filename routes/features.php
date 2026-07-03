@@ -25,7 +25,7 @@ use App\Http\Controllers\Features\PencarianBatikController;
 use App\Http\Controllers\Features\PencarianWarnaController;
 use App\Http\Controllers\Features\PewarnaanPaletController;
 use App\Http\Controllers\Features\PewarnaanPromptController;
-use App\Http\Controllers\Features\TextToImageController;
+
 use Illuminate\Support\Facades\Route;
 
 // ── Serve sample fashion images ───────────────────────────────────────────────
@@ -176,10 +176,4 @@ Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
 Route::middleware('menu.access_or_guest:pewarnaan-prompt')->group(function () {
     Route::get('/pewarnaan-prompt', [PewarnaanPromptController::class, 'show'])->name('pewarnaan.prompt');
     // TODO: Route::post('/ajax/pewarnaan/prompt', [PewarnaanPromptController::class, 'process'])->name('api.pewarnaan.prompt');
-});
-
-// ── [TODO] Text to Image Batik ────────────────────────────────────────────────
-Route::middleware('menu.access_or_guest:text-to-image')->group(function () {
-    Route::get('/text-to-image', [TextToImageController::class, 'show'])->name('text-to-image');
-    // TODO: Route::post('/ajax/text-to-image', [TextToImageController::class, 'generate'])->name('api.text-to-image');
 });

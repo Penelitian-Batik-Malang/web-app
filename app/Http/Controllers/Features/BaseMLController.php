@@ -189,7 +189,7 @@ abstract class BaseMLController extends Controller
     protected function handleImageDetection(Request $request, string $path)
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:20480',
         ]);
 
         if (!$this->isBatikAvailable()) {

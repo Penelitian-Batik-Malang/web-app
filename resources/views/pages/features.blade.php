@@ -134,18 +134,7 @@
             />
             @endif
 
-            {{-- Text to Image Batik --}}
-            @if(!auth()->check() || auth()->user()->hasMenuAccess('text-to-image'))
-            <x-card-features
-                title="Text to Image Batik"
-                description="Generate motif batik Malang baru dari deskripsi teks"
-                icon="bi-lightning-charge"
-                iconBgColor="bg-amber-500/10"
-                iconTextColor="text-amber-500"
-                badge="AI"
-                :url="route('text-to-image')"
-            />
-            @endif
+
         </div>
     </div>
     @endif

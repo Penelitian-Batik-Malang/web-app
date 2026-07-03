@@ -10,8 +10,6 @@ class MonitorAiController extends Controller
 {
     public function index()
     {
-        // services.ml.url adalah base URL murni, misal: http://127.0.0.1:8001
-        // FastAPI health endpoint: GET /api/health  (prefix /api dari api_router)
         $mlBase = rtrim((string) config('services.ml.url', ''), '/');
 
         $services = [
@@ -22,13 +20,13 @@ class MonitorAiController extends Controller
             ],
         ];
 
-        $results = [];
+        $results       = [];
         $errorMessages = [];
 
         foreach ($services as $key => $service) {
             if (empty($service['url'])) {
-                $results[$key] = null;
-                $errorMessages[$key] = "URL untuk {$service['name']} belum dikonfigurasi.";
+                $results[$key]       = null;
+                $errorMessages[$key] = "URL untuk {$service['name']} belum dikonfigurasi di .env (RETRIEVAL_API_BASE_URL).";
                 continue;
             }
 
@@ -36,67 +34,56 @@ class MonitorAiController extends Controller
 
             try {
                 $response = Http::timeout(10)->acceptJson()->get($url);
+
                 if ($response->successful()) {
-                    $data = $response->json();
-                    
-                    // Check if response format is the new FastAPI APIResponse format
-                    if (isset($data['status']) && is_numeric($data['status']) && isset($data['data'])) {
-                        $nestedData = $data['data'];
-                        $isHealthy = ($nestedData['status'] ?? '') === 'healthy';
-                        
-                        // Extract loaded models details
-                        $loadedModels = [];
-                        if (!empty($nestedData['models']) && is_array($nestedData['models'])) {
-                            foreach ($nestedData['models'] as $mName => $mStatus) {
-                                if ($mStatus) {
-                                    $loadedModels[] = $mName;
-                                }
-                            }
-                        }
-                        
-                        $modelsStr = count($loadedModels) > 0 
-                            ? ' (Models loaded: ' . implode(', ', $loadedModels) . ')' 
-                            : ' (No models loaded)';
-                            
-                        $results[$key] = [
-                            'name' => $service['name'],
-                            'memory_usage_mb' => null,
-                            'message' => $isHealthy ? 'healthy' . $modelsStr : 'unhealthy',
-                            'success' => $isHealthy,
-                            'timestamp' => now()->toIso8601String(),
-                        ];
-                    } else {
-                        // Standard fallback to the old format
-                        $results[$key] = [
-                            'name' => $service['name'],
-                            'memory_usage_mb' => $data['memory_usage_mb'] ?? null,
-                            'message' => $data['status'] ?? $data['message'] ?? '-',
-                            'success' => (isset($data['status']) && $data['status'] === 'ok') || (bool)($data['success'] ?? false),
-                            'timestamp' => $data['timestamp'] ?? null,
-                        ];
-                    }
+                    $raw = $response->json();
+
+                    // Unwrap FastAPI APIResponse envelope: { status, message, data: { ... } }
+                    $data = (isset($raw['data']) && is_array($raw['data'])) ? $raw['data'] : $raw;
+
+                    $isHealthy    = ($data['status'] ?? '') === 'healthy';
+                    $modelsStatus = $data['models'] ?? [];   // { motif: bool, tulis: bool, cbir: bool }
+                    $uptime       = $data['uptime'] ?? null;
+
+                    // Build human-readable message
+                    $loadedNames = array_keys(array_filter($modelsStatus));
+                    $modelsStr   = count($loadedNames) > 0
+                        ? 'Models loaded: ' . implode(', ', $loadedNames)
+                        : 'No models loaded';
+
+                    $results[$key] = [
+                        'name'            => $service['name'],
+                        'success'         => $isHealthy,
+                        'message'         => $isHealthy ? 'healthy (' . $modelsStr . ')' : 'unhealthy',
+                        'models'          => $modelsStatus, // structured { motif: bool, tulis: bool, cbir: bool }
+                        'uptime'          => $uptime,
+                        'memory_usage_mb' => $data['memory_usage_mb'] ?? null,
+                        'timestamp'       => now()->toDateTimeString(),
+                    ];
                 } else {
                     $results[$key] = [
-                        'name' => $service['name'],
+                        'name'    => $service['name'],
                         'success' => false,
                         'message' => 'HTTP ' . $response->status(),
+                        'models'  => [],
                     ];
-                    $errorMessages[$key] = "Gagal mengambil health {$service['name']}. HTTP " . $response->status() . ".";
+                    $errorMessages[$key] = "Gagal menghubungi {$service['name']}. HTTP " . $response->status() . ".";
                 }
             } catch (\Throwable $e) {
                 Log::error("Monitor AI health error ({$service['name']}): " . $e->getMessage());
                 $results[$key] = [
-                    'name' => $service['name'],
+                    'name'    => $service['name'],
                     'success' => false,
-                    'message' => 'Connection Error',
+                    'message' => 'Connection Error — server tidak berjalan atau tidak bisa dijangkau.',
+                    'models'  => [],
                 ];
-                $errorMessages[$key] = "Tidak dapat menghubungi {$service['name']}.";
+                $errorMessages[$key] = "Tidak dapat menghubungi {$service['name']}. Pastikan ML server sudah dijalankan.";
             }
         }
 
         return view('admin.monitor-ai', [
-            'services' => $results,
-            'errorMessages' => $errorMessages
+            'services'      => $results,
+            'errorMessages' => $errorMessages,
         ]);
     }
 }

@@ -23,7 +23,7 @@
         {{-- Thumbnail Utama --}}
         <div class="lg:col-span-1">
             @if($batik->mainImage)
-                <img src="{{ $batik->mainImage->full_url }}" alt="{{ $batik->name }}"
+                <img src="{{ url('/thumbnail?url=' . urlencode($batik->mainImage->full_url) . '&w=600') }}" alt="{{ $batik->name }}"
                      class="w-full aspect-square object-cover rounded-2xl border border-gray-700 shadow-2xl">
             @else
                 <div class="w-full aspect-square bg-gray-800 rounded-2xl border border-gray-700 flex items-center justify-center text-gray-600">
@@ -78,7 +78,7 @@
                     <div class="aspect-square relative group cursor-pointer" 
                          @auth ondblclick="handleDoubleClick(event, {{ $img->id }})" @endauth
                          @guest ondblclick="window.location.href='{{ route('galeri.auto-like', $img->id) }}'" @endguest>
-                        <img src="{{ $img->full_url }}" loading="lazy"
+                        <img src="{{ url('/thumbnail?url=' . urlencode($img->full_url) . '&w=400') }}" loading="lazy" decoding="async"
                              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none">
                         
                         {{-- Double Click Heart Animation Container --}}

@@ -91,20 +91,25 @@
                     </td>
                     <td class="px-6 py-4 text-right">
                         <div class="flex justify-end gap-3">
-                            <a href="{{ route('admin.batiks.edit', $batik->id) }}" class="text-amber-500 hover:text-amber-400 font-medium tracking-wide">Kelola</a>
+                            <a href="{{ route('admin.batiks.edit', $batik) }}" class="text-amber-500 hover:text-amber-400 font-medium tracking-wide">Kelola</a>
 
                             @if($batik->is_active)
                                 {{-- Aktif → bisa disembunyikan --}}
-                                <form action="{{ route('admin.batiks.destroy', $batik->id) }}" method="POST"
+                                <form action="{{ route('admin.batiks.destroy', $batik) }}" method="POST"
                                       onsubmit="return confirm('Sembunyikan \'{{ $batik->name }}\' dari galeri publik? Data & likes tetap aman.');">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="text-yellow-500 hover:text-yellow-400 font-medium">Sembunyikan</button>
                                 </form>
                             @else
                                 {{-- Sembunyi → bisa diaktifkan --}}
-                                <form action="{{ route('admin.batiks.activate', $batik->id) }}" method="POST">
+                                <form action="{{ route('admin.batiks.activate', $batik) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="text-green-500 hover:text-green-400 font-medium">Aktifkan</button>
+                                </form>
+                                <form action="{{ route('admin.batiks.destroy-permanent', $batik) }}" method="POST"
+                                      onsubmit="return confirm('Hapus permanen \'{{ $batik->name }}\'? Semua data dan gambar akan terhapus.');">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="text-red-500 hover:text-red-400 font-medium ml-2">Hapus</button>
                                 </form>
                             @endif
                         </div>

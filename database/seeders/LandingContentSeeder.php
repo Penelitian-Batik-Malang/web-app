@@ -17,7 +17,7 @@ class LandingContentSeeder extends Seeder
             ['key' => 'hero_bg', 'value' => 'https://t3.ftcdn.net/jpg/02/64/50/58/360_F_264505804_DHKnvdaT3YtdJteynvJyKCxjxwWNE1EI.jpg', 'type' => 'image'],
             
             ['key' => 'about_title', 'value' => 'Menghubungkan Tradisi & Teknologi', 'type' => 'text'],
-            ['key' => 'about_desc1', 'value' => 'BatikMalang.ai lahir dari kecintaan terhadap warisan budaya batik dan visi untuk membuatnya relevan bagi generasi modern. Kami percaya setiap orang memiliki motif batik yang merepresentasikan karakter mereka.', 'type' => 'text'],
+            ['key' => 'about_desc1', 'value' => 'Galeri Digital Batik Malang lahir dari kecintaan terhadap warisan budaya batik dan visi untuk membuatnya relevan bagi generasi modern. Kami percaya setiap orang memiliki motif batik yang merepresentasikan karakter mereka.', 'type' => 'text'],
             ['key' => 'about_desc2', 'value' => 'Dengan kecerdasan buatan, kami memudahkan Anda menjelajahi kekayaan motif batik khas Malang yang otentik serta lebih personal dan bermakna.', 'type' => 'text'],
             
             ['key' => 'step_1_title', 'value' => 'Pindai atau Unggah', 'type' => 'text'],

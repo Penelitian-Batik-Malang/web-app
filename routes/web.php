@@ -71,6 +71,7 @@ Route::middleware('auth')->group(function () {
             Route::post('batiks/images/{image}/main', [App\Http\Controllers\Admin\BatikGalleryController::class, 'setMainImage'])->name('batiks.images.main');
             Route::post('batiks/sync-s3', [App\Http\Controllers\Admin\BatikGalleryController::class, 'syncFromS3'])->name('batiks.sync-s3');
             Route::post('batiks/{batik}/activate', [App\Http\Controllers\Admin\BatikGalleryController::class, 'activate'])->name('batiks.activate');
+            Route::delete('batiks/{batik}/permanent', [App\Http\Controllers\Admin\BatikGalleryController::class, 'destroyPermanent'])->name('batiks.destroy-permanent');
         });
 
         Route::middleware('menu.access:monitor-ai')->group(function () {
@@ -80,6 +81,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // ── Galeri Batik (publik) ─────────────────────────────────────────────────────
+Route::get('/thumbnail', [App\Http\Controllers\ThumbnailController::class, 'generate'])->name('thumbnail');
 Route::get('/galeri', [App\Http\Controllers\GalleryController::class, 'index'])->name('galeri');
 Route::get('/galeri/{batik}', [App\Http\Controllers\GalleryController::class, 'show'])->name('galeri.show');
 

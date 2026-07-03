@@ -90,7 +90,7 @@ class TerapkanBatikController extends BaseMLController
             'session_id'     => 'required|string',
             'part'           => 'required|string|in:shirt,t-shirt,sweater,cardigan,jacket,vest,dress,jumpsuit,suit,coat,sleeve,collar,lapel,hood,pocket,neckline,epaulette',
             'instance_index' => 'nullable|integer|min:0',
-            'batik'          => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'batik'          => 'required|image|mimes:jpeg,png,jpg,webp|max:20480',
         ]);
 
         if (!$this->isFashionAvailable()) {

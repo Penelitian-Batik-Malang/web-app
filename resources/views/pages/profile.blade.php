@@ -1,6 +1,6 @@
 @extends('layouts.layout')
 
-@section('title', 'Profil Akun - BatikMalang.ai')
+@section('title', 'Profil Akun - Galeri Digital Batik Malang')
 
 @section('content')
 <div class="max-w-2xl mx-auto py-10">
