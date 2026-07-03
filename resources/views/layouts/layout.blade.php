@@ -62,7 +62,7 @@
                     {{-- Logo --}}
                     <a href="{{ url('/') }}" class="flex ml-2 md:mr-24">
                         <span class="self-center text-xl font-bold sm:text-2xl whitespace-nowrap text-white">
-                            BatikMalang<span class="text-primary">.ai</span>
+                            {{ config('app.name', 'Galeri Digital Batik Malang') }}
                         </span>
                     </a>
                 </div>

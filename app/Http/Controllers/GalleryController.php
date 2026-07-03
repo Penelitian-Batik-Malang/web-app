@@ -104,8 +104,8 @@ class GalleryController extends Controller
             $ext     = str_contains($mime, 'png') ? 'png' : 'jpg';
             $fullUrl = $batikUrl . '/api/search/general';
             $response = Http::timeout(60)
-                ->attach('file', $imgResp->body(), 'liked_image.' . $ext)
                 ->withHeaders(['X-API-Key' => trim((string) config('services.ml.api_key', ''))])
+                ->attach('file', $imgResp->body(), 'liked_image.' . $ext)
                 ->post($fullUrl);
 
             if (!$response->successful()) {

@@ -287,21 +287,46 @@ class SharedMLController extends BaseMLController
                     ->header('Access-Control-Allow-Origin', '*');
             }
 
-            // Fetch image via HTTP (bypass SSL verification for local dev stability)
-            $response = Http::timeout(30)
-                ->withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                ])
-                ->withoutVerifying()
-                ->get($url);
+            // Detect if URL is local to prevent deadlock on php artisan serve
+            $appUrl = rtrim(config('app.url'), '/');
+            $requestHost = $request->getSchemeAndHttpHost();
+            $isLocal = false;
+            $localPath = '';
 
-            if (!$response->successful()) {
-                Log::warning('Proxy Image Failed: ' . $url . ' (HTTP ' . $response->status() . ')');
-                return response()->json(['error' => 'Target URL failed'], $response->status());
+            if (str_starts_with($url, '/storage/')) {
+                $isLocal = true;
+                $localPath = substr($url, 9);
+            } elseif (str_starts_with($url, $appUrl . '/storage/')) {
+                $isLocal = true;
+                $localPath = substr($url, strlen($appUrl . '/storage/'));
+            } elseif (str_starts_with($url, $requestHost . '/storage/')) {
+                $isLocal = true;
+                $localPath = substr($url, strlen($requestHost . '/storage/'));
             }
 
-            $contentType = $response->header('Content-Type') ?: 'image/jpeg';
-            $content     = $response->body();
+            if ($isLocal) {
+                if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($localPath)) {
+                    return response()->json(['error' => 'Local image not found'], 404);
+                }
+                $content = \Illuminate\Support\Facades\Storage::disk('public')->get($localPath);
+                $contentType = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($localPath) ?: 'image/jpeg';
+            } else {
+                // Fetch image via HTTP (bypass SSL verification for local dev stability)
+                $response = Http::timeout(30)
+                    ->withHeaders([
+                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    ])
+                    ->withoutVerifying()
+                    ->get($url);
+
+                if (!$response->successful()) {
+                    Log::warning('Proxy Image Failed: ' . $url . ' (HTTP ' . $response->status() . ')');
+                    return response()->json(['error' => 'Target URL failed'], $response->status());
+                }
+
+                $contentType = $response->header('Content-Type') ?: 'image/jpeg';
+                $content     = $response->body();
+            }
 
             // Store in cache
             \Illuminate\Support\Facades\Cache::put($cacheKey, [

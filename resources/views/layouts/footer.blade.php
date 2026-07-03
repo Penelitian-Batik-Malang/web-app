@@ -4,7 +4,7 @@
             {{-- Galeri Digital Batik Malang Section --}}
             <div class="space-y-4">
                 <h3 class="text-lg font-bold text-white">
-                    BatikMalang<span class="text-primary">.ai</span>
+                    {{ config('app.name', 'Galeri Digital Batik Malang') }}
                 </h3>
                 <p class="text-gray-400 text-sm leading-relaxed">
                     Dikembangkan melalui kemitraan khusus dengan tiga sentra batik terkemuka di Malang.
