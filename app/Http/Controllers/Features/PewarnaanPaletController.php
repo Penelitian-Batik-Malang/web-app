@@ -32,6 +32,7 @@
 
 namespace App\Http\Controllers\Features;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -63,7 +64,7 @@ class PewarnaanPaletController extends BaseMLController
      * - color_image: base64 encoded gambar warna (required jika color_source_type='upload')
      * - manual_color: hex color code (required jika color_source_type='manual')
      *
-     * @return \Illuminate\View\View|RedirectResponse
+    * @return \Illuminate\View\View|RedirectResponse
      */
     public function processPalette(Request $request)
     {
@@ -204,7 +205,7 @@ class PewarnaanPaletController extends BaseMLController
                 'method' => 'sometimes|string',
             ]);
 
-            if (empty($this->fashionUrl)) {
+            if (!$this->isMLAvailable()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Model AI belum terhubung. ML API Base URL belum dikonfigurasi.',
@@ -232,7 +233,7 @@ class PewarnaanPaletController extends BaseMLController
             $paletteJson = json_encode($paletteHex);
 
             Log::info('Sending recolor request', [
-                'base_url' => $this->fashionUrl,
+                'base_url' => $this->mlUrl,
                 'image_size' => strlen($batikImageContent),
                 'palette_hex' => $paletteJson,
                 'method' => $method,
@@ -246,7 +247,7 @@ class PewarnaanPaletController extends BaseMLController
 
             if (!$recolorResponse) {
                 Log::error('All recolor endpoints failed', [
-                    'base_url' => $this->fashionUrl,
+                    'base_url' => $this->mlUrl,
                     'palette' => $paletteJson,
                 ]);
 
@@ -311,7 +312,7 @@ class PewarnaanPaletController extends BaseMLController
      * GET /pewarnaan/output-gambar
      * Menampilkan hasil pewarnaan dari session
      *
-     * @return \Illuminate\View\View|RedirectResponse
+    * @return \Illuminate\View\View|RedirectResponse
      */
     public function showOutput(Request $request)
     {
@@ -444,7 +445,7 @@ class PewarnaanPaletController extends BaseMLController
             'median_cut' => [],
         ];
 
-        if (empty($this->fashionUrl)) {
+        if (!$this->isMLAvailable()) {
             Log::warning('Fashion Service URL tidak dikonfigurasi, skipping palette extraction');
             return $palettes;
         }
@@ -457,7 +458,7 @@ class PewarnaanPaletController extends BaseMLController
             $response = Http::timeout(60)
                 ->withHeaders($this->getMLHeaders())
                 ->attach('image', $colorImageContent, 'color_image.jpg')
-                ->post($this->mlUrl . '/api/recolor/palette/extract', [
+                ->post($this->mlServiceUrl('/recolor/palette/extract'), [
                     'method' => 'all',
                     'n_colors' => 6
                 ]);
@@ -574,8 +575,7 @@ class PewarnaanPaletController extends BaseMLController
      */
     private function attemptRecolor(string $imageContent, array $paletteHex, string $baseUrl)
     {
-        $endpoint = '/api/recolor';
-        $fullUrl = $baseUrl . $endpoint;
+        $fullUrl = $this->mlServiceUrl('/recolor');
         $paletteJson = json_encode($paletteHex);
 
         try {
@@ -598,7 +598,7 @@ class PewarnaanPaletController extends BaseMLController
             ]);
 
             if ($response->successful()) {
-                Log::info('Recolor successful', ['endpoint' => $endpoint]);
+                Log::info('Recolor successful', ['endpoint' => $fullUrl]);
                 return $response;
             } else {
                 // Log error response untuk debugging
