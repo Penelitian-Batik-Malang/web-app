@@ -68,6 +68,7 @@ return [
         //
         // Path /api ditambahkan otomatis oleh endpoint mapping di bawah.
         'url'     => rtrim(env('RETRIEVAL_API_BASE_URL', 'http://127.0.0.1:8001'), '/'),
+        'colorizer_url' => rtrim(env('COLORIZER_API_BASE_URL', 'http://127.0.0.1:8000'), '/'),
         'api_key' => env('RETRIEVAL_API_KEY', ''),
 
         // ── Endpoint FastAPI terpusat (single source of truth) ──────────
@@ -94,6 +95,10 @@ return [
             // Color FAISS controller → no sub-prefix, at /api root
             'color_palette'   => '/api/color-palette-faiss',
             'color_recommend' => '/api/get-recommendation-faiss',
+
+            // Pewarnaan by Prompt (FastAPI /api/colorize)
+            'pewarnaan_prompt' => '/api/colorize',
+            'pewarnaan_templates' => '/api/templates',
         ],
 
         // ── S3 Object Storage ──────────────────────────────────────────

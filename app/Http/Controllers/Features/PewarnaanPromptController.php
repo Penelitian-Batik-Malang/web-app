@@ -41,6 +41,20 @@ use Illuminate\Http\Request;
 class PewarnaanPromptController extends BaseMLController
 {
     /**
+     * Override mlServiceUrl to use the new colorizer python backend (port 8000)
+     */
+    protected function mlServiceUrl(string $path): string
+    {
+        $cleanPath = ltrim($path, '/');
+        if (!str_starts_with($cleanPath, 'api/')) {
+            $cleanPath = 'api/' . $cleanPath;
+        }
+
+        $colorizerUrl = config('services.ml.colorizer_url', 'http://127.0.0.1:8000');
+        return rtrim($colorizerUrl, '/') . '/' . $cleanPath;
+    }
+
+    /**
      * Tampilkan halaman pewarnaan by prompt teks.
      *
      * @return \Illuminate\View\View
@@ -51,21 +65,116 @@ class PewarnaanPromptController extends BaseMLController
     }
 
     /**
-     * Proses pewarnaan ulang batik dari instruksi teks/prompt AI.
+     * Ambil daftar template prompt dari ML.
      *
-     * Menerima gambar batik dan prompt teks dari frontend,
-     * meneruskan ke API ML, dan mengembalikan hasilnya.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function templates()
+    {
+        if (!$this->isMLAvailable()) {
+            return response()->json(['templates' => []]);
+        }
+
+        try {
+            $endpointPath = config('services.ml.endpoints.pewarnaan_templates', '/templates');
+            $url  = $this->mlServiceUrl($endpointPath);
+
+            $response = \Illuminate\Support\Facades\Http::timeout(60)->get($url);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            return response()->json(['templates' => []]);
+        } catch (\Exception $e) {
+            return response()->json(['templates' => []]);
+        }
+    }
+
+    /**
+     * Proses pewarnaan ulang batik dari instruksi teks/prompt AI.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @todo Implementasi setelah endpoint API ML /recolor/prompt tersedia
      */
     public function process(Request $request)
     {
-        return response()->json([
-            'success' => false,
-            'message' => 'Fitur Pewarnaan by Prompt belum diimplementasi.',
-        ], 501);
+        $request->validate([
+            'image'         => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'prompt_mode'   => 'nullable|string',
+            'template_id'   => 'nullable|integer',
+            'custom_prompt' => 'nullable|string',
+            'neg_prompt'    => 'nullable|string',
+            'steps'         => 'nullable|integer',
+            'cfg_scale'     => 'nullable|numeric',
+            'color_scale'   => 'nullable|numeric',
+        ]);
+
+        if (!$this->isMLAvailable()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Model AI belum terhubung. Konfigurasi ML_URL di .env.',
+            ], 503);
+        }
+
+        try {
+            $endpointPath = config('services.ml.endpoints.pewarnaan_prompt', '/colorize');
+            $url  = $this->mlServiceUrl($endpointPath);
+            $file = $request->file('image');
+
+            if (empty($this->apiKey)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Konfigurasi API Key ML tidak ditemukan.',
+                ], 503);
+            }
+
+            $response = \Illuminate\Support\Facades\Http::timeout(120)
+                ->withHeaders(['X-API-Key' => $this->apiKey])
+                ->attach(
+                    'image', 
+                    file_get_contents($file->getRealPath()), 
+                    $file->getClientOriginalName(),
+                    ['Content-Type' => $file->getClientMimeType()]
+                )
+                ->post($url, [
+                    'prompt_mode'   => $request->input('prompt_mode', 'custom'),
+                    'template_id'   => $request->input('template_id', 1),
+                    'custom_prompt' => $request->input('custom_prompt', ''),
+                    'neg_prompt'    => $request->input('neg_prompt', ''),
+                    'steps'         => $request->input('steps', 50),
+                    'cfg_scale'     => $request->input('cfg_scale', 12.0),
+                    'color_scale'   => $request->input('color_scale', 0.8),
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                $outputB64 = $data['output_image_b64'] ?? null;
+                if ($outputB64) {
+                    $data['result_image_url'] = 'data:image/jpeg;base64,' . $outputB64;
+                }
+                
+                return response()->json($data);
+            }
+
+            \Illuminate\Support\Facades\Log::error('ML API Prompt Colorize returned non-success', [
+                'url'    => $url,
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Model AI tidak memberikan respons yang valid.',
+            ], $response->status());
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('ML API Prompt Colorize Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghubungi server Model AI. Periksa koneksi atau endpoint.',
+            ], 500);
+        }
     }
 }
