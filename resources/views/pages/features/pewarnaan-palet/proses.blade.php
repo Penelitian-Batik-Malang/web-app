@@ -184,7 +184,7 @@
                 </div>
 
                 {{-- Color Picker Modal --}}
-                <div id="color-picker-modal" class="hidden fixed bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-5 z-40" style="width: 300px;">
+                <div id="color-picker-modal" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-5 z-50" style="width: 300px;">
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
                             <label class="text-white text-sm font-bold">Pilih Warna</label>
@@ -315,8 +315,8 @@
         const palettesKmeans = {!! json_encode($palettesKmeans ?? []) !!};
         const palettesHistogram = {!! json_encode($palettesHistogram ?? []) !!};
         const paletteMedianCut = {!! json_encode($paletteMedianCut ?? []) !!};
-        const batikImage = '{{ $batikImage }}';
-        const colorImage = '{{ $colorImage }}';
+        const batikImage = {!! json_encode($batikImage ?? '') !!};
+        const colorImage = {!! json_encode($colorImage ?? '') !!};
 
         // Initialize app
         pewarnaanApp = new PewarnaanPalletNet(palettesKmeans, palettesHistogram, paletteMedianCut);

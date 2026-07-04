@@ -173,7 +173,10 @@ class PewarnaanPaletController extends BaseMLController
             ]);
 
             // Try dengan fallback endpoints jika primary gagal
+            $startTime = microtime(true);
             $recolorResponse = $this->attemptRecolor($batikImageContent, $paletteHex, $this->mlUrl);
+            $endTime = microtime(true);
+            $processingTimeMs = round(($endTime - $startTime) * 1000);
 
             if (!$recolorResponse) {
                 Log::error('All recolor endpoints failed', [
@@ -195,14 +198,20 @@ class PewarnaanPaletController extends BaseMLController
             ]);
 
             // Construct full image URL
-            $resultImageUrl = $result['result_image_url'] ?? null;
-            if ($resultImageUrl && !filter_var($resultImageUrl, FILTER_VALIDATE_URL)) {
-                // It's a relative path, prepend base URL
-                $baseUrl = rtrim($this->mlUrl, '/');
-                if (strpos($resultImageUrl, '/uploads') === 0) {
-                    $resultImageUrl = $baseUrl . $resultImageUrl;
-                } else {
-                    $resultImageUrl = $baseUrl . '/uploads/' . ltrim($resultImageUrl, '/');
+            $resultImageUrl = null;
+            if (isset($result['data']['image_b64'])) {
+                // Return as data URL
+                $resultImageUrl = 'data:image/jpeg;base64,' . $result['data']['image_b64'];
+            } elseif (isset($result['result_image_url'])) {
+                $resultImageUrl = $result['result_image_url'];
+                if (!filter_var($resultImageUrl, FILTER_VALIDATE_URL)) {
+                    // It's a relative path, prepend base URL
+                    $baseUrl = rtrim($this->mlUrl, '/');
+                    if (strpos($resultImageUrl, '/uploads') === 0) {
+                        $resultImageUrl = $baseUrl . $resultImageUrl;
+                    } else {
+                        $resultImageUrl = $baseUrl . '/uploads/' . ltrim($resultImageUrl, '/');
+                    }
                 }
             }
 
@@ -217,7 +226,7 @@ class PewarnaanPaletController extends BaseMLController
                 'result' => [
                     'result_image_url' => $resultImageUrl,
                     'result_image_path' => $result['result_image_path'] ?? null,
-                    'processing_time_ms' => $result['processing_time_ms'] ?? 0,
+                    'processing_time_ms' => $result['processing_time_ms'] ?? $processingTimeMs,
                     'palette_used' => $palette,
                 ]
             ]);
@@ -358,15 +367,45 @@ class PewarnaanPaletController extends BaseMLController
             return $palettes;
         }
 
-        // ── STUB ───────────────────────────────────────────────────────────────
-        // Endpoint /api/palette/extract BELUM diimplementasikan di FastAPI backend.
-        // Fitur ini menggunakan endpoint berbeda: POST /api/color-palette-faiss
-        // yang dikelola oleh ColorSearchController.
-        //
-        // TODO: Sambungkan ke /api/color-palette-faiss atau implementasikan
-        //       endpoint /api/palette/extract di model-ml jika diperlukan.
-        // ──────────────────────────────────────────────────────────────────────
-        Log::warning('PewarnaanPalet: extractPalettes dipanggil tapi endpoint belum tersedia di FastAPI.');
+        try {
+            // Konversi base64 ke binary
+            $colorImageContent = $this->base64ToImageFile($colorImageBase64);
+
+            // Endpoint: POST /api/recolor/palette/extract
+            $response = Http::timeout(60)
+                ->withHeaders($this->getMLHeaders())
+                ->attach('image', $colorImageContent, 'color_image.jpg')
+                ->post($this->mlUrl . '/api/recolor/palette/extract', [
+                    'method' => 'all',
+                    'n_colors' => 6
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (isset($data['data']['palette'])) {
+                    // Convert RGB format to HEX format for frontend display
+                    $palettes['kmeans'] = $this->convertRgbToHex($data['data']['palette']['kmeans'] ?? []);
+                    $palettes['histogram'] = $this->convertRgbToHex($data['data']['palette']['histogram'] ?? []);
+                    $palettes['median_cut'] = $this->convertRgbToHex($data['data']['palette']['median_cut'] ?? []);
+                }
+
+                Log::info('Palettes extracted successfully', [
+                    'kmeans_count' => count($palettes['kmeans']),
+                    'histogram_count' => count($palettes['histogram']),
+                    'median_cut_count' => count($palettes['median_cut']),
+                ]);
+            } else {
+                Log::warning('Palette extraction failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::warning('Palette extraction error: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+        }
 
         return $palettes;
     }
@@ -453,12 +492,48 @@ class PewarnaanPaletController extends BaseMLController
      */
     private function attemptRecolor(string $imageContent, array $paletteHex, string $baseUrl)
     {
-        // ── STUB ────────────────────────────────────────────────────────────────
-        // Endpoint /api/recolor BELUM diimplementasikan di FastAPI (model-ml).
-        // TODO: Tambahkan endpoint POST /api/recolor di model-ml/app/controllers/
-        //       atau arahkan ke /api/color-palette-faiss yang sudah ada.
-        // ───────────────────────────────────────────────────────────────────────
-        Log::warning('PewarnaanPalet: attemptRecolor dipanggil tapi endpoint /api/recolor belum ada di FastAPI.');
-        return false;
+        $endpoint = '/api/recolor/recolor';
+        $fullUrl = $baseUrl . $endpoint;
+        $paletteJson = json_encode($paletteHex);
+
+        try {
+            Log::info('Attempting recolor', [
+                'endpoint' => $fullUrl,
+                'image_size' => strlen($imageContent),
+                'palette_hex' => $paletteJson,
+            ]);
+            
+            $response = Http::timeout(1200)
+                ->withHeaders($this->getMLHeaders())
+                ->attach('image', $imageContent, 'batik.jpg')
+                ->post($fullUrl, [
+                    'palette' => $paletteJson,
+                    'white_threshold' => 150.0
+                ]);
+
+            Log::info('Recolor response received', [
+                'status' => $response->status(),
+                'headers' => $response->headers(),
+                'body' => substr($response->body(), 0, 500),
+            ]);
+
+            if ($response->successful()) {
+                Log::info('Recolor successful', ['endpoint' => $endpoint]);
+                return $response;
+            } else {
+                // Log error response untuk debugging
+                Log::warning('Recolor returned error status', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                return $response;
+            }
+        } catch (\Exception $e) {
+            Log::error('Recolor request exception', [
+                'error' => $e->getMessage(),
+                'endpoint' => $fullUrl,
+            ]);
+            return false;
+        }
     }
 }

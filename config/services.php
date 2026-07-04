@@ -95,6 +95,10 @@ return [
             // Color FAISS controller → no sub-prefix, at /api root
             'color_palette'   => '/api/color-palette-faiss',
             'color_recommend' => '/api/get-recommendation-faiss',
+
+            // Pewarnaan by Prompt (FastAPI /api/colorizer/colorize)
+            'pewarnaan_prompt' => '/api/colorizer/colorize',
+            'pewarnaan_templates' => '/api/colorizer/templates',
         ],
 
         // ── S3 Object Storage ──────────────────────────────────────────
