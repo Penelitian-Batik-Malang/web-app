@@ -1,2 +1,1 @@
-import "./bootstrap";
-import "./pewarnaan-upload";
+import './bootstrap';

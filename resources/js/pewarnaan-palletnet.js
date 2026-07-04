@@ -33,9 +33,6 @@ class PewarnaanPalletNet {
         this.currentV = 100;
         this.isDragging = false;
 
-        // Click listener reference untuk color picker modal
-        this.colorPickerClickListener = null;
-
         this.colorBox = document.getElementById("color-box-container");
         this.init();
     }
@@ -52,15 +49,6 @@ class PewarnaanPalletNet {
                 this.handleMouseMove(e),
             );
             window.addEventListener("mouseup", () => this.handleMouseUp());
-        }
-
-        this.setupBackdropListener();
-    }
-
-    setupBackdropListener() {
-        const backdrop = document.getElementById("color-picker-backdrop");
-        if (backdrop) {
-            backdrop.addEventListener("click", () => this.closeColorPicker());
         }
     }
 
@@ -121,29 +109,28 @@ class PewarnaanPalletNet {
      * Position modal di dekat elemen yang diklik
      */
     positionColorPickerModal(element) {
-        const backdrop = document.getElementById("color-picker-backdrop");
         const modal = document.getElementById("color-picker-modal");
         if (!modal) return;
 
-        if (backdrop) backdrop.classList.remove("hidden");
+        const rect = element.getBoundingClientRect();
+        modal.style.left = rect.right + 10 + "px";
+        modal.style.top = rect.top + "px";
         modal.classList.remove("hidden");
-        modal.style.left = "";
-        modal.style.top = "";
 
-        // Remove old click listener if exists (prevent memory leak)
-        if (this.colorPickerClickListener) {
-            document.removeEventListener("click", this.colorPickerClickListener);
-        }
+        setTimeout(() => {
+            document.addEventListener("click", (e) =>
+                this.handleColorPickerOutsideClick(e),
+            );
+        }, 0);
     }
 
     /**
-     * Konversi hex ke HSV
+     * Konversi HEX ke HSV
      */
     hexToHsv(hex) {
-        hex = hex.replace("#", "");
-        let r = parseInt(hex.slice(0, 2), 16) / 255;
-        let g = parseInt(hex.slice(2, 4), 16) / 255;
-        let b = parseInt(hex.slice(4, 6), 16) / 255;
+        let r = parseInt(hex.slice(1, 3), 16) / 255;
+        let g = parseInt(hex.slice(3, 5), 16) / 255;
+        let b = parseInt(hex.slice(5, 7), 16) / 255;
 
         let max = Math.max(r, g, b);
         let min = Math.min(r, g, b);
@@ -274,19 +261,12 @@ class PewarnaanPalletNet {
      * Close color picker modal
      */
     closeColorPicker() {
-        const backdrop = document.getElementById("color-picker-backdrop");
         const modal = document.getElementById("color-picker-modal");
-        if (backdrop) backdrop.classList.add("hidden");
         if (modal) {
             modal.classList.add("hidden");
-            // Remove click listener properly
-            if (this.colorPickerClickListener) {
-                document.removeEventListener(
-                    "click",
-                    this.colorPickerClickListener,
-                );
-                this.colorPickerClickListener = null;
-            }
+            document.removeEventListener("click", (e) =>
+                this.handleColorPickerOutsideClick(e),
+            );
         }
     }
 
@@ -463,7 +443,7 @@ class PewarnaanPalletNet {
     /**
      * Handle button colorize - process all 3 methods in parallel
      */
-    async handleColorize(batikImage, colorImage, colorSourceType = "upload") {
+    async handleColorize(batikImage, colorImage) {
         const processButton = document.getElementById("process-button");
         const buttonText = document.getElementById("button-text");
         const loadingSpinner = document.getElementById("loading-spinner");
@@ -490,84 +470,49 @@ class PewarnaanPalletNet {
                 throw new Error("Gambar batik sumber tidak ditemukan.");
             }
 
-            console.log("Colorize with colorSourceType:", colorSourceType);
-
-            // For manual palette, we only need to validate kmeans palette
-            // For upload palette, validate all 3 palettes
-            if (colorSourceType === "manual") {
-                if (this.modifiedPalettes.kmeans.length === 0) {
-                    throw new Error(
-                        "Palette warna tidak lengkap. Silakan pilih warna terlebih dahulu.",
-                    );
-                }
-
-                // Process only 1 metode (kmeans) untuk manual palette
-                const results = await Promise.all([
-                    this.processWithPalette(
-                        "kmeans",
-                        this.modifiedPalettes.kmeans,
-                        batikImage,
-                        colorImage,
-                    ),
-                ]);
-
-                console.log("Manual palette processed successfully", results);
-
-                // Save results dan redirect
-                await this.saveResultsAndRedirect(
-                    results,
-                    batikImage,
-                    colorImage,
-                );
-            } else {
-                // Upload palette - validate all 3 metode dan process all
-                if (
-                    this.modifiedPalettes.kmeans.length === 0 ||
-                    this.modifiedPalettes.histogram.length === 0 ||
-                    this.modifiedPalettes.median.length === 0
-                ) {
-                    throw new Error(
-                        "Palette warna tidak lengkap. Silakan upload ulang gambar warna Anda.",
-                    );
-                }
-
-                if (!colorImage) {
-                    throw new Error(
-                        "Tidak ada gambar warna yang diunggah. Silakan upload gambar warna terlebih dahulu.",
-                    );
-                }
-
-                // Process 3 metode secara paralel
-                const results = await Promise.all([
-                    this.processWithPalette(
-                        "kmeans",
-                        this.modifiedPalettes.kmeans,
-                        batikImage,
-                        colorImage,
-                    ),
-                    this.processWithPalette(
-                        "histogram",
-                        this.modifiedPalettes.histogram,
-                        batikImage,
-                        colorImage,
-                    ),
-                    this.processWithPalette(
-                        "median",
-                        this.modifiedPalettes.median,
-                        batikImage,
-                        colorImage,
-                    ),
-                ]);
-
-                console.log("All results processed successfully", results);
-
-                // Save results dan redirect
-                await this.saveResultsAndRedirect(
-                    results,
-                    batikImage,
-                    colorImage,
+            if (!colorImage) {
+                throw new Error(
+                    "Tidak ada gambar warna yang diunggah. Silakan upload gambar warna terlebih dahulu.",
                 );
             }
+
+            // Validate palettes
+            if (
+                this.modifiedPalettes.kmeans.length === 0 ||
+                this.modifiedPalettes.histogram.length === 0 ||
+                this.modifiedPalettes.median.length === 0
+            ) {
+                throw new Error(
+                    "Palette warna tidak lengkap. Silakan upload ulang gambar warna Anda.",
+                );
+            }
+
+            // Process 3 metode secara paralel
+            const results = await Promise.all([
+                this.processWithPalette(
+                    "kmeans",
+                    this.modifiedPalettes.kmeans,
+                    batikImage,
+                    colorImage,
+                ),
+                this.processWithPalette(
+                    "histogram",
+                    this.modifiedPalettes.histogram,
+                    batikImage,
+                    colorImage,
+                ),
+                this.processWithPalette(
+                    "median",
+                    this.modifiedPalettes.median,
+                    batikImage,
+                    colorImage,
+                ),
+            ]);
+
+            console.log("All results processed successfully", results);
+
+            // Save results dan redirect
+            await this.saveResultsAndRedirect(results, batikImage, colorImage);
         } catch (error) {
             console.error("Colorize error:", error);
             alert("Error: " + error.message);

@@ -31,7 +31,6 @@ class PewarnaanPalletNet {
             "/pewarnaan/output-gambar";
 
         this.setupColorPickerListeners();
-        this.setupBackdropListener();
     }
 
     /**
@@ -48,16 +47,6 @@ class PewarnaanPalletNet {
     }
 
     /**
-     * Setup backdrop click to close modal
-     */
-    setupBackdropListener() {
-        const backdrop = document.getElementById("color-picker-backdrop");
-        if (backdrop) {
-            backdrop.addEventListener("click", () => this.closeColorPicker());
-        }
-    }
-
-    /**
      * Open color picker modal
      */
     openColorPicker(method, index) {
@@ -68,10 +57,8 @@ class PewarnaanPalletNet {
         const currentColor = this.getCurrentPaletteColor(method, index);
         this.hexToHsv(currentColor);
 
-        // Show backdrop and modal
-        const backdrop = document.getElementById("color-picker-backdrop");
+        // Update UI
         const modal = document.getElementById("color-picker-modal");
-        if (backdrop) backdrop.classList.remove("hidden");
         if (modal) {
             modal.classList.remove("hidden");
             this.updateColorPreview();
@@ -83,9 +70,7 @@ class PewarnaanPalletNet {
      * Close color picker modal
      */
     closeColorPicker() {
-        const backdrop = document.getElementById("color-picker-backdrop");
         const modal = document.getElementById("color-picker-modal");
-        if (backdrop) backdrop.classList.add("hidden");
         if (modal) {
             modal.classList.add("hidden");
         }
@@ -346,7 +331,7 @@ class PewarnaanPalletNet {
     /**
      * Handle colorize button click
      */
-    async handleColorize(batikImage, colorImage, colorSourceType = "upload") {
+    async handleColorize(batikImage, colorImage) {
         try {
             // Validate inputs
             if (!batikImage) {
@@ -366,19 +351,11 @@ class PewarnaanPalletNet {
                 processButton.disabled = true;
             }
 
-            console.log(
-                "Starting colorization with colorSourceType:",
-                colorSourceType,
-            );
+            console.log("Starting colorization with 3 methods...");
 
-            // Prepare data for all three methods or single method for manual palette
+            // Prepare data for all three methods
             const results = {};
-            const methods =
-                colorSourceType === "manual"
-                    ? ["kmeans"]
-                    : ["kmeans", "histogram", "median"];
-
-            console.log("Processing methods:", methods);
+            const methods = ["kmeans", "histogram", "median"];
 
             // Process each method in parallel
             const promises = methods.map((method) =>
