@@ -424,7 +424,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const palettesKmeans = {!! json_encode($palettesKmeans ?? []) !!};
         const palettesHistogram = {!! json_encode($palettesHistogram ?? []) !!};
-        const paletteMedianCut = {!! json_encode($paletteMedianCut ?? []) !!};
+        const paletteMedianCut = {!! json_encode($paletteMedianCut ?? []) !!};  
         const batikImage = '{{ $batikImage }}';
         const colorImage = '{{ $colorImage }}';
         const colorSourceType = '{{ $colorSourceType ?? 'upload' }}';
