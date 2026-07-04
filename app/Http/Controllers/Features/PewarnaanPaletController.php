@@ -258,6 +258,42 @@ class PewarnaanPaletController extends BaseMLController
             }
 
             $result = $recolorResponse->json();
+            $resultImageUrl = null;
+
+            if (!is_array($result)) {
+                $rawBody = trim((string) $recolorResponse->body());
+
+                if ($rawBody !== '') {
+                    if (str_starts_with($rawBody, 'data:image')) {
+                        $resultImageUrl = $rawBody;
+                    } elseif (!str_starts_with($rawBody, '<')) {
+                        $resultImageUrl = 'data:image/jpeg;base64,' . $rawBody;
+                    }
+                }
+
+                if (!$resultImageUrl) {
+                    Log::error('Recolor API returned invalid JSON', [
+                        'status' => $recolorResponse->status(),
+                        'body' => substr($recolorResponse->body(), 0, 1000),
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Response dari model AI tidak valid. Silakan coba lagi.',
+                    ], 502);
+                }
+
+                $result = [
+                    'success' => true,
+                    'result_image_url' => $resultImageUrl,
+                ];
+            }
+
+            if (isset($result['data']) && is_array($result['data'])) {
+                $result = $result['data'];
+            } elseif (isset($result['result']) && is_array($result['result'])) {
+                $result = $result['result'];
+            }
 
             Log::info('Recolor result parsed', [
                 'result_keys' => array_keys($result),
@@ -265,11 +301,13 @@ class PewarnaanPaletController extends BaseMLController
             ]);
 
             // Construct full image URL
-            $resultImageUrl = null;
-            if (isset($result['data']['image_b64'])) {
-                // Return as data URL
-                $resultImageUrl = 'data:image/jpeg;base64,' . $result['data']['image_b64'];
-            } elseif (isset($result['result_image_url'])) {
+            if (!$resultImageUrl && isset($result['image_b64'])) {
+                $resultImageUrl = 'data:image/jpeg;base64,' . $result['image_b64'];
+            } elseif (!$resultImageUrl && isset($result['result_image_b64'])) {
+                $resultImageUrl = 'data:image/jpeg;base64,' . $result['result_image_b64'];
+            } elseif (!$resultImageUrl && isset($result['output_image_b64'])) {
+                $resultImageUrl = 'data:image/jpeg;base64,' . $result['output_image_b64'];
+            } elseif (!$resultImageUrl && isset($result['result_image_url'])) {
                 $resultImageUrl = $result['result_image_url'];
                 if (!filter_var($resultImageUrl, FILTER_VALIDATE_URL)) {
                     // It's a relative path, prepend base URL
@@ -575,7 +613,7 @@ class PewarnaanPaletController extends BaseMLController
      */
     private function attemptRecolor(string $imageContent, array $paletteHex, string $baseUrl)
     {
-        $fullUrl = $this->mlServiceUrl('/recolor');
+        $fullUrl = $this->mlServiceUrl('/recolor/palette');
         $paletteJson = json_encode($paletteHex);
 
         try {
@@ -587,9 +625,11 @@ class PewarnaanPaletController extends BaseMLController
             
             $response = Http::timeout(120)
                 ->attach('image', $imageContent, 'batik.jpg')
-                ->attach('palette', $paletteJson)
-                ->attach('white_threshold', '150')
-                ->post($fullUrl);
+                ->post($fullUrl, [
+                    'colors' => $paletteJson,
+                    'palette' => $paletteJson,
+                    'white_threshold' => 150,
+                ]);
 
             Log::info('Recolor response received', [
                 'status' => $response->status(),
