@@ -239,7 +239,10 @@ class PewarnaanPaletController extends BaseMLController
             ]);
 
             // Try dengan fallback endpoints jika primary gagal
-            $recolorResponse = $this->attemptRecolor($batikImageContent, $paletteHex, $this->fashionUrl);
+            $startTime = microtime(true);
+            $recolorResponse = $this->attemptRecolor($batikImageContent, $paletteHex, $this->mlUrl);
+            $endTime = microtime(true);
+            $processingTimeMs = round(($endTime - $startTime) * 1000);
 
             if (!$recolorResponse) {
                 Log::error('All recolor endpoints failed', [
@@ -261,20 +264,20 @@ class PewarnaanPaletController extends BaseMLController
             ]);
 
             // Construct full image URL
-            $resultImageUrl = $result['result_image_url'] ?? null;
-            
-            // Normalize backslashes to forward slashes (Windows path fix)
-            if ($resultImageUrl) {
-                $resultImageUrl = str_replace('\\', '/', $resultImageUrl);
-            }
-            
-            if ($resultImageUrl && !filter_var($resultImageUrl, FILTER_VALIDATE_URL)) {
-                // It's a relative path, prepend base URL
-                $baseUrl = rtrim($this->fashionUrl, '/');
-                if (strpos($resultImageUrl, '/uploads') === 0) {
-                    $resultImageUrl = $baseUrl . $resultImageUrl;
-                } else {
-                    $resultImageUrl = $baseUrl . '/uploads/' . ltrim($resultImageUrl, '/');
+            $resultImageUrl = null;
+            if (isset($result['data']['image_b64'])) {
+                // Return as data URL
+                $resultImageUrl = 'data:image/jpeg;base64,' . $result['data']['image_b64'];
+            } elseif (isset($result['result_image_url'])) {
+                $resultImageUrl = $result['result_image_url'];
+                if (!filter_var($resultImageUrl, FILTER_VALIDATE_URL)) {
+                    // It's a relative path, prepend base URL
+                    $baseUrl = rtrim($this->mlUrl, '/');
+                    if (strpos($resultImageUrl, '/uploads') === 0) {
+                        $resultImageUrl = $baseUrl . $resultImageUrl;
+                    } else {
+                        $resultImageUrl = $baseUrl . '/uploads/' . ltrim($resultImageUrl, '/');
+                    }
                 }
             }
 
@@ -289,7 +292,7 @@ class PewarnaanPaletController extends BaseMLController
                 'result' => [
                     'result_image_url' => $resultImageUrl,
                     'result_image_path' => $result['result_image_path'] ?? null,
-                    'processing_time_ms' => $result['processing_time_ms'] ?? 0,
+                    'processing_time_ms' => $result['processing_time_ms'] ?? $processingTimeMs,
                     'palette_used' => $palette,
                 ]
             ]);
@@ -450,21 +453,22 @@ class PewarnaanPaletController extends BaseMLController
             // Konversi base64 ke binary
             $colorImageContent = $this->base64ToImageFile($colorImageBase64);
 
-            // Call API extract palette dengan method "all" untuk mendapatkan 3 metode sekaligus
-            // Endpoint: POST /api/palette/extract
-            $response = Http::timeout(30)
+            // Endpoint: POST /api/recolor/palette/extract
+            $response = Http::timeout(60)
+                ->withHeaders($this->getMLHeaders())
                 ->attach('image', $colorImageContent, 'color_image.jpg')
-                ->attach('method', 'all')
-                ->attach('n_colors', '6')
-                ->post($this->fashionUrl . '/api/palette/extract');
+                ->post($this->mlUrl . '/api/recolor/palette/extract', [
+                    'method' => 'all',
+                    'n_colors' => 6
+                ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                if (isset($data['palettes'])) {
+                if (isset($data['data']['palette'])) {
                     // Convert RGB format to HEX format for frontend display
-                    $palettes['kmeans'] = $this->convertRgbToHex($data['palettes']['kmeans'] ?? []);
-                    $palettes['histogram'] = $this->convertRgbToHex($data['palettes']['histogram'] ?? []);
-                    $palettes['median_cut'] = $this->convertRgbToHex($data['palettes']['median_cut'] ?? []);
+                    $palettes['kmeans'] = $this->convertRgbToHex($data['data']['palette']['kmeans'] ?? []);
+                    $palettes['histogram'] = $this->convertRgbToHex($data['data']['palette']['histogram'] ?? []);
+                    $palettes['median_cut'] = $this->convertRgbToHex($data['data']['palette']['median_cut'] ?? []);
                 }
 
                 Log::info('Palettes extracted successfully', [
