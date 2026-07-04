@@ -43,6 +43,24 @@ window.BatikApp.FashionUpload.init = function () {
      * @param {File} file - File gambar yang dipilih user
      */
     const setFashionFile = async (file) => {
+        // Validasi ekstensi dan tipe file
+        const allowedExtensions = /(\.jpg|\.jpeg|\.png|\.webp)$/i;
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+        
+        if (!allowedTypes.includes(file.type) && !allowedExtensions.exec(file.name)) {
+            alert('Format file tidak didukung. Harap unggah gambar dengan format .jpg, .jpeg, .png, atau .webp');
+            if (fashionInput) fashionInput.value = '';
+            if (fashionCameraInput) fashionCameraInput.value = '';
+            return;
+        }
+
+        if (file.size > 20 * 1024 * 1024) {
+            alert('Ukuran file maksimal adalah 20MB.');
+            if (fashionInput) fashionInput.value = '';
+            if (fashionCameraInput) fashionCameraInput.value = '';
+            return;
+        }
+
         state.fashionFile = file;
         const src = await readAsDataURL(file);
         fashionPreview.src = src;

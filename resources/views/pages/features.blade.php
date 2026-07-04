@@ -48,7 +48,7 @@
     @endif
 
     {{-- PENCARIAN BATIK Section --}}
-    @if($isGuest || $user->hasMenuAccess('pencarian-batik') || $user->hasMenuAccess('pencarian-warna') || $user->hasMenuAccess('rekomendasi-batik'))
+    @if($isGuest || $user->hasMenuAccess('pencarian-batik') || $user->hasMenuAccess('pencarian-warna') || $user->hasMenuAccess('rekomendasi-fashion'))
     <div class="space-y-6 border-b border-secondary pb-10">
         <h2 class="text-xl md:text-2xl font-bold text-secondary uppercase tracking-wider">Pencarian Batik</h2>
         
@@ -78,7 +78,7 @@
             @endif
 
             {{-- Rekomendasi by Fashion --}}
-            @if(!auth()->check() || auth()->user()->hasMenuAccess('rekomendasi-batik'))
+            @if(!auth()->check() || auth()->user()->hasMenuAccess('rekomendasi-fashion'))
             <x-card-features 
                 title="Rekomendasi by Fashion" 
                 description="Rekomendasi batik dari warna dominan citra fashion + terapkan langsung"
@@ -106,7 +106,7 @@
                 icon="bi-palette2"
                 iconBgColor="bg-amber-500/10"
                 iconTextColor="text-amber-500"
-                :url="route('pewarnaan.palet')"
+                :url="route('features.pewarnaan.palet')"
             />
             @endif
 
@@ -134,20 +134,29 @@
             />
             @endif
 
-            {{-- Text to Image Batik --}}
-            @if(!auth()->check() || auth()->user()->hasMenuAccess('text-to-image'))
-            <x-card-features
-                title="Text to Image Batik"
-                description="Generate motif batik Malang baru dari deskripsi teks"
-                icon="bi-lightning-charge"
-                iconBgColor="bg-amber-500/10"
-                iconTextColor="text-amber-500"
-                badge="AI"
-                :url="route('text-to-image')"
-            />
-            @endif
+
         </div>
     </div>
     @endif
 </div>
+
+@php
+    $paletteEndpoint = \Illuminate\Support\Facades\Route::has('api.search.color-palette')
+        ? route('api.search.color-palette')
+        : url('/api/search/color-palette');
+
+    $recommendationEndpoint = \Illuminate\Support\Facades\Route::has('api.search.color-recommendation')
+        ? route('api.search.color-recommendation')
+        : url('/api/search/color-recommendation');
+@endphp
+
+<x-color-search-modal
+    id="color-search-modal"
+    :palette-endpoint="$paletteEndpoint"
+    :recommendation-endpoint="$recommendationEndpoint"
+/> 
 @endsection
+
+@push('scripts')
+<script src="{{ asset('js/color-search-modal.js') }}"></script>
+@endpush

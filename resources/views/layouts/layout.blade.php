@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'BatikMalang.ai') }} - @yield('title', 'Digital Batik Gallery')</title>
+    <title>{{ config('app.name', 'Galeri Digital Batik Malang') }} - @yield('title', 'Digital Batik Gallery')</title>
 
     @php
         $logoIcon = \App\Models\LandingContent::where('key', 'logo_icon')->value('value');
@@ -62,7 +62,7 @@
                     {{-- Logo --}}
                     <a href="{{ url('/') }}" class="flex ml-2 md:mr-24">
                         <span class="self-center text-xl font-bold sm:text-2xl whitespace-nowrap text-white">
-                            BatikMalang<span class="text-primary">.ai</span>
+                            {{ config('app.name', 'Galeri Digital Batik Malang') }}
                         </span>
                     </a>
                 </div>

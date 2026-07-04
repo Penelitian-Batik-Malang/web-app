@@ -45,28 +45,42 @@ class SharedMLController extends BaseMLController
     public function inference(Request $request)
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:20480',
         ]);
 
         if (!$this->isFashionAvailable()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Fashion Service belum terhubung. Konfigurasi ML_FASHION_URL di .env.',
+                'message' => 'Fashion Service belum terhubung. Konfigurasi ML_URL di .env.',
             ], 503);
         }
 
         $url = $this->fashionServiceUrl('/fashion/segment');
 
         try {
-            $http = $this->attachFile(
-                Http::timeout(600)->accept('application/json'),
-                'image',
-                $request->file('image')
-            );
+            // ── DEBUG ───────────────────────────────────────────────────────────────
+            Log::debug('SharedMLController:inference request', [
+                'url'         => $url,
+                'api_key_set' => !empty($this->apiKey),
+                'api_key_len' => strlen($this->apiKey),
+                'api_key_val' => substr($this->apiKey, 0, 8) . '...',
+            ]);
+            // ───────────────────────────────────────────────────────────────
+            
+            if (empty($this->apiKey)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Konfigurasi API Key ML tidak ditemukan di server. Periksa ML_API_KEY di .env dan jalankan config:clear.',
+                ], 503);
+            }
+
+            $http = Http::timeout(600)->accept('application/json')->withHeaders(['X-API-Key' => $this->apiKey]);
+            $http = $this->attachFile($http, 'image', $request->file('image'));
             $response = $http->post($url);
 
             if ($response->successful()) {
-                $data = $response->json();
+                $raw = $response->json();
+                $data = isset($raw['data']) && isset($raw['status']) ? $raw['data'] : $raw;
                 $data = $this->enrichCbirItems($data);
                 return response()->json($data);
             }
@@ -111,26 +125,10 @@ class SharedMLController extends BaseMLController
             }
         }
 
-        // Kumpulkan unique labels untuk bulk lookup
-        $uniqueLabels = [];
-        foreach (['top_5', 'top_10', 'top_15'] as $tier) {
-            foreach ($data['cbir'][$tier] ?? [] as $item) {
-                if (!empty($item['label'])) {
-                    $uniqueLabels[$item['label']] = null;
-                }
-            }
-        }
-
-        // Lookup galeri URL per label (sekali per label unik)
-        $galeriUrls = [];
-        foreach (array_keys($uniqueLabels) as $label) {
-            $galeriUrls[$label] = $this->findGaleriUrlByLabel($label);
-        }
-
         // Enrichment: gunakan proxy route /storage/cbir/ agar tidak 403 (bucket private)
         foreach (['top_5', 'top_10', 'top_15'] as $tier) {
             if (!isset($data['cbir'][$tier])) continue;
-            $data['cbir'][$tier] = array_map(function ($item) use ($galeriUrls) {
+            $data['cbir'][$tier] = array_map(function ($item) {
                 // Konversi URL S3 full ke internal proxy route
                 // misal: https://is3.cloudhost.id/color-dominant-batik/hijau/img.jpg
                 // jadi:  /storage/cbir/hijau/img.jpg
@@ -144,8 +142,8 @@ class SharedMLController extends BaseMLController
                     }
                 }
                 
-                // galeri_url: dari lookup label ke DB
-                $item['galeri_url'] = $galeriUrls[$item['label'] ?? ''] ?? null;
+                // galeri_url dinonaktifkan untuk pencarian warna karena hasil mewakili banyak motif
+                $item['galeri_url'] = null;
                 return $item;
             }, $data['cbir'][$tier]);
         }
@@ -174,12 +172,22 @@ class SharedMLController extends BaseMLController
         $url = $this->fashionServiceUrl('/fashion/reset-session');
 
         try {
+            if (empty($this->apiKey)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Konfigurasi API Key ML tidak ditemukan di server.',
+                ], 503);
+            }
+
             $response = Http::timeout(30)
-                ->asJson()
+                ->asForm()
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->post($url, ['session_id' => $request->input('session_id')]);
 
             if ($response->successful()) {
-                return response()->json($response->json());
+                $raw = $response->json();
+                $data = isset($raw['data']) && isset($raw['status']) ? $raw['data'] : $raw;
+                return response()->json($data);
             }
 
             return response()->json([
@@ -213,10 +221,21 @@ class SharedMLController extends BaseMLController
         $url = $this->fashionServiceUrl('/fashion/session/' . $sessionId);
 
         try {
-            $response = Http::timeout(30)->get($url);
+            if (empty($this->apiKey)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Konfigurasi API Key ML tidak ditemukan di server.',
+                ], 503);
+            }
+
+            $response = Http::timeout(30)
+                ->withHeaders(['X-API-Key' => $this->apiKey])
+                ->get($url);
 
             if ($response->successful()) {
-                return response()->json($response->json());
+                $raw = $response->json();
+                $data = isset($raw['data']) && isset($raw['status']) ? $raw['data'] : $raw;
+                return response()->json($data);
             }
 
             return response()->json([
@@ -268,21 +287,46 @@ class SharedMLController extends BaseMLController
                     ->header('Access-Control-Allow-Origin', '*');
             }
 
-            // Fetch image via HTTP (bypass SSL verification for local dev stability)
-            $response = Http::timeout(30)
-                ->withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                ])
-                ->withoutVerifying()
-                ->get($url);
+            // Detect if URL is local to prevent deadlock on php artisan serve
+            $appUrl = rtrim(config('app.url'), '/');
+            $requestHost = $request->getSchemeAndHttpHost();
+            $isLocal = false;
+            $localPath = '';
 
-            if (!$response->successful()) {
-                Log::warning('Proxy Image Failed: ' . $url . ' (HTTP ' . $response->status() . ')');
-                return response()->json(['error' => 'Target URL failed'], $response->status());
+            if (str_starts_with($url, '/storage/')) {
+                $isLocal = true;
+                $localPath = substr($url, 9);
+            } elseif (str_starts_with($url, $appUrl . '/storage/')) {
+                $isLocal = true;
+                $localPath = substr($url, strlen($appUrl . '/storage/'));
+            } elseif (str_starts_with($url, $requestHost . '/storage/')) {
+                $isLocal = true;
+                $localPath = substr($url, strlen($requestHost . '/storage/'));
             }
 
-            $contentType = $response->header('Content-Type') ?: 'image/jpeg';
-            $content     = $response->body();
+            if ($isLocal) {
+                if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($localPath)) {
+                    return response()->json(['error' => 'Local image not found'], 404);
+                }
+                $content = \Illuminate\Support\Facades\Storage::disk('public')->get($localPath);
+                $contentType = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($localPath) ?: 'image/jpeg';
+            } else {
+                // Fetch image via HTTP (bypass SSL verification for local dev stability)
+                $response = Http::timeout(30)
+                    ->withHeaders([
+                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    ])
+                    ->withoutVerifying()
+                    ->get($url);
+
+                if (!$response->successful()) {
+                    Log::warning('Proxy Image Failed: ' . $url . ' (HTTP ' . $response->status() . ')');
+                    return response()->json(['error' => 'Target URL failed'], $response->status());
+                }
+
+                $contentType = $response->header('Content-Type') ?: 'image/jpeg';
+                $content     = $response->body();
+            }
 
             // Store in cache
             \Illuminate\Support\Facades\Cache::put($cacheKey, [

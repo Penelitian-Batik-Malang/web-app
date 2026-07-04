@@ -1,10 +1,10 @@
 <footer class="bg-dark border-t border-secondary mt-auto">
     <div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {{-- BatikMalang.ai Section --}}
+            {{-- Galeri Digital Batik Malang Section --}}
             <div class="space-y-4">
                 <h3 class="text-lg font-bold text-white">
-                    BatikMalang<span class="text-primary">.ai</span>
+                    {{ config('app.name', 'Galeri Digital Batik Malang') }}
                 </h3>
                 <p class="text-gray-400 text-sm leading-relaxed">
                     Dikembangkan melalui kemitraan khusus dengan tiga sentra batik terkemuka di Malang.
@@ -89,7 +89,7 @@
         {{-- Footer Bottom --}}
         <div class="mt-8 pt-8 border-t border-gray-800">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-sm">
-                <p>Copyright {{ date('Y') }} BatikMalang.ai</p>
+                <p>Copyright {{ date('Y') }} Galeri Digital Batik Malang</p>
                 <p>No Surat Kementrian</p>
             </div>
         </div>

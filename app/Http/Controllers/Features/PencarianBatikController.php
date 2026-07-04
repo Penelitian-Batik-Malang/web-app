@@ -22,7 +22,7 @@ class PencarianBatikController extends BaseMLController
 
     public function search(Request $request)
     {
-        $request->validate(['image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240']);
+        $request->validate(['image' => 'required|image|mimes:jpeg,png,jpg,webp|max:20480']);
 
         if (!$this->isBatikAvailable()) {
             return $this->notConfiguredResponse();
@@ -32,6 +32,7 @@ class PencarianBatikController extends BaseMLController
 
         try {
             $response = Http::timeout(60)
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->post($this->batikServiceUrl('/search/general'));
 
@@ -39,8 +40,11 @@ class PencarianBatikController extends BaseMLController
                 return response()->json(['success' => false, 'message' => 'Batik Service error ' . $response->status()], $response->status());
             }
 
-            $data   = $response->json();
-            Log::info('Batik Search Raw Data:', ['data' => $data]);
+            $raw    = $response->json();
+            Log::info('Batik Search Raw Data:', ['raw' => $raw]);
+
+            // Unwrap FastAPI APIResponse envelope: { status, message, data: { ... } }
+            $data   = (isset($raw['data']) && is_array($raw['data'])) ? $raw['data'] : $raw;
             $s3Base = $this->s3BatikBase();
 
             $results = collect($data['results'] ?? [])
@@ -86,7 +90,7 @@ class PencarianBatikController extends BaseMLController
                         'image_url'    => $proxiedImageUrl,
                         'fallback_url' => $fallbackUrl,
                         'similarity'   => round(($item['similarity'] ?? 0) * 100, 1),
-                        'galeri_url'   => $batik ? route('galeri.show', $batik->id) : null,
+                        'galeri_url'   => $batik ? route('galeri.show', $batik->name) : null,
                     ];
                 })
                 ->values()->all();

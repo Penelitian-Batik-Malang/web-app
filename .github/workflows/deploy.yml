@@ -1,0 +1,66 @@
+name: Deploy Laravel
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            set -e
+
+            echo "=== [1/10] Navigasi ke direktori proyek ==="
+            cd /var/www/web-app
+
+            echo "=== [2/10] Aktifkan maintenance mode ==="
+            php8.4 artisan down --retry=60
+
+            echo "=== [3/10] Pull kode terbaru ==="
+            git pull origin main
+
+            echo "=== [4/10] Tulis file .env dari secret ==="
+            cat > /var/www/web-app/.env << 'ENVEOF'
+            ${{ secrets.ENV_PROD }}
+            ENVEOF
+
+            echo "=== [5/10] Install dependencies Composer ==="
+            composer install --no-dev --optimize-autoloader --no-interaction
+
+            echo "=== [6/10] Install dependencies Node dan build assets ==="
+            rm -rf node_modules package-lock.json
+            npm install
+            npm run build
+
+            echo "=== [7/10] Jalankan migrasi database ==="
+            php8.4 artisan migrate --force
+
+            echo "=== [8/10] Clear dan rebuild cache ==="
+            php8.4 artisan config:cache
+            php8.4 artisan route:cache
+            php8.4 artisan view:cache
+            php8.4 artisan event:cache
+
+            echo "=== [9/10] Set permission storage ==="
+            sudo chown -R deployment:www-data /var/www/web-app/storage
+            sudo chmod -R 775 /var/www/web-app/storage
+            sudo chmod -R 775 /var/www/web-app/bootstrap/cache
+
+            echo "=== [10/10] Nonaktifkan maintenance mode ==="
+            php8.4 artisan up
+
+            echo "✅ Deployment Laravel selesai!"

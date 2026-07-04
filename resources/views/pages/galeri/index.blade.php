@@ -58,7 +58,7 @@
                 title="{{ $batik->name }}"
                 description="{{ mb_strimwidth($batik->description, 0, 80, '...') }}"
                 image="{{ $imageUrl }}"
-                href="{{ route('galeri.show', $batik->id) }}"
+                href="{{ route('galeri.show', $batik) }}"
             />
         @empty
             <div class="col-span-full py-20 text-center flex flex-col items-center">

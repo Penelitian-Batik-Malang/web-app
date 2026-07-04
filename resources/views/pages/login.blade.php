@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Masuk - {{ config('app.name', 'BatikMalang.ai') }}</title>
+    <title>Masuk - {{ config('app.name', 'Galeri Digital Batik Malang') }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -19,7 +19,7 @@
         <!-- Logo -->
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-white mb-2">
-                BatikMalang<span class="text-primary">.ai</span>
+                Galeri Digital Batik Malang
             </h1>
             <p class="text-gray-400">Masuk ke akun Anda</p>
         </div>

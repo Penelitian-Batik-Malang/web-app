@@ -15,26 +15,14 @@ Route::get('/fitur', function () {
     return view('pages.features');
 })->name('fitur');
 
-Route::middleware('menu.access_or_guest:deteksi-motif')->group(function () {
-    Route::get('/deteksi/motif', function () {
-        return view('pages.deteksi-motif');
-    })->name('deteksi.motif');
-    Route::post('/api/detect/motif', [App\Http\Controllers\MLController::class, 'detectMotif'])->name('api.detect.motif');
-});
-
-Route::middleware('menu.access_or_guest:deteksi-jenis')->group(function () {
-    Route::get('/deteksi/jenis', function () {
-        return view('pages.deteksi-jenis');
-    })->name('deteksi.jenis');
-    Route::post('/api/detect/jenis', [App\Http\Controllers\MLController::class, 'detectJenis'])->name('api.detect.jenis');
-});
 
 Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
     Route::get('/pewarnaan/palet', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'show'])->name('pewarnaan.palet');
     Route::post('/pewarnaan/palet/proses', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'processPalette'])->name('pewarnaan.palet.proses');
-    Route::post('/api/colorize/palet', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'colorize'])->name('api.colorize.palet');
+    // Unified palette extraction endpoint (FAISS) – uses single ML_URL
+    Route::post('/ajax/color-palette-faiss', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'colorize'])->name('api.colorize.palet');
     Route::get('/pewarnaan/output-gambar', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'showOutput'])->name('pewarnaan.output');
-    Route::post('/api/save-results', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'saveResults'])->name('api.save.results');
+    Route::post('/ajax/save-results', [App\Http\Controllers\Features\PewarnaanPaletController::class, 'saveResults'])->name('api.save.results');
 });
 
 
@@ -83,6 +71,7 @@ Route::middleware('auth')->group(function () {
             Route::post('batiks/images/{image}/main', [App\Http\Controllers\Admin\BatikGalleryController::class, 'setMainImage'])->name('batiks.images.main');
             Route::post('batiks/sync-s3', [App\Http\Controllers\Admin\BatikGalleryController::class, 'syncFromS3'])->name('batiks.sync-s3');
             Route::post('batiks/{batik}/activate', [App\Http\Controllers\Admin\BatikGalleryController::class, 'activate'])->name('batiks.activate');
+            Route::delete('batiks/{batik}/permanent', [App\Http\Controllers\Admin\BatikGalleryController::class, 'destroyPermanent'])->name('batiks.destroy-permanent');
         });
 
         Route::middleware('menu.access:monitor-ai')->group(function () {
@@ -92,13 +81,14 @@ Route::middleware('auth')->group(function () {
 });
 
 // ── Galeri Batik (publik) ─────────────────────────────────────────────────────
+Route::get('/thumbnail', [App\Http\Controllers\ThumbnailController::class, 'generate'])->name('thumbnail');
 Route::get('/galeri', [App\Http\Controllers\GalleryController::class, 'index'])->name('galeri');
 Route::get('/galeri/{batik}', [App\Http\Controllers\GalleryController::class, 'show'])->name('galeri.show');
 
 // ── Like & Rekomendasi (wajib login) ─────────────────────────────────────────
 Route::middleware('auth')->group(function () {
-    Route::post('/api/batik-images/{id}/like', [App\Http\Controllers\GalleryController::class, 'toggleLike'])->name('api.batik-images.like');
-    Route::get('/api/batik-images/{id}/recommend', [App\Http\Controllers\GalleryController::class, 'recommend'])->name('api.batik-images.recommend');
+    Route::post('/ajax/batik-images/{id}/like', [App\Http\Controllers\GalleryController::class, 'toggleLike'])->name('api.batik-images.like');
+    Route::get('/ajax/batik-images/{id}/recommend', [App\Http\Controllers\GalleryController::class, 'recommend'])->name('api.batik-images.recommend');
     // Auto-like: guest klik like -> login -> route ini terpanggil -> like applied -> redirect ke detail batik
     Route::get('/galeri/like/{imageId}', [App\Http\Controllers\GalleryController::class, 'autoLike'])->name('galeri.auto-like');
 });

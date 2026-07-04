@@ -14,32 +14,34 @@ class MLController extends Controller
      */
     private string $baseUrl;
     private array $endpoints;
+    private string $apiKey;
 
     public function __construct()
     {
-        $this->baseUrl = rtrim((string) config('services.ml.base_url', env('ML_API_BASE_URL', '')), '/');
+        $this->baseUrl = rtrim((string) config('services.ml.url', ''), '/');
         $this->endpoints = (array) config('services.ml.endpoints', []);
+        $this->apiKey = trim((string) config('services.ml.api_key', ''));
     }
 
     /**
-     * Endpoint: POST /api/detect/motif
+     * Endpoint: POST /api/detection/motif
      * Input: Gambar (multipart/form-data)
      * Output: { label, confidence, description }
      */
     public function detectMotif(Request $request)
     {
-        $path = $this->endpoints['motif'] ?? '/motif/scan';
+        $path = $this->endpoints['motif'] ?? '/detection/motif';
         return $this->handleImageDetection($request, $path);
     }
 
     /**
-     * Endpoint: POST /api/detect/jenis
+     * Endpoint: POST /api/detection/type
      * Input: Gambar (multipart/form-data)
      * Output: { label, confidence, description }
      */
     public function detectJenis(Request $request)
     {
-        $path = $this->endpoints['jenis'] ?? '/tulis/scan';
+        $path = $this->endpoints['jenis'] ?? '/detection/type';
         return $this->handleImageDetection($request, $path);
     }
 
@@ -83,6 +85,7 @@ class MLController extends Controller
             if (empty($palettes) || !$skipExtract) {
                 // Extract palette dari color_image jika tidak disediakan atau skip_extract false
                 $paletteResponse = Http::timeout(30)
+                    ->withHeaders(['X-API-Key' => $this->apiKey])
                     ->attach('image', $colorImageContent, 'color_image.jpg')
                     ->attach('method', 'kmeans')
                     ->attach('n_colors', '6')
@@ -96,7 +99,9 @@ class MLController extends Controller
                     ], 400);
                 }
 
-                $paletteData = $paletteResponse->json();
+                $paletteRaw  = $paletteResponse->json();
+                // Unwrap APIResponse envelope
+                $paletteData = (isset($paletteRaw['data']) && is_array($paletteRaw['data'])) ? $paletteRaw['data'] : $paletteRaw;
                 $palettes = $paletteData['palettes']['kmeans'] ?? [];
             }
 
@@ -111,6 +116,7 @@ class MLController extends Controller
             $paletteJson = json_encode($palettes);
             
             $recolorResponse = Http::timeout(60)
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->attach('image', $batikImageContent, 'batik.jpg')
                 ->attach('palette', $paletteJson)
                 ->attach('white_threshold', '150')
@@ -124,8 +130,10 @@ class MLController extends Controller
                 ], 400);
             }
 
-            $result = $recolorResponse->json();
-            
+            $recolorRaw = $recolorResponse->json();
+            // Unwrap APIResponse envelope
+            $result = (isset($recolorRaw['data']) && is_array($recolorRaw['data'])) ? $recolorRaw['data'] : $recolorRaw;
+
             // Construct full image URL
             $resultImageUrl = $result['result_image_url'] ?? null;
             
@@ -207,20 +215,21 @@ class MLController extends Controller
         try {
             $url = $this->baseUrl . '/' . ltrim($mlPath, '/');
             $response = Http::timeout(30)
+                ->withHeaders(['X-API-Key' => $this->apiKey])
                 ->attach('image', file_get_contents($request->file('image')->getRealPath()), $request->file('image')->getClientOriginalName())
                 ->post($url);
 
             if ($response->successful()) {
-                $data = $response->json();
+                $raw  = $response->json();
+                // Unwrap FastAPI APIResponse envelope: { status, message, data: {...} }
+                $data = (isset($raw['data']) && is_array($raw['data'])) ? $raw['data'] : $raw;
                 return response()->json([
                     'success' => true,
                     'result'  => [
-                        // Normalisasi response agar UI/JS konsisten.
-                        'label'       => $data['label'] ?? $data['class'] ?? $data['result'] ?? 'Tidak Diketahui',
-                        // API produksi: confidence biasanya number (0..1 atau 0..100). UI sudah handle >1 sebagai persen.
-                        'confidence'  => $data['confidence'] ?? $data['probability'] ?? $data['score'] ?? 0,
-                        // API produksi yang kamu tunjukkan belum tentu ada description.
-                        'description' => $data['description'] ?? $data['desc'] ?? $data['message'] ?? '-',
+                        // motif_classifier returns 'motif'; tulis_classifier returns 'label'
+                        'label'       => $data['motif']       ?? $data['label']       ?? $data['class']  ?? $data['result'] ?? 'Tidak Diketahui',
+                        'confidence'  => $data['confidence']  ?? $data['probability'] ?? $data['score']  ?? 0,
+                        'description' => $data['description'] ?? $data['desc']        ?? $data['message'] ?? '-',
                     ]
                 ]);
             }

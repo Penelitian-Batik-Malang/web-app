@@ -39,11 +39,13 @@ class Batik extends Model
         return $this->hasMany(BatikImage::class);
     }
 
-    /**
-     * Gambar utama (thumbnail di galeri).
-     */
     public function mainImage()
     {
         return $this->hasOne(BatikImage::class)->where('is_main', true);
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'name';
     }
 }

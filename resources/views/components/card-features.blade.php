@@ -9,9 +9,9 @@
 ])
 
 @if($url)
-    <a href="{{ $url }}" class="block focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-xl">
+    <a href="{{ $url }}" class="block h-full focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-xl">
 @endif
-<div class="bg-gray-900 border border-gray-700 rounded-xl p-6 hover:border-primary transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 {{ $url ? 'cursor-pointer' : '' }}">
+<div class="h-full bg-gray-900 border border-gray-700 rounded-xl p-6 hover:border-primary transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 {{ $url ? 'cursor-pointer' : '' }}">
     <div class="flex items-start gap-4">
         <div class="{{ $iconBgColor }} {{ $iconTextColor }} p-3 rounded-lg shrink-0">
             <i class="{{ $icon }} text-2xl"></i>

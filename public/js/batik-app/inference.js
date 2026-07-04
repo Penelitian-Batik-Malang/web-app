@@ -55,12 +55,21 @@ window.BatikApp.Inference.init = function () {
                     'X-CSRF-TOKEN': helpers.csrf(),
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-API-Key': config.apiKey || '',
                 },
                 body: fd,
             });
             const data = await helpers.safeJson(resp);
             if (!resp.ok || !data.session_id) {
                 throw new Error(data.message || 'Gagal menganalisis. Pastikan API aktif.');
+            }
+
+            // Cek apakah ada mask/pakaian yang terdeteksi
+            const parts = data.parts || {};
+            const isPartsEmpty = Array.isArray(parts) ? parts.length === 0 : Object.keys(parts).length === 0;
+            if (isPartsEmpty) {
+                alert('Peringatan: Tidak terdeteksi atribut pakaian pada foto ini. Silakan unggah foto lain.');
+                throw new Error('Tidak terdeteksi atribut pakaian pada foto ini.');
             }
 
             // Simpan CBIR data global (dipakai oleh rekomendasi-batik)
@@ -113,6 +122,8 @@ window.BatikApp.Inference.init = function () {
         for (const [partName, value] of Object.entries(parts)) {
             const label = PART_LABELS[partName] || partName;
             const items = Array.isArray(value) ? value : [{ ...value, index: 0 }];
+            
+            let seqIdx = 0;
             for (const item of items) {
                 const idx = item.index ?? 0;
                 const key = `${partName}-${idx}`;
@@ -123,11 +134,12 @@ window.BatikApp.Inference.init = function () {
                     } catch (_) {}
                 }
                 state.partsList.push({
-                    key, partName, index: idx, label,
+                    key, partName, index: seqIdx, label,
                     bbox: item.bbox, maskImg,
                     area: item.area ?? 0,
                     score: item.score ?? null,
                 });
+                seqIdx++;
             }
         }
 

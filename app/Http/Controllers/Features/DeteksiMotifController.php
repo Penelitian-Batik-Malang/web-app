@@ -12,9 +12,9 @@
  *
  * Alur kerja:
  *   1. User membuka halaman /deteksi/motif
- *   2. Halaman fetch GET /api/detect/motif/labels → daftar motif dinamis
+ *   2. Halaman fetch GET /api/detection/motif/labels → daftar motif dinamis
  *   3. User mengunggah gambar via komponen <x-ml-detector>
- *   4. Frontend memanggil POST /api/detect/motif (AJAX)
+ *   4. Frontend memanggil POST /api/detection/motif (AJAX)
  *   5. Controller memanggil Batik Service POST /detection/motif
  *   6. Response dinormalisasi: { label, confidence, description }
  *   7. Frontend menampilkan hasil di modal

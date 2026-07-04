@@ -59,17 +59,6 @@ window.BatikApp.Canvas.init = function () {
             if (!part.maskImg) continue;
             const color = PART_COLORS[part.partName] || [200, 200, 200];
             const isHovered = state.hoveredKey === part.key;
-            const isBlended = state.blendedKeys.has(part.key);
-            if (isBlended) {
-                // Bagian sudah di-blend: tampilkan tanda centang
-                const b  = part.bbox;
-                const fs = Math.max(14, fashionCanvas.width * 0.035);
-                canvasCtx.fillStyle = 'rgba(0,0,0,0.6)';
-                canvasCtx.fillRect(b.x + b.w - fs - 8, b.y - 2, fs + 12, fs + 10);
-                canvasCtx.font = `bold ${fs}px sans-serif`;
-                canvasCtx.fillStyle = '#4ade80';
-                canvasCtx.fillText('✓', b.x + b.w - fs, b.y + fs + 2);
-            }
 
             if (isHovered) {
                 // Buat mask berwarna di canvas sementara hanya saat hover
@@ -167,10 +156,75 @@ window.BatikApp.Canvas.init = function () {
     });
 
     fashionCanvas.addEventListener('click', e => {
+        // Prevent click if we were dragging
+        if (state.wasDraggingCanvas) {
+            state.wasDraggingCanvas = false;
+            return;
+        }
         const { x, y } = canvasToImageCoords(e);
         const part = findPartAt(x, y);
         if (part && window.BatikApp.BatikPanel) {
             window.BatikApp.BatikPanel.open(part);
         }
     });
+
+    // ── Zoom and Pan Implementation ───────────────────────────────
+    let zoomLevel = 1;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    const canvasContainer = document.getElementById('canvas-container');
+    const zoomInBtn = document.getElementById('workspace-zoom-in');
+    const zoomOutBtn = document.getElementById('workspace-zoom-out');
+    const zoomResetBtn = document.getElementById('workspace-zoom-reset');
+
+    const updateTransform = () => {
+        fashionCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+    };
+
+    const setZoom = (newZoom) => {
+        zoomLevel = Math.max(1, Math.min(5, newZoom));
+        if (zoomLevel === 1) {
+            panX = 0; panY = 0;
+        }
+        updateTransform();
+    };
+
+    zoomInBtn?.addEventListener('click', () => setZoom(zoomLevel + 0.5));
+    zoomOutBtn?.addEventListener('click', () => setZoom(zoomLevel - 0.5));
+    zoomResetBtn?.addEventListener('click', () => setZoom(1));
+
+    canvasContainer?.addEventListener('wheel', e => {
+        e.preventDefault();
+        setZoom(zoomLevel + (e.deltaY < 0 ? 0.2 : -0.2));
+    }, { passive: false });
+
+    canvasContainer?.addEventListener('mousedown', e => {
+        if (zoomLevel <= 1) return;
+        isDragging = true;
+        state.wasDraggingCanvas = false;
+        dragStartX = e.clientX - panX;
+        dragStartY = e.clientY - panY;
+        canvasContainer.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        state.wasDraggingCanvas = true; // Mark as dragged so click doesn't trigger
+        panX = e.clientX - dragStartX;
+        panY = e.clientY - dragStartY;
+        updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            canvasContainer.style.cursor = 'grab';
+            // wasDraggingCanvas remains true until click event fires and resets it
+            setTimeout(() => { state.wasDraggingCanvas = false; }, 100);
+        }
+    });
+
 };

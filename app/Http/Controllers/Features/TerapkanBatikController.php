@@ -90,7 +90,7 @@ class TerapkanBatikController extends BaseMLController
             'session_id'     => 'required|string',
             'part'           => 'required|string|in:shirt,t-shirt,sweater,cardigan,jacket,vest,dress,jumpsuit,suit,coat,sleeve,collar,lapel,hood,pocket,neckline,epaulette',
             'instance_index' => 'nullable|integer|min:0',
-            'batik'          => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'batik'          => 'required|image|mimes:jpeg,png,jpg,webp|max:20480',
         ]);
 
         if (!$this->isFashionAvailable()) {
@@ -98,6 +98,13 @@ class TerapkanBatikController extends BaseMLController
         }
 
         $url = $this->fashionServiceUrl('/fashion/blend-manual');
+
+        if (empty($this->apiKey)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Konfigurasi API Key ML tidak ditemukan di server.',
+            ], 503);
+        }
 
         try {
             $batikFile     = $request->file('batik');
@@ -122,7 +129,10 @@ class TerapkanBatikController extends BaseMLController
             $guzzle     = new GuzzleClient(['timeout' => 120]);
             $guzzleResp = $guzzle->post($url, [
                 'http_errors' => false,
-                'headers'     => ['Accept' => 'application/json'],
+                'headers'     => [
+                    'Accept'    => 'application/json',
+                    'X-API-Key' => $this->apiKey
+                ],
                 'multipart'   => [
                     ['name' => 'session_id',     'contents' => (string) $request->input('session_id')],
                     ['name' => 'part',           'contents' => (string) $request->input('part')],
@@ -138,9 +148,10 @@ class TerapkanBatikController extends BaseMLController
 
             $statusCode = $guzzleResp->getStatusCode();
             $body       = (string) $guzzleResp->getBody();
-            $data       = json_decode($body, true);
+            $raw       = json_decode($body, true);
 
             if ($statusCode >= 200 && $statusCode < 300) {
+                $data = isset($raw['data']) && isset($raw['status']) ? $raw['data'] : $raw;
                 return response()->json($data ?? []);
             }
 

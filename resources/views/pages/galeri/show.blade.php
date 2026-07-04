@@ -23,7 +23,7 @@
         {{-- Thumbnail Utama --}}
         <div class="lg:col-span-1">
             @if($batik->mainImage)
-                <img src="{{ $batik->mainImage->full_url }}" alt="{{ $batik->name }}"
+                <img src="{{ url('/thumbnail?url=' . urlencode($batik->mainImage->full_url) . '&w=600') }}" alt="{{ $batik->name }}"
                      class="w-full aspect-square object-cover rounded-2xl border border-gray-700 shadow-2xl">
             @else
                 <div class="w-full aspect-square bg-gray-800 rounded-2xl border border-gray-700 flex items-center justify-center text-gray-600">
@@ -78,7 +78,7 @@
                     <div class="aspect-square relative group cursor-pointer" 
                          @auth ondblclick="handleDoubleClick(event, {{ $img->id }})" @endauth
                          @guest ondblclick="window.location.href='{{ route('galeri.auto-like', $img->id) }}'" @endguest>
-                        <img src="{{ $img->full_url }}" loading="lazy"
+                        <img src="{{ url('/thumbnail?url=' . urlencode($img->full_url) . '&w=400') }}" loading="lazy" decoding="async"
                              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none">
                         
                         {{-- Double Click Heart Animation Container --}}
@@ -194,7 +194,7 @@
         icon.classList.add('scale-150');
         setTimeout(() => icon.classList.remove('scale-150'), 200);
 
-        fetch(`/api/batik-images/${imageId}/like`, {
+        fetch(`/ajax/batik-images/${imageId}/like`, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/json' }
         })
@@ -234,7 +234,7 @@
                 <div class="p-2"><div class="h-2.5 bg-gray-700 rounded w-3/4 mb-1"></div><div class="h-2 bg-gray-700 rounded w-1/2"></div></div>
             </div>`).join('')}`;
 
-        fetch(`/api/batik-images/${likedImageId}/recommend`, {
+        fetch(`/ajax/batik-images/${likedImageId}/recommend`, {
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
         })
         .then(res => { if (!res.ok) throw new Error(); return res.json(); })

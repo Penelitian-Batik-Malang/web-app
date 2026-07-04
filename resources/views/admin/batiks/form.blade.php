@@ -26,7 +26,7 @@
         <div class="border border-gray-700 rounded-3xl p-6 bg-gray-800 shadow-xl">
             <h2 class="text-xl font-bold text-white mb-6 border-b border-gray-700 pb-3">Informasi Metadata</h2>
             
-            <form action="{{ isset($batik) ? route('admin.batiks.update', $batik->id) : route('admin.batiks.store') }}" method="POST">
+            <form action="{{ isset($batik) ? route('admin.batiks.update', $batik) : route('admin.batiks.store') }}" method="POST">
                 @csrf
                 @if(isset($batik)) @method('PUT') @endif
 
@@ -76,7 +76,7 @@
                     </h2>
                     
                     {{-- Dropzone Form --}}
-                    <form action="{{ route('admin.batiks.images.store', $batik->id) }}" class="dropzone bg-gray-900 border-2 border-dashed border-gray-600 rounded-xl hover:border-amber-500 flex flex-col justify-center items-center min-h-[150px]" id="batikVisualsDropzone">
+                    <form action="{{ route('admin.batiks.images.store', $batik) }}" class="dropzone bg-gray-900 border-2 border-dashed border-gray-600 rounded-xl hover:border-amber-500 flex flex-col justify-center items-center min-h-[150px]" id="batikVisualsDropzone">
                         @csrf
                         <div class="dz-message" data-dz-message>
                             <span class="text-gray-400">Tarik dan lepas (*drag-n-drop*) berkas gambar disini, <br> atau <span class="text-amber-500 font-bold underline">klik untuk mencari fail</span>.</span>

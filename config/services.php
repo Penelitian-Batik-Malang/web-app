@@ -62,19 +62,43 @@ return [
     |
     */
     'ml' => [
-        // ── Batik Service (Python 3.9, PyTorch) — Port 8001 ──────────
-        // Endpoint: /detection/motif, /detection/type, /search/general
-        'batik_url'  => env('ML_BATIK_URL', 'http://127.0.0.1:8001'),
+        // ── Base URL murni tanpa path /api ─────────────────────────────
+        //   Lokal      : RETRIEVAL_API_BASE_URL=http://127.0.0.1:8001
+        //   Production : RETRIEVAL_API_BASE_URL=http://127.0.0.1:8001  (atau via SSH tunnel)
+        //
+        // Path /api ditambahkan otomatis oleh endpoint mapping di bawah.
+        'url'     => rtrim(env('RETRIEVAL_API_BASE_URL', 'http://127.0.0.1:8001'), '/'),
+        'api_key' => env('RETRIEVAL_API_KEY', ''),
 
-        // ── Fashion Service (Python 3.7, TF 1.15) — Port 8002 ────────
-        // Endpoint: /fashion/segment, /fashion/blend-manual, /fashion/blend-cbir, etc.
-        'fashion_url' => env('ML_FASHION_URL', 'http://127.0.0.1:8002'),
+        // ── Endpoint FastAPI terpusat (single source of truth) ──────────
+        // Semua path sudah menyertakan prefix /api sesuai FastAPI router.
+        // Lihat: model-ml/app/routes/api.py  (prefix="/api")
+        //        model-ml/app/controllers/detection.py (prefix="/detection")
+        //        model-ml/app/controllers/fashion.py   (prefix="/fashion")
+        //        model-ml/app/controllers/search.py    (prefix="/search")
+        'endpoints' => [
+            // Detection controller  → router prefix /api/detection
+            'motif'           => '/api/detection/motif',
+            'jenis'           => '/api/detection/type',
 
-        // ── S3 Object Storage ─────────────────────────────────────────
-        // Base URL bucket batik-signature-gdrive (galeri utama)
-        's3_batik_base'   => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/' . env('IDC_S3_BATIK_BUCKET', 'batik-signature-gdrive'),
-        // Base URL bucket color-dominant-batik (hasil CBIR warna fashion)
-        's3_cbir_base'    => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/color-dominant-batik',
+            // Fashion controller   → router prefix /api/fashion
+            'fashion_segment' => '/api/fashion/segment',
+            'fashion_blend'   => '/api/fashion/blend-manual',
+            'fashion_cbir'    => '/api/fashion/blend-cbir',
+            'fashion_reset'   => '/api/fashion/reset-session',
+            'fashion_session' => '/api/fashion/session',
+
+            // Search controller    → router prefix /api/search
+            'search_general'  => '/api/search/general',
+
+            // Color FAISS controller → no sub-prefix, at /api root
+            'color_palette'   => '/api/color-palette-faiss',
+            'color_recommend' => '/api/get-recommendation-faiss',
+        ],
+
+        // ── S3 Object Storage ──────────────────────────────────────────
+        's3_batik_base' => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/' . env('IDC_S3_BATIK_BUCKET', 'batik-signature-gdrive'),
+        's3_cbir_base'  => env('IDC_S3_ENDPOINT', 'https://is3.cloudhost.id') . '/color-dominant-batik',
     ],
 
 ];
