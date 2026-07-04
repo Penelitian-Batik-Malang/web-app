@@ -79,16 +79,121 @@
                                      alt="Color palette" 
                                      class="w-full h-auto object-cover">
                             </div>
-                        @else
-                            <div class="w-full h-80 flex items-center justify-center bg-gray-800 rounded-2xl border border-gray-700">
-                                <div class="text-center">
-                                    <i class="bi bi-palette text-5xl text-gray-600 mb-3 block"></i>
-                                    <p class="text-gray-500 text-sm">Tidak ada pallet warna</p>
+                        @elseif(!empty($manualColors))
+                            {{-- Manual color palette mode - show color swatches --}}
+                            <div class="w-full min-h-80 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border-2 border-amber-700/50 p-8">
+                                <div class="text-center space-y-6">
+                                    <div>
+                                        <i class="bi bi-palette text-6xl text-amber-400 mb-4 block"></i>
+                                        <p class="text-white font-semibold text-sm">Palet Warna Manual</p>
+                                    </div>
+                                    
+                                    {{-- Color Swatches Grid --}}
+                                    <div class="grid grid-cols-2 gap-4 mt-6">
+                                        @foreach($manualColors as $index => $color)
+                                            <div class="flex flex-col items-center gap-2">
+                                                <div 
+                                                    class="w-16 h-16 rounded-lg border-3 border-gray-600 shadow-lg hover:border-amber-400 transition-all cursor-pointer"
+                                                    style="background-color: {{ $color }}"
+                                                    title="{{ $color }}"
+                                                ></div>
+                                                <span class="text-gray-300 text-xs font-mono">{{ strtoupper($color) }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
                                 </div>
                             </div>
+                        @else
+                       
                         @endif
                         
-                        @if($colorImage && (!empty($palettesKmeans) || !empty($palettesHistogram) || !empty($paletteMedianCut)))
+                        {{-- FITUR BARU: Editing colors extracted from batik --}}
+                        @if(($isAutoExtract ?? false) && (!empty($palettesKmeans) || !empty($palettesHistogram) || !empty($paletteMedianCut)))
+                            <div class="bg-gray-800/50 rounded-xl p-4 space-y-4">
+                                <p class="text-amber-500 text-xs font-semibold mb-3">Ubah Warna : <span class="text-gray-400 text-[9px]">(Klik untuk mengubah)</span></p>
+                                
+                                {{-- KMeans --}}
+                                @if(!empty($palettesKmeans))
+                                    <div class="border-l-2 border-blue-500 pl-3">
+                                        <p class="text-amber-500 text-xs font-semibold mb-3">kmeans</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach($palettesKmeans as $index => $color)
+                                                <div class="flex items-center gap-1 group cursor-pointer">
+                                                    <div 
+                                                        class="w-6 h-6 rounded border-2 border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-kmeans-{{ $index }}"
+                                                        style="background-color: {{ $color }}"
+                                                        title="{{ $color }}"
+                                                        onclick="openColorPicker('kmeans', {{ $index }})"
+                                                    ></div>
+                                                    <input 
+                                                        type="color" 
+                                                        id="color-kmeans-{{ $index }}" 
+                                                        value="{{ $color }}"
+                                                        class="hidden"
+                                                        onchange="updatePaletteColor('kmeans', {{ $index }}, this.value)"
+                                                    >
+                                                    <span class="text-gray-300 text-[9px] font-mono group-hover:text-amber-400 transition-colors" id="label-kmeans-{{ $index }}">{{ strtoupper($color) }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                                
+                                {{-- Histogram --}}
+                                @if(!empty($palettesHistogram))
+                                    <div class="border-l-2 border-green-500 pl-3">
+                                        <p class="text-amber-500 text-xs font-semibold mb-3">histogram</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach($palettesHistogram as $index => $color)
+                                                <div class="flex items-center gap-1 group cursor-pointer">
+                                                    <div 
+                                                        class="w-6 h-6 rounded border-2 border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-histogram-{{ $index }}"
+                                                        style="background-color: {{ $color }}"
+                                                        title="{{ $color }}"
+                                                        onclick="openColorPicker('histogram', {{ $index }})"
+                                                    ></div>
+                                                    <input 
+                                                        type="color" 
+                                                        id="color-histogram-{{ $index }}" 
+                                                        value="{{ $color }}"
+                                                        class="hidden"
+                                                        onchange="updatePaletteColor('histogram', {{ $index }}, this.value)"
+                                                    >
+                                                    <span class="text-gray-300 text-[9px] font-mono group-hover:text-amber-400 transition-colors" id="label-histogram-{{ $index }}">{{ strtoupper($color) }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                                
+                                {{-- Median Cut --}}
+                                @if(!empty($paletteMedianCut))
+                                    <div class="border-l-2 border-purple-500 pl-3">
+                                        <p class="text-amber-500 text-xs font-semibold mb-3">median cut</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach($paletteMedianCut as $index => $color)
+                                                <div class="flex items-center gap-1 group cursor-pointer">
+                                                    <div 
+                                                        class="w-6 h-6 rounded border-2 border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-median-{{ $index }}"
+                                                        style="background-color: {{ $color }}"
+                                                        title="{{ $color }}"
+                                                        onclick="openColorPicker('median', {{ $index }})"
+                                                    ></div>
+                                                    <input 
+                                                        type="color" 
+                                                        id="color-median-{{ $index }}" 
+                                                        value="{{ $color }}"
+                                                        class="hidden"
+                                                        onchange="updatePaletteColor('median', {{ $index }}, this.value)"
+                                                    >
+                                                    <span class="text-gray-300 text-[9px] font-mono group-hover:text-amber-400 transition-colors" id="label-median-{{ $index }}">{{ strtoupper($color) }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        @elseif($colorImage && (!empty($palettesKmeans) || !empty($palettesHistogram) || !empty($paletteMedianCut)) && $colorSourceType !== 'manual')
                             <div class="bg-gray-800/50 rounded-xl p-4 space-y-4">
                                 <p class="text-amber-500 text-xs font-semibold mb-3">Warna yang Di-Extract : <span class="text-gray-400 text-[9px]">(Klik untuk mengubah)</span></p>
                                 
@@ -184,15 +289,15 @@
                 </div>
 
                 {{-- Color Picker Modal --}}
-                <div id="color-picker-modal" class="hidden fixed bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-5 z-40" style="width: 300px;">
-                    <div class="space-y-4">
+                <div id="color-picker-modal" class="hidden fixed bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-8 z-40" style="width: 500px;">
+                    <div class="space-y-6">
                         <div class="flex justify-between items-center">
-                            <label class="text-white text-sm font-bold">Pilih Warna</label>
-                            <button onclick="closeColorPicker()" class="text-gray-400 hover:text-white transition-colors"><i class="bi bi-x-lg text-lg"></i></button>
+                            <label class="text-white text-lg font-bold">Pilih Warna</label>
+                            <button onclick="closeColorPicker()" class="text-gray-400 hover:text-white transition-colors"><i class="bi bi-x-lg text-xl"></i></button>
                         </div>
                         
                         {{-- Saturation/Brightness Box --}}
-                        <div id="color-box-container" class="relative w-full h-40 rounded-lg cursor-crosshair overflow-hidden border-2 border-gray-600 shadow-inner">
+                        <div id="color-box-container" class="relative w-full h-64 rounded-lg cursor-crosshair overflow-hidden border-2 border-gray-600 shadow-inner">
                             {{-- Layer 1: Base Color (Hue) --}}
                             <div id="base-color-layer" class="absolute inset-0" style="background-color: #ff0000;"></div>
                             {{-- Layer 2: White Gradient (Saturation) --}}
@@ -200,27 +305,32 @@
                             {{-- Layer 3: Black Gradient (Brightness) --}}
                             <div class="absolute inset-0" style="background: linear-gradient(to top, #000, transparent);"></div>
                             {{-- Selector Dot --}}
-                            <div id="color-cursor" class="absolute w-4 h-4 border-2 border-white rounded-full shadow-md pointer-events-none" style="left: 0; top: 0; transform: translate(-50%, -50%);"></div>
+                            <div id="color-cursor" class="absolute w-5 h-5 border-2 border-white rounded-full shadow-md pointer-events-none" style="left: 0; top: 0; transform: translate(-50%, -50%);"></div>
                         </div>
                         
                         {{-- Hue Slider (Rainbow) --}}
-                        <div>
+                        <div class="space-y-2">
+                            <label class="text-gray-300 text-xs font-semibold">Hue</label>
                             <input type="range" id="hue-slider" min="0" max="360" value="0" 
-                                class="hue-slider w-full h-3 rounded-lg cursor-pointer" 
+                                class="hue-slider w-full h-4 rounded-lg cursor-pointer" 
                                 oninput="updateHue()">
                         </div>
                         
-                        <div class="flex gap-3 items-center">
-                            <div id="color-preview" class="w-12 h-12 rounded-lg border-2 border-gray-600 shadow-inner flex-shrink-0"></div>
-                            <div class="flex-1">
+                        <div class="flex gap-4 items-start">
+                            <div class="space-y-2 flex-shrink-0">
+                                <label class="text-gray-300 text-xs font-semibold block">Preview</label>
+                                <div id="color-preview" class="w-20 h-20 rounded-lg border-3 border-gray-600 shadow-inner"></div>
+                            </div>
+                            <div class="flex-1 space-y-2">
+                                <label class="text-gray-300 text-xs font-semibold block">Hex Value</label>
                                 <input type="text" id="color-hex-input" 
-                                    class="w-full bg-gray-900 text-white text-sm font-mono px-3 py-2 rounded-lg border border-gray-700 focus:border-amber-500 outline-none" 
+                                    class="w-full bg-gray-900 text-white text-base font-mono px-4 py-3 rounded-lg border border-gray-700 focus:border-amber-500 outline-none" 
                                     maxlength="7"
                                     oninput="updateFromHexInput()">
                             </div>
                         </div>
                         
-                        <button onclick="applyColorPicker()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-lg transition-all text-sm">
+                        <button onclick="applyColorPicker()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-lg transition-all text-base">
                             Terapkan Warna
                         </button>
                     </div>
@@ -317,6 +427,7 @@
         const paletteMedianCut = {!! json_encode($paletteMedianCut ?? []) !!};
         const batikImage = '{{ $batikImage }}';
         const colorImage = '{{ $colorImage }}';
+        const colorSourceType = '{{ $colorSourceType ?? 'upload' }}';
 
         // Initialize app
         pewarnaanApp = new PewarnaanPalletNet(palettesKmeans, palettesHistogram, paletteMedianCut);
@@ -328,7 +439,8 @@
         window.updateFromHexInput = () => pewarnaanApp.updateFromHexInput();
         window.applyColorPicker = () => pewarnaanApp.applyColorPicker();
         window.updatePaletteColor = (method, index, color) => pewarnaanApp.updatePaletteColor(method, index, color);
-        window.handleColorize = () => pewarnaanApp.handleColorize(batikImage, colorImage);
+        window.colorSourceType = colorSourceType;
+        window.handleColorize = () => pewarnaanApp.handleColorize(batikImage, colorImage, colorSourceType);
     });
 </script>
 @endsection
