@@ -32,6 +32,7 @@
 
 namespace App\Http\Controllers\Features;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -55,55 +56,121 @@ class PewarnaanPaletController extends BaseMLController
 
     /**
      * POST /pewarnaan/palet/proses
-     * Proses gambar batik dan gambar warna, kemudian ekstrak palette
+     * Proses gambar batik dan pilihan warna (auto-extract, upload image, atau manual color)
      * 
      * Input:
-     * - batik_image: base64 encoded gambar batik
-     * - color_image: base64 encoded gambar warna referensi
+     * - batik_image: base64 encoded gambar batik (required)
+     * - color_source_type: 'auto-extract', 'upload' atau 'manual' (required)
+     * - color_image: base64 encoded gambar warna (required jika color_source_type='upload')
+     * - manual_color: hex color code (required jika color_source_type='manual')
      *
-     * @return \Illuminate\View\View|RedirectResponse
+    * @return \Illuminate\View\View|RedirectResponse
      */
     public function processPalette(Request $request)
     {
         try {
+            // Validasi umum
             $request->validate([
                 'batik_image' => 'required|string',
-                'color_image' => 'required|string',
+                'color_source_type' => 'required|in:auto-extract,upload,manual',
             ]);
 
             $batikImage = $request->input('batik_image');
-            $colorImage = $request->input('color_image');
+            $colorSourceType = $request->input('color_source_type');
 
             if (empty($batikImage)) {
                 return redirect()->route('pewarnaan.palet')
                     ->withErrors(['error' => 'Gambar batik sumber tidak ditemukan.']);
             }
 
-            if (empty($colorImage)) {
-                return redirect()->route('pewarnaan.palet')
-                    ->withErrors(['error' => 'Gambar warna referensi belum diunggah.']);
+            $palettes = [];
+            $colorImage = null;
+            $manualColor = null;
+            $manualColors = [];
+            $isAutoExtract = false;
+
+            // Handle berdasarkan tipe sumber warna
+            if ($colorSourceType === 'auto-extract') {
+                // FITUR BARU: Ekstrak warna otomatis dari batik image
+                $palettes = $this->extractPalettes($batikImage);
+                $isAutoExtract = true;
+
+                Log::info('Processing palette from batik image (auto-extract)', [
+                    'has_batik_image' => !empty($batikImage),
+                    'kmeans_count' => count($palettes['kmeans'] ?? []),
+                    'histogram_count' => count($palettes['histogram'] ?? []),
+                    'median_count' => count($palettes['median_cut'] ?? []),
+                ]);
+
+            } else if ($colorSourceType === 'upload') {
+                // Validasi color_image harus ada untuk tipe upload
+                $request->validate([
+                    'color_image' => 'required|string',
+                ]);
+
+                $colorImage = $request->input('color_image');
+                
+                if (empty($colorImage)) {
+                    return redirect()->route('pewarnaan.palet')
+                        ->withErrors(['error' => 'Gambar warna referensi belum diunggah.']);
+                }
+
+                // Extract palette dari color_image menggunakan semua 3 metode
+                $palettes = $this->extractPalettes($colorImage);
+
+                Log::info('Processing palette from image', [
+                    'has_batik_image' => !empty($batikImage),
+                    'has_color_image' => !empty($colorImage),
+                    'kmeans_count' => count($palettes['kmeans'] ?? []),
+                    'histogram_count' => count($palettes['histogram'] ?? []),
+                    'median_count' => count($palettes['median_cut'] ?? []),
+                ]);
+
+            } else if ($colorSourceType === 'manual') {
+                // Validasi manual_color harus ada untuk tipe manual
+                $request->validate([
+                    'manual_color' => 'required|string',
+                ]);
+
+                $manualColorJson = $request->input('manual_color');
+
+                if (empty($manualColorJson)) {
+                    return redirect()->route('pewarnaan.palet')
+                        ->withErrors(['error' => 'Warna tidak dipilih.']);
+                }
+
+                // Parse JSON array dari manual_color
+                $manualColors = json_decode($manualColorJson, true);
+                
+                if (!is_array($manualColors) || empty($manualColors)) {
+                    return redirect()->route('pewarnaan.palet')
+                        ->withErrors(['error' => 'Format warna tidak valid.']);
+                }
+
+                // Buat palette dari manual colors (sama untuk semua 3 metode)
+                $palettes = [
+                    'kmeans' => $manualColors,
+                    'histogram' => $manualColors,
+                    'median_cut' => $manualColors,
+                ];
+
+                Log::info('Processing palette from manual color picker', [
+                    'has_batik_image' => !empty($batikImage),
+                    'manual_colors' => $manualColors,
+                ]);
             }
-
-            // Extract palette dari color_image menggunakan semua 3 metode
-            $palettes = $this->extractPalettes($colorImage);
-
-            // Debug: Log apa yang dikirim ke view
-            Log::info('Processing palette - Data sent to proses.blade.php', [
-                'has_batik_image' => !empty($batikImage),
-                'has_color_image' => !empty($colorImage),
-                'kmeans_count' => count($palettes['kmeans'] ?? []),
-                'histogram_count' => count($palettes['histogram'] ?? []),
-                'median_count' => count($palettes['median_cut'] ?? []),
-                'kmeans_colors' => array_slice($palettes['kmeans'] ?? [], 0, 3), // First 3 colors for debugging
-            ]);
 
             // Pass data ke view
             return view('pages.features.pewarnaan-palet.proses', [
                 'batikImage' => $batikImage,
                 'colorImage' => $colorImage,
+                'colorSourceType' => $colorSourceType,
+                'manualColor' => $manualColor,
+                'manualColors' => $manualColors,
                 'palettesKmeans' => $palettes['kmeans'] ?? [],
                 'palettesHistogram' => $palettes['histogram'] ?? [],
                 'paletteMedianCut' => $palettes['median_cut'] ?? [],
+                'isAutoExtract' => $isAutoExtract,
             ]);
 
         } catch (\Exception $e) {
@@ -138,7 +205,7 @@ class PewarnaanPaletController extends BaseMLController
                 'method' => 'sometimes|string',
             ]);
 
-            if (empty($this->mlUrl)) {
+            if (!$this->isMLAvailable()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Model AI belum terhubung. ML API Base URL belum dikonfigurasi.',
@@ -245,7 +312,7 @@ class PewarnaanPaletController extends BaseMLController
      * GET /pewarnaan/output-gambar
      * Menampilkan hasil pewarnaan dari session
      *
-     * @return \Illuminate\View\View|RedirectResponse
+    * @return \Illuminate\View\View|RedirectResponse
      */
     public function showOutput(Request $request)
     {
@@ -280,6 +347,14 @@ class PewarnaanPaletController extends BaseMLController
                 ];
             }
         }
+
+        // Normalize all URLs (convert backslashes to forward slashes)
+        foreach ($transformedResults as &$methodResult) {
+            if (isset($methodResult['image_url']) && $methodResult['image_url']) {
+                $methodResult['image_url'] = str_replace('\\', '/', $methodResult['image_url']);
+            }
+        }
+        unset($methodResult);
 
         return view('pages.features.pewarnaan-palet.output', [
             'results' => $transformedResults,
@@ -318,6 +393,14 @@ class PewarnaanPaletController extends BaseMLController
                     'message' => 'Tidak ada hasil pewarnaan untuk disimpan.',
                 ], 400);
             }
+
+            // Normalize backslashes in all image URLs
+            foreach ($results as $method => &$methodResult) {
+                if (isset($methodResult['image_url'])) {
+                    $methodResult['image_url'] = str_replace('\\', '/', $methodResult['image_url']);
+                }
+            }
+            unset($methodResult); // Break reference
 
             // Simpan ke session
             $request->session()->put('colorize_results', $results);
@@ -362,8 +445,8 @@ class PewarnaanPaletController extends BaseMLController
             'median_cut' => [],
         ];
 
-        if (empty($this->mlUrl)) {
-            Log::warning('ML Service URL tidak dikonfigurasi, skipping palette extraction');
+        if (!$this->isMLAvailable()) {
+            Log::warning('Fashion Service URL tidak dikonfigurasi, skipping palette extraction');
             return $palettes;
         }
 
@@ -375,7 +458,7 @@ class PewarnaanPaletController extends BaseMLController
             $response = Http::timeout(60)
                 ->withHeaders($this->getMLHeaders())
                 ->attach('image', $colorImageContent, 'color_image.jpg')
-                ->post($this->mlUrl . '/api/recolor/palette/extract', [
+                ->post($this->mlServiceUrl('/recolor/palette/extract'), [
                     'method' => 'all',
                     'n_colors' => 6
                 ]);
@@ -492,8 +575,7 @@ class PewarnaanPaletController extends BaseMLController
      */
     private function attemptRecolor(string $imageContent, array $paletteHex, string $baseUrl)
     {
-        $endpoint = '/api/recolor/recolor';
-        $fullUrl = $baseUrl . $endpoint;
+        $fullUrl = $this->mlServiceUrl('/recolor');
         $paletteJson = json_encode($paletteHex);
 
         try {
@@ -503,13 +585,11 @@ class PewarnaanPaletController extends BaseMLController
                 'palette_hex' => $paletteJson,
             ]);
             
-            $response = Http::timeout(1200)
-                ->withHeaders($this->getMLHeaders())
+            $response = Http::timeout(120)
                 ->attach('image', $imageContent, 'batik.jpg')
-                ->post($fullUrl, [
-                    'palette' => $paletteJson,
-                    'white_threshold' => 150.0
-                ]);
+                ->attach('palette', $paletteJson)
+                ->attach('white_threshold', '150')
+                ->post($fullUrl);
 
             Log::info('Recolor response received', [
                 'status' => $response->status(),
@@ -518,7 +598,7 @@ class PewarnaanPaletController extends BaseMLController
             ]);
 
             if ($response->successful()) {
-                Log::info('Recolor successful', ['endpoint' => $endpoint]);
+                Log::info('Recolor successful', ['endpoint' => $fullUrl]);
                 return $response;
             } else {
                 // Log error response untuk debugging
@@ -526,6 +606,7 @@ class PewarnaanPaletController extends BaseMLController
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+                // Still return response jika ada error, biar handler catch
                 return $response;
             }
         } catch (\Exception $e) {
