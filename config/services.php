@@ -77,6 +77,8 @@ return [
         //        model-ml/app/controllers/detection.py (prefix="/detection")
         //        model-ml/app/controllers/fashion.py   (prefix="/fashion")
         //        model-ml/app/controllers/search.py    (prefix="/search")
+        //        model-ml/app/controllers/recolor.py   (prefix="/recolor")
+        //        model-ml/app/controllers/colorizer.py (prefix="/colorizer")
         'endpoints' => [
             // Detection controller  → router prefix /api/detection
             'motif'           => '/api/detection/motif',
@@ -96,9 +98,14 @@ return [
             'color_palette'   => '/api/color-palette-faiss',
             'color_recommend' => '/api/get-recommendation-faiss',
 
-            // Pewarnaan by Prompt (FastAPI /api/colorizer/colorize)
-            'pewarnaan_prompt' => '/api/colorizer/colorize',
-            'pewarnaan_templates' => '/api/colorizer/templates',
+            // Pewarnaan by Prompt  → router prefix /api/colorizer
+            'pewarnaan_prompt'     => '/api/colorizer/colorize',
+            'pewarnaan_templates'  => '/api/colorizer/templates',
+
+            // Pewarnaan by Palet  → router prefix /api/recolor
+            'palet_extract'        => '/api/recolor/palette/extract',
+            'palet_recolor'        => '/api/recolor/recolor',
+            'palet_recolor_simple' => '/api/recolor/recolor/simple',
         ],
 
         // ── S3 Object Storage ──────────────────────────────────────────

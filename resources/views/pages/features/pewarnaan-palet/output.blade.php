@@ -28,27 +28,21 @@
         <div class="p-8">
             <div class="space-y-8">
                 
-                {{-- Original Images Row --}}
-                <div class="flex flex-col lg:flex-row gap-8 items-start pb-8 border-b border-gray-800">
-                    
-                    {{-- Left: Gambar Batik Original --}}
-                    <div class="flex-1 space-y-4">
-                        <h3 class="text-center text-white font-semibold">Gambar Batik Original</h3>
-                        <div class="rounded-2xl overflow-hidden border border-amber-700/50 bg-black/50">
-                            @if($batikImage && (strpos($batikImage, 'data:') === 0 || strpos($batikImage, 'http') === 0))
-                                <img src="{{ $batikImage }}" 
-                                     alt="Gambar Batik" 
-                                     class="w-auto h-auto max-h-96"
-                                     onerror="this.parentElement.innerHTML='<div class=\"w-full h-20 flex items-center justify-center bg-gray-800 text-gray-600\"><i class=\"bi bi-exclamation-triangle text-5xl\"></i></div>'">
-                            @else
-                                <div class="w-full h-80 flex items-center justify-center bg-gray-800 text-gray-600">
-                                    <div class="text-center">
-                                        <i class="bi bi-image text-5xl mb-2 block"></i>
-                                        <p class="text-xs text-gray-500">Gambar tidak tersedia</p>
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
+                {{-- Original Image Row — compact, centered --}}
+                <div class="flex flex-col items-center gap-3 pb-6 border-b border-gray-800">
+                    <h3 class="text-center text-white font-semibold">Gambar Batik Original</h3>
+                    <div class="rounded-2xl overflow-hidden border border-amber-700/50 bg-black/50 flex items-center justify-center" style="height: 240px; max-width: 360px; width: 100%;">
+                        @if($batikImage && (strpos($batikImage, 'data:') === 0 || strpos($batikImage, 'http') === 0))
+                            <img src="{{ $batikImage }}" 
+                                 alt="Gambar Batik" 
+                                 class="max-w-full max-h-full w-auto h-auto object-contain"
+                                 onerror="this.parentElement.innerHTML='<div class=\"flex items-center justify-center h-full text-gray-600\"><i class=\"bi bi-exclamation-triangle text-5xl\"></i></div>'">
+                        @else
+                            <div class="text-center text-gray-600">
+                                <i class="bi bi-image text-5xl mb-2 block"></i>
+                                <p class="text-xs text-gray-500">Gambar tidak tersedia</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -67,12 +61,12 @@
                                 <div class="w-3 h-3 {{ $hasAllMethods ? 'bg-blue-500' : 'bg-amber-500' }} rounded-full"></div>
                                 <h4 class="text-white font-semibold text-sm">{{ $hasAllMethods ? '📊 KMeans' : '🎨 Hasil Anda' }}</h4>
                             </div>
-                            <div class="rounded-2xl overflow-hidden border border-blue-500/50 bg-black/50">
+                            <div class="rounded-2xl overflow-hidden border border-blue-500/50 bg-black/50 flex items-center justify-center" style="height: 256px;">
                                 @if($results['kmeans']['image_url'] ?? null)
                                     <img 
                                         src="{{ $results['kmeans']['image_url'] }}" 
                                         alt="Hasil KMeans" 
-                                        class="w-full h-auto object-cover max-h-64"
+                                        class="max-w-full max-h-full w-auto h-auto object-contain"
                                     >
                                 @else
                                     <div class="w-full h-40 flex items-center justify-center bg-gray-800">
@@ -102,12 +96,12 @@
                                 <div class="w-3 h-3 bg-green-500 rounded-full"></div>
                                 <h4 class="text-white font-semibold text-sm">📈 Histogram</h4>
                             </div>
-                            <div class="rounded-2xl overflow-hidden border border-green-500/50 bg-black/50">
+                            <div class="rounded-2xl overflow-hidden border border-green-500/50 bg-black/50 flex items-center justify-center" style="height: 256px;">
                                 @if($results['histogram']['image_url'] ?? null)
                                     <img 
                                         src="{{ $results['histogram']['image_url'] }}" 
                                         alt="Hasil Histogram" 
-                                        class="w-full h-auto object-cover max-h-64"
+                                        class="max-w-full max-h-full w-auto h-auto object-contain"
                                     >
                                 @else
                                     <div class="w-full h-40 flex items-center justify-center bg-gray-800">
@@ -138,12 +132,12 @@
                                 <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
                                 <h4 class="text-white font-semibold text-sm">🎨 Median Cut</h4>
                             </div>
-                            <div class="rounded-2xl overflow-hidden border border-purple-500/50 bg-black/50">
+                            <div class="rounded-2xl overflow-hidden border border-purple-500/50 bg-black/50 flex items-center justify-center" style="height: 256px;">
                                 @if($results['median']['image_url'] ?? null)
                                     <img 
                                         src="{{ $results['median']['image_url'] }}" 
                                         alt="Hasil Median Cut" 
-                                        class="w-full h-auto object-cover max-h-64"
+                                        class="max-w-full max-h-full w-auto h-auto object-contain"
                                     >
                                 @else
                                     <div class="w-full h-40 flex items-center justify-center bg-gray-800">

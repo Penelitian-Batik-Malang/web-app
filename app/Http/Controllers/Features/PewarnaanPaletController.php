@@ -493,10 +493,11 @@ class PewarnaanPaletController extends BaseMLController
             $colorImageContent = $this->base64ToImageFile($colorImageBase64);
 
             // Endpoint: POST /api/recolor/palette/extract
+            $endpointPath = config('services.ml.endpoints.palet_extract', '/api/recolor/palette/extract');
             $response = Http::timeout(60)
                 ->withHeaders($this->getMLHeaders())
                 ->attach('image', $colorImageContent, 'color_image.jpg')
-                ->post($this->mlServiceUrl('/recolor/palette/extract'), [
+                ->post($this->mlServiceUrl($endpointPath), [
                     'method' => 'all',
                     'n_colors' => 6
                 ]);
@@ -613,7 +614,9 @@ class PewarnaanPaletController extends BaseMLController
      */
     private function attemptRecolor(string $imageContent, array $paletteHex, string $baseUrl)
     {
-        $fullUrl = $this->mlServiceUrl('/recolor/palette');
+        $fullUrl = $this->mlServiceUrl(
+            config('services.ml.endpoints.palet_recolor', '/api/recolor/recolor')
+        );
         $paletteJson = json_encode($paletteHex);
 
         try {
@@ -624,6 +627,7 @@ class PewarnaanPaletController extends BaseMLController
             ]);
             
             $response = Http::timeout(120)
+                ->withHeaders($this->getMLHeaders())
                 ->attach('image', $imageContent, 'batik.jpg')
                 ->post($fullUrl, [
                     'colors' => $paletteJson,

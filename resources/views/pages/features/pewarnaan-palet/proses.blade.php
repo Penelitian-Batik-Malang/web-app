@@ -51,13 +51,13 @@
                     <div class="flex-1 space-y-4">
                         <h3 class="text-center text-white font-semibold">Gambar Batik Original</h3>
                         
-                        <div class="rounded-2xl overflow-hidden border border-amber-700/50 bg-black/50">
+                        <div class="rounded-2xl overflow-hidden border border-amber-700/50 bg-black/50 flex items-center justify-center" style="height: 320px;">
                             @if($batikImage)
                                 <img src="{{ $batikImage }}" 
                                      alt="Gambar Batik" 
-                                     class="w-full h-auto object-cover">
+                                     class="max-w-full max-h-full w-auto h-auto object-contain">
                             @else
-                                <div class="w-full h-80 flex items-center justify-center bg-gray-800 text-gray-600">
+                                <div class="text-gray-600 text-center">
                                     <i class="bi bi-image text-5xl"></i>
                                 </div>
                             @endif
@@ -74,10 +74,10 @@
                         <h3 class="text-center text-white font-semibold">Pallet Warnamu</h3>
                         
                         @if($colorImage)
-                            <div class="rounded-2xl overflow-hidden border border-amber-700/50 bg-black/50">
+                            <div class="rounded-2xl overflow-hidden border border-amber-700/50 bg-black/50 flex items-center justify-center" style="height: 320px;">
                                 <img src="{{ $colorImage }}" 
                                      alt="Color palette" 
-                                     class="w-full h-auto object-cover">
+                                     class="max-w-full max-h-full w-auto h-auto object-contain">
                             </div>
                         @elseif(!empty($manualColors))
                             {{-- Manual color palette mode - show color swatches --}}
@@ -114,16 +114,15 @@
                                 
                                 {{-- KMeans --}}
                                 @if(!empty($palettesKmeans))
-                                    <div class="border-l-2 border-blue-500 pl-3">
-                                        <p class="text-amber-500 text-xs font-semibold mb-3">kmeans</p>
-                                        <div class="flex flex-wrap gap-2">
+                                    <div class="flex items-center justify-between border-l-2 border-blue-500 pl-3 bg-gray-900/30 rounded-r-lg p-2">
+                                        <p class="text-gray-300 text-xs font-medium w-20">KMeans</p>
+                                        <div class="flex gap-1.5 sm:gap-2">
                                             @foreach($palettesKmeans as $index => $color)
-                                                <div class="flex items-center gap-1 group cursor-pointer">
+                                                <div class="relative group cursor-pointer" onclick="openColorPicker('kmeans', {{ $index }})">
                                                     <div 
-                                                        class="w-6 h-6 rounded border-2 border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-kmeans-{{ $index }}"
+                                                        class="w-7 h-7 rounded border border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-kmeans-{{ $index }}"
                                                         style="background-color: {{ $color }}"
-                                                        title="{{ $color }}"
-                                                        onclick="openColorPicker('kmeans', {{ $index }})"
+                                                        title="{{ strtoupper($color) }}"
                                                     ></div>
                                                     <input 
                                                         type="color" 
@@ -132,7 +131,7 @@
                                                         class="hidden"
                                                         onchange="updatePaletteColor('kmeans', {{ $index }}, this.value)"
                                                     >
-                                                    <span class="text-gray-300 text-[9px] font-mono group-hover:text-amber-400 transition-colors" id="label-kmeans-{{ $index }}">{{ strtoupper($color) }}</span>
+                                                    <span class="hidden" id="label-kmeans-{{ $index }}">{{ strtoupper($color) }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -141,16 +140,15 @@
                                 
                                 {{-- Histogram --}}
                                 @if(!empty($palettesHistogram))
-                                    <div class="border-l-2 border-green-500 pl-3">
-                                        <p class="text-amber-500 text-xs font-semibold mb-3">histogram</p>
-                                        <div class="flex flex-wrap gap-2">
+                                    <div class="flex items-center justify-between border-l-2 border-green-500 pl-3 bg-gray-900/30 rounded-r-lg p-2">
+                                        <p class="text-gray-300 text-xs font-medium w-20">Histogram</p>
+                                        <div class="flex gap-1.5 sm:gap-2">
                                             @foreach($palettesHistogram as $index => $color)
-                                                <div class="flex items-center gap-1 group cursor-pointer">
+                                                <div class="relative group cursor-pointer" onclick="openColorPicker('histogram', {{ $index }})">
                                                     <div 
-                                                        class="w-6 h-6 rounded border-2 border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-histogram-{{ $index }}"
+                                                        class="w-7 h-7 rounded border border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-histogram-{{ $index }}"
                                                         style="background-color: {{ $color }}"
-                                                        title="{{ $color }}"
-                                                        onclick="openColorPicker('histogram', {{ $index }})"
+                                                        title="{{ strtoupper($color) }}"
                                                     ></div>
                                                     <input 
                                                         type="color" 
@@ -159,7 +157,7 @@
                                                         class="hidden"
                                                         onchange="updatePaletteColor('histogram', {{ $index }}, this.value)"
                                                     >
-                                                    <span class="text-gray-300 text-[9px] font-mono group-hover:text-amber-400 transition-colors" id="label-histogram-{{ $index }}">{{ strtoupper($color) }}</span>
+                                                    <span class="hidden" id="label-histogram-{{ $index }}">{{ strtoupper($color) }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -168,16 +166,15 @@
                                 
                                 {{-- Median Cut --}}
                                 @if(!empty($paletteMedianCut))
-                                    <div class="border-l-2 border-purple-500 pl-3">
-                                        <p class="text-amber-500 text-xs font-semibold mb-3">median cut</p>
-                                        <div class="flex flex-wrap gap-2">
+                                    <div class="flex items-center justify-between border-l-2 border-purple-500 pl-3 bg-gray-900/30 rounded-r-lg p-2">
+                                        <p class="text-gray-300 text-xs font-medium w-20">Median Cut</p>
+                                        <div class="flex gap-1.5 sm:gap-2">
                                             @foreach($paletteMedianCut as $index => $color)
-                                                <div class="flex items-center gap-1 group cursor-pointer">
+                                                <div class="relative group cursor-pointer" onclick="openColorPicker('median', {{ $index }})">
                                                     <div 
-                                                        class="w-6 h-6 rounded border-2 border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-median-{{ $index }}"
+                                                        class="w-7 h-7 rounded border border-gray-500 shadow-sm hover:border-amber-400 transition-all palette-color-median-{{ $index }}"
                                                         style="background-color: {{ $color }}"
-                                                        title="{{ $color }}"
-                                                        onclick="openColorPicker('median', {{ $index }})"
+                                                        title="{{ strtoupper($color) }}"
                                                     ></div>
                                                     <input 
                                                         type="color" 
@@ -186,7 +183,7 @@
                                                         class="hidden"
                                                         onchange="updatePaletteColor('median', {{ $index }}, this.value)"
                                                     >
-                                                    <span class="text-gray-300 text-[9px] font-mono group-hover:text-amber-400 transition-colors" id="label-median-{{ $index }}">{{ strtoupper($color) }}</span>
+                                                    <span class="hidden" id="label-median-{{ $index }}">{{ strtoupper($color) }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
