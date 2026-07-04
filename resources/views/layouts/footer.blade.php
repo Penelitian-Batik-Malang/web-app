@@ -90,7 +90,7 @@
         <div class="mt-8 pt-8 border-t border-gray-800">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-sm">
                 <p>Copyright {{ date('Y') }} Galeri Digital Batik Malang</p>
-                <p>No Surat Kementrian</p>
+                <p>No. Surat Kementrian</p>
             </div>
         </div>
     </div>

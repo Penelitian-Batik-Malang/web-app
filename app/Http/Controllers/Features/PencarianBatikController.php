@@ -32,7 +32,7 @@ class PencarianBatikController extends BaseMLController
 
         try {
             $response = Http::timeout(60)
-                ->withHeaders(['X-API-Key' => $this->apiKey])
+                ->withHeaders($this->getMLHeaders())
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->post($this->batikServiceUrl('/search/general'));
 

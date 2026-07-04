@@ -16,11 +16,25 @@ class ColorSearchController extends Controller
 
     private string $baseUrl;
     private string $apiKey;
+    private string $hfToken;
 
     public function __construct()
     {
         $this->baseUrl = rtrim((string) config('services.ml.url', ''), '/');
         $this->apiKey = trim((string) config('services.ml.api_key', ''));
+        $this->hfToken = trim((string) config('services.ml.hf_token', ''));
+    }
+
+    private function getMLHeaders(): array
+    {
+        $headers = [];
+        if (!empty($this->apiKey)) {
+            $headers['X-API-Key'] = $this->apiKey;
+        }
+        if (!empty($this->hfToken)) {
+            $headers['Authorization'] = 'Bearer ' . $this->hfToken;
+        }
+        return $headers;
     }
 
     public function getPalette(Request $request): JsonResponse
@@ -61,9 +75,7 @@ class ColorSearchController extends Controller
             $url = $this->buildUrl(self::PALETTE_PATH);
 
             $response = Http::timeout(60)
-                ->withHeaders([
-                    'X-API-Key' => $this->apiKey,
-                ])
+                ->withHeaders($this->getMLHeaders())
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->post($url, [
                     'num_cluster' => $numCluster,
@@ -191,9 +203,7 @@ class ColorSearchController extends Controller
             $url = $this->buildUrl(self::RECOMMENDATION_PATH);
 
             $response = Http::timeout(60)
-                ->withHeaders([
-                    'X-API-Key' => $this->apiKey,
-                ])
+                ->withHeaders($this->getMLHeaders())
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->post($url, [
                     'num_cluster' => $numCluster,
