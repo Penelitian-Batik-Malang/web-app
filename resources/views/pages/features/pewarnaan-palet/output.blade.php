@@ -7,8 +7,9 @@
   - Has Batik Image: {{ !empty($batikImage) ? 'YES (' . strlen($batikImage) . ' chars)' : 'NO' }}
   - Has Color Image: {{ !empty($colorImage) ? 'YES (' . strlen($colorImage) . ' chars)' : 'NO' }}
   - Results Count: {{ count($results ?? []) }}
-  - Batik Image Type: {{ substr($batikImage, 0, 30) ?? 'N/A' }}
-  - Color Image Type: {{ substr($colorImage, 0, 30) ?? 'N/A' }}
+  - Kmeans Result: {{ !empty($results['kmeans']['image_url'] ?? null) ? 'YES' : 'NO' }}
+  - Histogram Result: {{ !empty($results['histogram']['image_url'] ?? null) ? 'YES' : 'NO' }}
+  - Median Result: {{ !empty($results['median']['image_url'] ?? null) ? 'YES' : 'NO' }}
 -->
 
 <div class="flex items-center justify-center min-h-screen py-8 px-4">
@@ -17,7 +18,10 @@
         {{-- Header --}}
         <div class="text-center pt-10 pb-6 px-8 border-b border-gray-800">
             <h2 class="text-3xl font-bold text-white font-playfair mb-2">Hasil Pewarnaan Batik</h2>
-            <p class="text-gray-400 text-sm">Perbandingan hasil pewarnaan menggunakan 3 metode berbeda</p>
+            @php
+                $hasAllMethods = !empty($results['histogram']['image_url'] ?? null) || !empty($results['median']['image_url'] ?? null);
+            @endphp
+            <p class="text-gray-400 text-sm">{{ $hasAllMethods ? 'Perbandingan hasil pewarnaan menggunakan 3 metode berbeda' : 'Hasil pewarnaan dengan palet warna pilihan Anda' }}</p>
         </div>
 
         {{-- Body --}}
@@ -34,8 +38,8 @@
                             @if($batikImage && (strpos($batikImage, 'data:') === 0 || strpos($batikImage, 'http') === 0))
                                 <img src="{{ $batikImage }}" 
                                      alt="Gambar Batik" 
-                                     class="w-full h-auto object-cover max-h-96"
-                                     onerror="this.parentElement.innerHTML='<div class=\"w-full h-80 flex items-center justify-center bg-gray-800 text-gray-600\"><i class=\"bi bi-exclamation-triangle text-5xl\"></i></div>'">
+                                     class="w-auto h-auto max-h-96"
+                                     onerror="this.parentElement.innerHTML='<div class=\"w-full h-20 flex items-center justify-center bg-gray-800 text-gray-600\"><i class=\"bi bi-exclamation-triangle text-5xl\"></i></div>'">
                             @else
                                 <div class="w-full h-80 flex items-center justify-center bg-gray-800 text-gray-600">
                                     <div class="text-center">
@@ -46,46 +50,29 @@
                             @endif
                         </div>
                     </div>
-
-                    {{-- Right: Pallet Warna --}}
-                    <div class="flex-1 space-y-4">
-                        <h3 class="text-center text-white font-semibold">Pallet Warna</h3>
-                        <div class="rounded-2xl overflow-hidden border border-amber-700/50 bg-black/50">
-                            @if($colorImage && (strpos($colorImage, 'data:') === 0 || strpos($colorImage, 'http') === 0))
-                                <img src="{{ $colorImage }}" 
-                                     alt="Color palette" 
-                                     class="w-full h-auto object-cover max-h-96"
-                                     onerror="this.parentElement.innerHTML='<div class=\"w-full h-80 flex items-center justify-center bg-gray-800 text-gray-600\"><i class=\"bi bi-exclamation-triangle text-5xl\"></i></div>'">
-                            @else
-                                <div class="w-full h-80 flex items-center justify-center bg-gray-800 rounded-2xl border border-gray-700">
-                                    <div class="text-center">
-                                        <i class="bi bi-palette text-5xl text-gray-600 mb-2 block"></i>
-                                        <p class="text-xs text-gray-500">Pallet warna tidak tersedia</p>
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
                 </div>
 
-                {{-- 3 Results Grid --}}
+                {{-- Results Section --}}
                 <div>
-                    <h3 class="text-center text-white font-semibold mb-6">Hasil Pewarnaan (3 Metode)</h3>
+                    @php
+                        $hasAllMethods = !empty($results['histogram']['image_url'] ?? null) || !empty($results['median']['image_url'] ?? null);
+                    @endphp
+                    <h3 class="text-center text-white font-semibold mb-6">{{ $hasAllMethods ? 'Hasil Pewarnaan (3 Metode)' : 'Hasil Pewarnaan' }}</h3>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="{{ $hasAllMethods ? 'grid grid-cols-1 md:grid-cols-3 gap-6' : 'flex justify-center' }}">
                         
-                        {{-- Result 1: KMeans --}}
-                        <div class="space-y-3">
+                        {{-- Result 1: KMeans or Custom Result --}}
+                        <div class="{{ !($hasAllMethods ?? false) ? 'w-full max-w-md' : '' }} space-y-3">
                             <div class="flex items-center gap-2 mb-3">
-                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                <h4 class="text-white font-semibold text-sm">📊 KMeans</h4>
+                                <div class="w-3 h-3 {{ $hasAllMethods ? 'bg-blue-500' : 'bg-amber-500' }} rounded-full"></div>
+                                <h4 class="text-white font-semibold text-sm">{{ $hasAllMethods ? '📊 KMeans' : '🎨 Hasil Anda' }}</h4>
                             </div>
                             <div class="rounded-2xl overflow-hidden border border-blue-500/50 bg-black/50">
                                 @if($results['kmeans']['image_url'] ?? null)
                                     <img 
                                         src="{{ $results['kmeans']['image_url'] }}" 
                                         alt="Hasil KMeans" 
-                                        class="w-full h-auto object-cover"
+                                        class="w-full h-auto object-cover max-h-64"
                                     >
                                 @else
                                     <div class="w-full h-40 flex items-center justify-center bg-gray-800">
@@ -99,8 +86,8 @@
                             <div class="bg-gray-800/50 rounded-lg p-2 text-[10px] text-gray-300 space-y-1">
                                 <p>Time: <span class="text-amber-400">{{ $results['kmeans']['processing_time_ms'] ?? '-' }}ms</span></p>
                                 <button 
-                                    onclick="downloadImage('{{ $results['kmeans']['image_url'] ?? '' }}', 'kmeans')"
-                                    class="w-full mt-2 bg-blue-700 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded transition-all {{ !($results['kmeans']['image_url'] ?? null) ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                    onclick="downloadImage('{{ $results['kmeans']['image_url'] ?? '' }}', 'custom-result')"
+                                    class="w-full mt-2 {{ $hasAllMethods ? 'bg-blue-700 hover:bg-blue-600' : 'bg-amber-700 hover:bg-amber-600' }} text-white text-xs py-1 px-2 rounded transition-all {{ !($results['kmeans']['image_url'] ?? null) ? 'opacity-50 cursor-not-allowed' : '' }}"
                                     {{ !($results['kmeans']['image_url'] ?? null) ? 'disabled' : '' }}
                                 >
                                     <i class="bi bi-download"></i> Download
@@ -109,6 +96,7 @@
                         </div>
                         
                         {{-- Result 2: Histogram --}}
+                        @if($hasAllMethods ?? false)
                         <div class="space-y-3">
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -119,7 +107,7 @@
                                     <img 
                                         src="{{ $results['histogram']['image_url'] }}" 
                                         alt="Hasil Histogram" 
-                                        class="w-full h-auto object-cover"
+                                        class="w-full h-auto object-cover max-h-64"
                                     >
                                 @else
                                     <div class="w-full h-40 flex items-center justify-center bg-gray-800">
@@ -143,6 +131,8 @@
                         </div>
                         
                         {{-- Result 3: Median Cut --}}
+                        @endif
+                        @if($hasAllMethods ?? false)
                         <div class="space-y-3">
                             <div class="flex items-center gap-2 mb-3">
                                 <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
@@ -153,7 +143,7 @@
                                     <img 
                                         src="{{ $results['median']['image_url'] }}" 
                                         alt="Hasil Median Cut" 
-                                        class="w-full h-auto object-cover"
+                                        class="w-full h-auto object-cover max-h-64"
                                     >
                                 @else
                                     <div class="w-full h-40 flex items-center justify-center bg-gray-800">
@@ -175,20 +165,13 @@
                                 </button>
                             </div>
                         </div>
+                        @endif
                         
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- Footer --}}
-        <div class="border-t border-gray-800 px-8 py-6">
-            <div class="flex flex-col sm:flex-row justify-center gap-4">
-                <a href="{{ route('pewarnaan.palet') }}" class="border border-gray-700 bg-gray-800/50 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-xl transition-all text-center">
-                    Mulai Lagi
-                </a>
-            </div>
-        </div>
     </div>
 </div>
 
