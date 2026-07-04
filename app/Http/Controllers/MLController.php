@@ -128,6 +128,12 @@ class MLController extends Controller
             
             // Construct full image URL
             $resultImageUrl = $result['result_image_url'] ?? null;
+            
+            // Normalize backslashes to forward slashes (Windows path fix)
+            if ($resultImageUrl) {
+                $resultImageUrl = str_replace('\\', '/', $resultImageUrl);
+            }
+            
             if ($resultImageUrl) {
                 // If it's already a full URL, use as-is
                 if (filter_var($resultImageUrl, FILTER_VALIDATE_URL)) {

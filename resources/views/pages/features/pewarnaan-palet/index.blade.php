@@ -51,7 +51,7 @@
                         </div>
                     </div>
                     
-                    <input type="file" id="batik-file-input" name="batik_source" accept="image/*" class="hidden" onchange="handleBatikFileSelect(this)">
+                    <input type="file" id="batik-file-input" name="batik_source" accept="image/*" class="hidden">
                     
                     {{-- Batik File Preview --}}
                     <div id="batik-file-preview" class="hidden bg-gray-800/50 border border-amber-700/30 rounded-xl p-3 flex items-center gap-3">
@@ -119,43 +119,133 @@
                 
 
                 {{-- Section 3: Pilih Sumber Warna --}}
-                <div class="space-y-3 border-t border-gray-800 pt-8 mt-4 border-b border-gray-800 pb-8">
+                <div id="color-source-section" class="hidden space-y-4 border-t border-gray-800 pt-8 mt-4 border-b border-gray-800 pb-8">
                     <h3 class="text-center text-white font-semibold">Pilih Sumber Warna</h3>
-                    <p class="text-center text-gray-500 text-xs mb-6">kosongkan jika ingin langsung dengan menggunakan pallet</p>
                     
-                    {{-- Upload Area --}}
-                    <div
-                        id="color-dropzone"
-                        class="border-2 border-dashed border-amber-700/50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors bg-amber-950/20 min-h-40 group mx-auto"
-                        onclick="document.getElementById('color-file-input').click()"
-                    >
-                        <div class="text-amber-600/80 group-hover:text-amber-400 transition-colors">
-                            <i class="bi bi-cloud-upload text-4xl"></i>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-white font-bold text-sm">
-                                Click to upload <span class="text-amber-500 font-normal">or drag and drop</span>
-                            </p>
-                            <p class="text-gray-500 text-xs mt-1">JPG, JPEG, PNG less than 1MB</p>
+                    {{-- Source Type Selection --}}
+                    <div class="flex gap-4 justify-center flex-wrap">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="color_source_type" value="auto-extract" class="color-source-radio">
+                            <span class="text-white text-sm">Auto-Extract dari Batik</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="color_source_type" value="upload" class="color-source-radio" checked>
+                            <span class="text-white text-sm">Upload Gambar Warna</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="color_source_type" value="manual" class="color-source-radio">
+                            <span class="text-white text-sm">Pilih Warna Manual</span>
+                        </label>
+                    </div>
+                    
+                    {{-- Auto-Extract Option (NEW) --}}
+                    <div id="color-auto-extract-option" class="space-y-3">
+                        <div class="bg-gradient-to-br from-amber-900/30 to-amber-950/20 border border-amber-700/50 rounded-xl p-6">
+                            <div class="text-center space-y-3">
+                                <div>
+                                    <i class="bi bi-sparkles text-3xl text-amber-400 mb-2 block"></i>
+                                    <p class="text-white font-semibold text-sm">Warna akan diekstrak otomatis</p>
+                                    <p class="text-gray-400 text-xs mt-1">dari gambar batik yang Anda upload menggunakan 3 metode (KMeans, Histogram, Median Cut)</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <input type="file" id="color-file-input" accept="image/*" class="hidden" onchange="handleFileSelect(this)">
-                    
-                    {{-- File Preview --}}
-                    <div id="file-preview" class="hidden bg-gray-800/50 border border-amber-700/30 rounded-xl p-3 flex items-center gap-3">
-                        <img id="file-img" src="" alt="preview" class="w-10 h-10 rounded object-cover border border-gray-700">
-                        <div class="flex-1">
-                            <p id="file-name" class="text-white text-xs font-semibold truncate"></p>
-                            <p id="file-size" class="text-gray-500 text-[10px]"></p>
+                    {{-- Upload Image Option --}}
+                    <div id="color-upload-option" class="space-y-3">
+                        <div
+                            id="color-dropzone"
+                            class="border-2 border-dashed border-amber-700/50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors bg-amber-950/20 min-h-40 group mx-auto"
+                            onclick="document.getElementById('color-file-input').click()"
+                        >
+                            <div class="text-amber-600/80 group-hover:text-amber-400 transition-colors">
+                                <i class="bi bi-cloud-upload text-4xl"></i>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-white font-bold text-sm">
+                                    Click to upload <span class="text-amber-500 font-normal">or drag and drop</span>
+                                </p>
+                                <p class="text-gray-500 text-xs mt-1">JPG, JPEG, PNG less than 10MB</p>
+                            </div>
                         </div>
-                        <button type="button" onclick="resetFile()" class="text-gray-500 hover:text-red-500 text-lg">
-                            <i class="bi bi-x-circle"></i>
-                        </button>
+                        
+                        <input type="file" id="color-file-input" accept="image/*" class="hidden">
+                        
+                        {{-- File Preview --}}
+                        <div id="file-preview" class="hidden bg-gray-800/50 border border-amber-700/30 rounded-xl p-3 flex items-center gap-3">
+                            <img id="file-img" src="" alt="preview" class="w-10 h-10 rounded object-cover border border-gray-700">
+                            <div class="flex-1">
+                                <p id="file-name" class="text-white text-xs font-semibold truncate"></p>
+                                <p id="file-size" class="text-gray-500 text-[10px]"></p>
+                            </div>
+                            <button type="button" onclick="resetFile()" class="text-gray-500 hover:text-red-500 text-lg">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </div>
+                        
+                        <input type="hidden" id="color-file-base64" name="color_image">
                     </div>
                     
-                    {{-- Hidden field untuk color file --}}
-                    <input type="hidden" id="color-file-base64" name="color_image">
+                    {{-- Manual Color Picker Option --}}
+                    <div id="color-manual-option" class="hidden space-y-3">
+                        <div class="bg-gray-800/50 border border-amber-700/30 rounded-xl p-6">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {{-- Color 1 --}}
+                                <div class="flex flex-col items-center gap-2">
+                                    <input 
+                                        type="color" 
+                                        class="manual-color-picker" 
+                                        data-color-index="0"
+                                        value="#ff0000"
+                                        class="w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50"
+                                    >
+                                    <p class="text-gray-400 text-xs">Warna 1</p>
+                                    <p class="color-code text-white text-sm font-mono font-bold">#ff0000</p>
+                                </div>
+                                
+                                {{-- Color 2 --}}
+                                <div class="flex flex-col items-center gap-2">
+                                    <input 
+                                        type="color" 
+                                        class="manual-color-picker" 
+                                        data-color-index="1"
+                                        value="#00ff00"
+                                        class="w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50"
+                                    >
+                                    <p class="text-gray-400 text-xs">Warna 2</p>
+                                    <p class="color-code text-white text-sm font-mono font-bold">#00ff00</p>
+                                </div>
+                                
+                                {{-- Color 3 --}}
+                                <div class="flex flex-col items-center gap-2">
+                                    <input 
+                                        type="color" 
+                                        class="manual-color-picker" 
+                                        data-color-index="2"
+                                        value="#0000ff"
+                                        class="w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50"
+                                    >
+                                    <p class="text-gray-400 text-xs">Warna 3</p>
+                                    <p class="color-code text-white text-sm font-mono font-bold">#0000ff</p>
+                                </div>
+                                
+                                {{-- Color 4 --}}
+                                <div class="flex flex-col items-center gap-2">
+                                    <input 
+                                        type="color" 
+                                        class="manual-color-picker" 
+                                        data-color-index="3"
+                                        value="#ffff00"
+                                        class="w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50"
+                                    >
+                                    <p class="text-gray-400 text-xs">Warna 4</p>
+                                    <p class="color-code text-white text-sm font-mono font-bold">#ffff00</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" id="color-picker-value" name="manual_color">
+                    </div>
                 </div>
 
                 {{-- Footer Actions Inside Form --}}
@@ -182,200 +272,269 @@
     </div>
 </div>
 
-<style>
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 10px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(217, 119, 6, 0.4);
-        border-radius: 10px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(217, 119, 6, 0.6);
-    }
-</style>
 
 <script>
-    const fileInput = document.getElementById('color-file-input');
-    const dropzone = document.getElementById('color-dropzone');
-    const filePreview = document.getElementById('file-preview');
-    const pewarnoanForm = document.getElementById('pewarnaan-form');
+function formatFileSize(bytes) {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+}
 
-    const batikFileInput = document.getElementById('batik-file-input');
-    const batikDropzone = document.getElementById('batik-dropzone');
-    const batikFilePreview = document.getElementById('batik-file-preview');
+function handleBatikFileSelect(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+        alert("File harus berupa gambar");
+        input.value = "";
+        return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+        alert("File terlalu besar. Maksimal 10MB");
+        input.value = "";
+        return;
+    }
 
-    // Debug: Log form submission
-    pewarnoanForm.addEventListener('submit', function(e) {
-        const colorImageValue = document.getElementById('color-file-base64').value;
-        const batikImageValue = document.getElementById('batik-file-base64').value;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = document.getElementById("batik-file-img");
+        if (img) img.src = e.target.result;
         
-        console.log('Form submitted', {
-            hasColorImage: colorImageValue ? 'ADA' : 'TIDAK ADA',
-            hasBatikImage: batikImageValue ? 'ADA' : 'TIDAK ADA',
+        const name = document.getElementById("batik-file-name");
+        if (name) name.textContent = file.name;
+        
+        const size = document.getElementById("batik-file-size");
+        if (size) size.textContent = formatFileSize(file.size);
+        
+        const base64Input = document.getElementById("batik-file-base64");
+        if (base64Input) base64Input.value = e.target.result;
+        
+        const dropzone = document.getElementById("batik-dropzone");
+        if (dropzone) dropzone.classList.add("hidden");
+        
+        const preview = document.getElementById("batik-file-preview");
+        if (preview) preview.classList.remove("hidden");
+        
+        const colorSection = document.getElementById("color-source-section");
+        if (colorSection) colorSection.classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
+}
+
+function handleFileSelect(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+        alert("File harus berupa gambar");
+        input.value = "";
+        return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+        alert("File terlalu besar. Maksimal 10MB");
+        input.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = document.getElementById("file-img");
+        if (img) img.src = e.target.result;
+        
+        const name = document.getElementById("file-name");
+        if (name) name.textContent = file.name;
+        
+        const size = document.getElementById("file-size");
+        if (size) size.textContent = formatFileSize(file.size);
+        
+        const base64Input = document.getElementById("color-file-base64");
+        if (base64Input) base64Input.value = e.target.result;
+        
+        const dropzone = document.getElementById("color-dropzone");
+        if (dropzone) dropzone.classList.add("hidden");
+        
+        const preview = document.getElementById("file-preview");
+        if (preview) preview.classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
+}
+
+function resetBatikFile() {
+    const input = document.getElementById("batik-file-input");
+    if (input) input.value = "";
+    
+    const dropzone = document.getElementById("batik-dropzone");
+    if (dropzone) dropzone.classList.remove("hidden");
+    
+    const preview = document.getElementById("batik-file-preview");
+    if (preview) preview.classList.add("hidden");
+    
+    const base64 = document.getElementById("batik-file-base64");
+    if (base64) base64.value = "";
+    
+    const colorSection = document.getElementById("color-source-section");
+    if (colorSection) colorSection.classList.add("hidden");
+    
+    resetFile();
+}
+
+function resetFile() {
+    const input = document.getElementById("color-file-input");
+    if (input) input.value = "";
+    
+    const dropzone = document.getElementById("color-dropzone");
+    if (dropzone) dropzone.classList.remove("hidden");
+    
+    const preview = document.getElementById("file-preview");
+    if (preview) preview.classList.add("hidden");
+    
+    const base64 = document.getElementById("color-file-base64");
+    if (base64) base64.value = "";
+    
+    // Reset 4 color pickers ke default
+    const colorPickers = document.querySelectorAll(".manual-color-picker");
+    const defaultColors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00"];
+    const colorCodes = document.querySelectorAll("#color-manual-option .color-code");
+    
+    colorPickers.forEach((picker, index) => {
+        picker.value = defaultColors[index];
+        if (colorCodes[index]) {
+            colorCodes[index].textContent = defaultColors[index];
+        }
+    });
+    
+    updateManualColorValue();
+    
+    const colorPickerValue = document.getElementById("color-picker-value");
+    if (colorPickerValue) colorPickerValue.value = "";
+}
+
+function resetFormAndFile() {
+    const form = document.getElementById("pewarnaan-form");
+    if (form) form.reset();
+    resetBatikFile();
+    resetFile();
+}
+
+function toggleColorSourceType(sourceType) {
+    const autoExtractOption = document.getElementById("color-auto-extract-option");
+    const uploadOption = document.getElementById("color-upload-option");
+    const manualOption = document.getElementById("color-manual-option");
+    
+    if (sourceType === "auto-extract") {
+        if (autoExtractOption) autoExtractOption.classList.remove("hidden");
+        if (uploadOption) uploadOption.classList.add("hidden");
+        if (manualOption) manualOption.classList.add("hidden");
+    } else if (sourceType === "upload") {
+        if (autoExtractOption) autoExtractOption.classList.add("hidden");
+        if (uploadOption) uploadOption.classList.remove("hidden");
+        if (manualOption) manualOption.classList.add("hidden");
+    } else if (sourceType === "manual") {
+        if (autoExtractOption) autoExtractOption.classList.add("hidden");
+        if (uploadOption) uploadOption.classList.add("hidden");
+        if (manualOption) manualOption.classList.remove("hidden");
+    }
+}
+
+function updateManualColorValue() {
+    const colorPickers = document.querySelectorAll(".manual-color-picker");
+    const colors = Array.from(colorPickers).map(picker => picker.value);
+    const colorPickerValue = document.getElementById("color-picker-value");
+    if (colorPickerValue) {
+        colorPickerValue.value = JSON.stringify(colors);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const batikInput = document.getElementById("batik-file-input");
+    if (batikInput) {
+        batikInput.addEventListener("change", function() {
+            handleBatikFileSelect(this);
         });
-        
-        if (!batikImageValue) {
-            e.preventDefault();
-            alert('Upload gambar batik sumber terlebih dahulu!');
-            return false;
-        }
-        
-        if (!colorImageValue) {
-            e.preventDefault();
-            alert('Upload gambar warna terlebih dahulu!');
-            return false;
-        }
-    });
-
-    // ===== BATIK FILE UPLOAD HANDLERS =====
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        batikDropzone.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
     }
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        batikDropzone.addEventListener(eventName, () => {
-            batikDropzone.classList.add('border-primary', 'bg-primary/5');
-        }, false);
+    
+    const colorInput = document.getElementById("color-file-input");
+    if (colorInput) {
+        colorInput.addEventListener("change", function() {
+            handleFileSelect(this);
+        });
+    }
+    
+    const colorSourceRadios = document.querySelectorAll(".color-source-radio");
+    colorSourceRadios.forEach(radio => {
+        radio.addEventListener("change", (e) => {
+            toggleColorSourceType(e.target.value);
+        });
     });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        batikDropzone.addEventListener(eventName, () => {
-            batikDropzone.classList.remove('border-primary', 'bg-primary/5');
-        }, false);
+    
+    // Event listeners untuk 4 color pickers
+    const colorPickers = document.querySelectorAll(".manual-color-picker");
+    colorPickers.forEach((picker, index) => {
+        picker.addEventListener("input", (e) => {
+            const color = e.target.value;
+            const colorCodes = document.querySelectorAll("#color-manual-option .color-code");
+            if (colorCodes[index]) {
+                colorCodes[index].textContent = color;
+            }
+            updateManualColorValue();
+        });
     });
-
-    batikDropzone.addEventListener('drop', function(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        if (files.length > 0) {
-            batikFileInput.files = files;
-            handleBatikFileSelect({ files: files });
-        }
-    });
-
-    function handleBatikFileSelect(input) {
-        const file = input.files ? input.files[0] : null;
-        if (!file) return;
-
-        if (file.size > 10 * 1024 * 1024) {
-            alert('File terlalu besar. Maksimal 10MB.');
-            return;
-        }
-
-        if (!file.type.startsWith('image/')) {
-            alert('File harus berupa gambar.');
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('batik-file-img').src = e.target.result;
-            document.getElementById('batik-file-name').textContent = file.name;
-            document.getElementById('batik-file-size').textContent = formatBytes(file.size);
-            document.getElementById('batik-file-base64').value = e.target.result;
+    
+    // Set initial value
+    updateManualColorValue();
+    
+    const form = document.getElementById("pewarnaan-form");
+    if (form) {
+        form.addEventListener("submit", (e) => {
+            const batikBase64 = document.getElementById("batik-file-base64");
+            const colorSourceType = document.querySelector("input[name='color_source_type']:checked")?.value;
             
-            batikDropzone.classList.add('hidden');
-            batikFilePreview.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function resetBatikFile() {
-        batikFileInput.value = '';
-        batikDropzone.classList.remove('hidden');
-        batikFilePreview.classList.add('hidden');
-        document.getElementById('batik-file-base64').value = '';
-    }
-
-    // ===== COLOR FILE UPLOAD HANDLERS =====
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropzone.addEventListener(eventName, preventDefaults, false);
-    });
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropzone.addEventListener(eventName, () => {
-            dropzone.classList.add('border-primary', 'bg-primary/5');
-        }, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropzone.addEventListener(eventName, () => {
-            dropzone.classList.remove('border-primary', 'bg-primary/5');
-        }, false);
-    });
-
-    dropzone.addEventListener('drop', function(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        if (files.length > 0) {
-            fileInput.files = files;
-            handleFileSelect({ files: files });
-        }
-    });
-
-    function handleFileSelect(input) {
-        const file = input.files ? input.files[0] : null;
-        if (!file) return;
-
-        if (file.size > 10 * 1024 * 1024) {
-            alert('File terlalu besar. Maksimal 1MB.');
-            return;
-        }
-
-        if (!file.type.startsWith('image/')) {
-            alert('File harus berupa gambar.');
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('file-img').src = e.target.result;
-            document.getElementById('file-name').textContent = file.name;
-            document.getElementById('file-size').textContent = formatBytes(file.size);
-            document.getElementById('color-file-base64').value = e.target.result;
+            if (!batikBase64?.value) {
+                e.preventDefault();
+                alert("Upload gambar batik sumber terlebih dahulu!");
+                return false;
+            }
             
-            dropzone.classList.add('hidden');
-            filePreview.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
+            if (colorSourceType === "upload") {
+                const colorImage = document.getElementById("color-file-base64");
+                if (!colorImage?.value) {
+                    e.preventDefault();
+                    alert("Upload gambar sumber warna terlebih dahulu!");
+                    return false;
+                }
+                // Clear manual color value if upload is selected
+                const manualColor = document.getElementById("color-picker-value");
+                if (manualColor) manualColor.value = "";
+            } else if (colorSourceType === "manual") {
+                const manualColor = document.getElementById("color-picker-value");
+                if (!manualColor?.value) {
+                    e.preventDefault();
+                    alert("Pilih warna terlebih dahulu!");
+                    return false;
+                }
+                // Try to parse as JSON array
+                try {
+                    const colors = JSON.parse(manualColor.value);
+                    if (!Array.isArray(colors) || colors.length === 0) {
+                        e.preventDefault();
+                        alert("Pilih warna terlebih dahulu!");
+                        return false;
+                    }
+                } catch (err) {
+                    e.preventDefault();
+                    alert("Format warna tidak valid!");
+                    return false;
+                }
+                // Clear color image value if manual is selected
+                const colorImage = document.getElementById("color-file-base64");
+                if (colorImage) colorImage.value = "";
+            }
+        });
     }
-
-    function resetFile() {
-        fileInput.value = '';
-        dropzone.classList.remove('hidden');
-        filePreview.classList.add('hidden');
-        document.getElementById('color-file-base64').value = '';
-    }
-
-    function resetFormAndFile() {
-        document.getElementById('pewarnaan-form').reset();
-        resetBatikFile();
-        resetFile();
-    }
-
-    function formatBytes(bytes) {
-        if (!bytes) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-    }
-
-    // Handle dropdown drag leave properly
-    let dragCounter = 0;
-    batikDropzone.addEventListener('dragenter', () => dragCounter++);
-    batikDropzone.addEventListener('dragleave', () => dragCounter--);
-    dropzone.addEventListener('dragenter', () => dragCounter++);
-    dropzone.addEventListener('dragleave', () => dragCounter--);
+});
 </script>
 @endsection
