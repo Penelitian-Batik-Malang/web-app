@@ -33,7 +33,16 @@ class MonitorAiController extends Controller
             $url = $service['url'] . ($service['healthPath'] ?? '/api/health');
 
             try {
-                $response = Http::timeout(10)->acceptJson()->get($url);
+                $hfToken = trim((string) config('services.ml.hf_token', ''));
+                $headers = [];
+                if (!empty($hfToken)) {
+                    $headers['Authorization'] = 'Bearer ' . $hfToken;
+                }
+
+                $response = Http::timeout(10)
+                    ->withHeaders($headers)
+                    ->acceptJson()
+                    ->get($url);
 
                 if ($response->successful()) {
                     $raw = $response->json();

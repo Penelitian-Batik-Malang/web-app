@@ -175,5 +175,6 @@ Route::middleware('menu.access_or_guest:pewarnaan-palet')->group(function () {
 // ── [TODO] Pewarnaan by Prompt ────────────────────────────────────────────────
 Route::middleware('menu.access_or_guest:pewarnaan-prompt')->group(function () {
     Route::get('/pewarnaan-prompt', [PewarnaanPromptController::class, 'show'])->name('pewarnaan.prompt');
-    // TODO: Route::post('/ajax/pewarnaan/prompt', [PewarnaanPromptController::class, 'process'])->name('api.pewarnaan.prompt');
+    Route::post('/ajax/pewarnaan/prompt', [PewarnaanPromptController::class, 'process'])->name('api.pewarnaan.prompt');
+    Route::get('/ajax/pewarnaan/templates', [PewarnaanPromptController::class, 'templates'])->name('api.pewarnaan.templates');
 });

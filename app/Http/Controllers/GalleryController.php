@@ -103,8 +103,15 @@ class GalleryController extends Controller
             $mime    = $imgResp->header('Content-Type', 'image/jpeg');
             $ext     = str_contains($mime, 'png') ? 'png' : 'jpg';
             $fullUrl = $batikUrl . '/api/search/general';
+            
+            $headers = ['X-API-Key' => trim((string) config('services.ml.api_key', ''))];
+            $hfToken = trim((string) config('services.ml.hf_token', ''));
+            if (!empty($hfToken)) {
+                $headers['Authorization'] = 'Bearer ' . $hfToken;
+            }
+
             $response = Http::timeout(60)
-                ->withHeaders(['X-API-Key' => trim((string) config('services.ml.api_key', ''))])
+                ->withHeaders($headers)
                 ->attach('file', $imgResp->body(), 'liked_image.' . $ext)
                 ->post($fullUrl);
 
