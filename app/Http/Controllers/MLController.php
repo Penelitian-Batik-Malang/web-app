@@ -15,12 +15,26 @@ class MLController extends Controller
     private string $baseUrl;
     private array $endpoints;
     private string $apiKey;
+    private string $hfToken;
 
     public function __construct()
     {
         $this->baseUrl = rtrim((string) config('services.ml.url', ''), '/');
         $this->endpoints = (array) config('services.ml.endpoints', []);
         $this->apiKey = trim((string) config('services.ml.api_key', ''));
+        $this->hfToken = trim((string) config('services.ml.hf_token', ''));
+    }
+
+    private function getMLHeaders(): array
+    {
+        $headers = [];
+        if (!empty($this->apiKey)) {
+            $headers['X-API-Key'] = $this->apiKey;
+        }
+        if (!empty($this->hfToken)) {
+            $headers['Authorization'] = 'Bearer ' . $this->hfToken;
+        }
+        return $headers;
     }
 
     /**
@@ -85,7 +99,7 @@ class MLController extends Controller
             if (empty($palettes) || !$skipExtract) {
                 // Extract palette dari color_image jika tidak disediakan atau skip_extract false
                 $paletteResponse = Http::timeout(30)
-                    ->withHeaders(['X-API-Key' => $this->apiKey])
+                    ->withHeaders($this->getMLHeaders())
                     ->attach('image', $colorImageContent, 'color_image.jpg')
                     ->attach('method', 'kmeans')
                     ->attach('n_colors', '6')
@@ -116,7 +130,7 @@ class MLController extends Controller
             $paletteJson = json_encode($palettes);
             
             $recolorResponse = Http::timeout(60)
-                ->withHeaders(['X-API-Key' => $this->apiKey])
+                ->withHeaders($this->getMLHeaders())
                 ->attach('image', $batikImageContent, 'batik.jpg')
                 ->attach('palette', $paletteJson)
                 ->attach('white_threshold', '150')
@@ -209,7 +223,7 @@ class MLController extends Controller
         try {
             $url = $this->baseUrl . '/' . ltrim($mlPath, '/');
             $response = Http::timeout(30)
-                ->withHeaders(['X-API-Key' => $this->apiKey])
+                ->withHeaders($this->getMLHeaders())
                 ->attach('image', file_get_contents($request->file('image')->getRealPath()), $request->file('image')->getClientOriginalName())
                 ->post($url);
 

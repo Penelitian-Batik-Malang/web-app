@@ -74,7 +74,7 @@ class SharedMLController extends BaseMLController
                 ], 503);
             }
 
-            $http = Http::timeout(600)->accept('application/json')->withHeaders(['X-API-Key' => $this->apiKey]);
+            $http = Http::timeout(600)->accept('application/json')->withHeaders($this->getMLHeaders());
             $http = $this->attachFile($http, 'image', $request->file('image'));
             $response = $http->post($url);
 
@@ -181,7 +181,7 @@ class SharedMLController extends BaseMLController
 
             $response = Http::timeout(30)
                 ->asForm()
-                ->withHeaders(['X-API-Key' => $this->apiKey])
+                ->withHeaders($this->getMLHeaders())
                 ->post($url, ['session_id' => $request->input('session_id')]);
 
             if ($response->successful()) {
@@ -229,7 +229,7 @@ class SharedMLController extends BaseMLController
             }
 
             $response = Http::timeout(30)
-                ->withHeaders(['X-API-Key' => $this->apiKey])
+                ->withHeaders($this->getMLHeaders())
                 ->get($url);
 
             if ($response->successful()) {

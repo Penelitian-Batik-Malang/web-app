@@ -69,6 +69,7 @@ return [
         // Path /api ditambahkan otomatis oleh endpoint mapping di bawah.
         'url'     => rtrim(env('RETRIEVAL_API_BASE_URL', 'http://127.0.0.1:8001'), '/'),
         'api_key' => env('RETRIEVAL_API_KEY', ''),
+        'hf_token'=> env('HF_TOKEN', ''),
 
         // ── Endpoint FastAPI terpusat (single source of truth) ──────────
         // Semua path sudah menyertakan prefix /api sesuai FastAPI router.

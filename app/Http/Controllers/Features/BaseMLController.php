@@ -47,12 +47,36 @@ abstract class BaseMLController extends Controller
     protected string $apiKey;
 
     /**
+     * Token Hugging Face untuk akses Space privat.
+     * @var string
+     */
+    protected string $hfToken;
+
+    /**
      * Inisialisasi konfigurasi ML API (single-service).
      */
     public function __construct()
     {
         $this->mlUrl   = rtrim((string) config('services.ml.url', 'http://127.0.0.1:8001'), '/');
         $this->apiKey  = trim((string) config('services.ml.api_key', ''));
+        $this->hfToken = trim((string) config('services.ml.hf_token', ''));
+    }
+
+    /**
+     * Dapatkan header default untuk request ke ML API.
+     *
+     * @return array
+     */
+    protected function getMLHeaders(): array
+    {
+        $headers = [];
+        if (!empty($this->apiKey)) {
+            $headers['X-API-Key'] = $this->apiKey;
+        }
+        if (!empty($this->hfToken)) {
+            $headers['Authorization'] = 'Bearer ' . $this->hfToken;
+        }
+        return $headers;
     }
 
     /**
@@ -224,7 +248,7 @@ abstract class BaseMLController extends Controller
             // ─────────────────────────────────────────────────────────────────
 
             $response = Http::timeout(60)
-                ->withHeaders(['X-API-Key' => $this->apiKey])
+                ->withHeaders($this->getMLHeaders())
                 ->attach(
                     'file', 
                     file_get_contents($file->getRealPath()), 
@@ -294,7 +318,7 @@ abstract class BaseMLController extends Controller
                 'api_key_set' => !empty($this->apiKey),
             ]);
             $response = Http::timeout(10)
-                ->withHeaders(['X-API-Key' => $this->apiKey])
+                ->withHeaders($this->getMLHeaders())
                 ->get($this->batikServiceUrl($path));
             if ($response->successful()) {
                 $raw    = $response->json();
