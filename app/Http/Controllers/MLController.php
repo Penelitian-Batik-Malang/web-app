@@ -59,7 +59,7 @@ class MLController extends Controller
         return $this->handleImageDetection($request, $path);
     }
 
-        /**
+    /**
      * Endpoint: POST /api/colorize/palet
      * Input: batik_image (base64), color_image (base64), palette (optional, pre-extracted), skip_extract (boolean)
      * Process: 
@@ -87,7 +87,7 @@ class MLController extends Controller
             // Get batik image content dari base64
             $batikImageBase64 = $request->input('batik_image');
             $batikImageContent = $this->base64ToImageFile($batikImageBase64);
-            
+
             // Get color image content dari base64
             $colorImageBase64 = $request->input('color_image');
             $colorImageContent = $this->base64ToImageFile($colorImageBase64);
@@ -95,7 +95,7 @@ class MLController extends Controller
             // Step 1: Get palette - dari request atau extract dari color_image
             $palettes = $request->input('palette', []);
             $skipExtract = $request->input('skip_extract', false);
-            
+
             if (empty($palettes) || !$skipExtract) {
                 // Extract palette dari color_image jika tidak disediakan atau skip_extract false
                 $paletteResponse = Http::timeout(30)
@@ -128,7 +128,7 @@ class MLController extends Controller
 
             // Step 2: Recolor batik dengan palette
             $paletteJson = json_encode($palettes);
-            
+
             $recolorResponse = Http::timeout(60)
                 ->withHeaders($this->getMLHeaders())
                 ->attach('image', $batikImageContent, 'batik.jpg')
@@ -176,7 +176,6 @@ class MLController extends Controller
                     'palette_used' => $palettes,
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Colorize Palet Error: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
@@ -195,10 +194,10 @@ class MLController extends Controller
         if (strpos($base64String, 'data:image') === 0) {
             $base64String = substr($base64String, strpos($base64String, ',') + 1);
         }
-        
+
         return base64_decode($base64String);
     }
-    
+
 
     /**
      * Shared handler untuk semua fitur image → text classification.
@@ -246,13 +245,95 @@ class MLController extends Controller
                 'success' => false,
                 'message' => 'Model AI tidak memberikan respons yang valid.',
             ], $response->status());
-
         } catch (\Exception $e) {
             Log::error('ML API Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghubungi server Model AI. Periksa koneksi atau endpoint.',
             ], 500);
+        }
+    }
+
+    /**
+     * Endpoint: POST /api/search/text
+     * Input: { query: string, top_k?: int }
+     * Output: { success, query, count, results: [{ rank, score, image_url, category, filename }] }
+     */
+    public function searchText(Request $request)
+    {
+        $query = $request->query('query');
+
+        if (!$query) {
+            return view('pages.features.retrieval-batik');
+        }
+
+        $topK = (int) $request->query('top_k', 10);
+        $data = $this->performTextSearch($query, $topK);
+
+        return view('pages.features.retrieval-batik', [
+            'query'   => $query,
+            'results' => $data['results'],
+            'error'   => $data['success'] ? null : ($data['message'] ?? 'Model pencarian belum tersedia.'),
+        ]);
+    }
+
+    private function performTextSearch(string $query, int $topK): array
+    {
+        if (empty($this->baseUrl)) {
+            return [
+                'success' => false,
+                'stub'    => true,
+                'message' => 'Model pencarian belum terhubung. Endpoint ML_SEARCH_API_BASE_URL belum dikonfigurasi.',
+                'results' => [],
+                'status'  => 503,
+            ];
+        }
+
+        try {
+            $path = $this->endpoints['search_text'] ?? '/search-text';
+            $url  = $this->baseUrl . '/' . ltrim($path, '/');
+
+            $response = Http::timeout(30)->post($url, [
+                'query' => $query,
+                'top_k' => $topK,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $rawResults = $data['results'] ?? [];
+
+                $results = collect($rawResults)->map(function ($item, $i) {
+                    return [
+                        'rank'      => $item['rank'] ?? $i + 1,
+                        'score'     => $item['score'] ?? $item['similarity'] ?? 0,
+                        'image_url' => $item['image_url'] ?? $item['url'] ?? null,
+                        'category'  => $item['category'] ?? $item['label'] ?? 'Tidak Diketahui',
+                        'filename'  => $item['filename'] ?? basename((string) ($item['image_url'] ?? '')),
+                    ];
+                })->values()->all();
+
+                return [
+                    'success' => true,
+                    'results' => $results,
+                    'status'  => 200,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Model AI tidak memberikan respons yang valid.',
+                'results' => [],
+                'status'  => $response->status(),
+            ];
+        } catch (\Exception $e) {
+            Log::error('ML API Error (search-text): ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'message' => 'Gagal menghubungi server Model AI. Periksa koneksi atau endpoint.',
+                'results' => [],
+                'status'  => 500,
+            ];
         }
     }
 }
