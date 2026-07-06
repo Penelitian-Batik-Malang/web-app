@@ -180,10 +180,9 @@
                                 <div class="flex flex-col items-center gap-2">
                                     <input 
                                         type="color" 
-                                        class="manual-color-picker" 
+                                        class="manual-color-picker w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50" 
                                         data-color-index="0"
                                         value="#ff0000"
-                                        class="w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50"
                                     >
                                     <p class="text-gray-400 text-xs">Warna 1</p>
                                     <p class="color-code text-white text-sm font-mono font-bold">#ff0000</p>
@@ -193,10 +192,9 @@
                                 <div class="flex flex-col items-center gap-2">
                                     <input 
                                         type="color" 
-                                        class="manual-color-picker" 
+                                        class="manual-color-picker w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50" 
                                         data-color-index="1"
                                         value="#00ff00"
-                                        class="w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50"
                                     >
                                     <p class="text-gray-400 text-xs">Warna 2</p>
                                     <p class="color-code text-white text-sm font-mono font-bold">#00ff00</p>
@@ -206,10 +204,9 @@
                                 <div class="flex flex-col items-center gap-2">
                                     <input 
                                         type="color" 
-                                        class="manual-color-picker" 
+                                        class="manual-color-picker w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50" 
                                         data-color-index="2"
                                         value="#0000ff"
-                                        class="w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50"
                                     >
                                     <p class="text-gray-400 text-xs">Warna 3</p>
                                     <p class="color-code text-white text-sm font-mono font-bold">#0000ff</p>
@@ -219,10 +216,9 @@
                                 <div class="flex flex-col items-center gap-2">
                                     <input 
                                         type="color" 
-                                        class="manual-color-picker" 
+                                        class="manual-color-picker w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50" 
                                         data-color-index="3"
                                         value="#ffff00"
-                                        class="w-16 h-16 rounded cursor-pointer border-2 border-amber-700/50"
                                     >
                                     <p class="text-gray-400 text-xs">Warna 4</p>
                                     <p class="color-code text-white text-sm font-mono font-bold">#ffff00</p>

@@ -331,7 +331,7 @@ class PewarnaanPalletNet {
     /**
      * Handle colorize button click
      */
-    async handleColorize(batikImage, colorImage) {
+    async handleColorize(batikImage, colorImage, colorSourceType) {
         try {
             // Validate inputs
             if (!batikImage) {
@@ -351,11 +351,22 @@ class PewarnaanPalletNet {
                 processButton.disabled = true;
             }
 
-            console.log("Starting colorization with 3 methods...");
+            let methods = ["kmeans", "histogram", "median"];
+            if (colorSourceType === "manual") {
+                methods = ["kmeans"];
+            }
 
-            // Prepare data for all three methods
+            console.log(`Starting colorization with ${methods.length} method(s)...`);
+
+            // Update modal text
+            const modalText = document.querySelector("#processing-modal p:last-child");
+            if (modalText) {
+                const methodCount = methods.length;
+                modalText.textContent = `Memproses ${methodCount} metode pewarnaan...`;
+            }
+
+            // Prepare data for all selected methods
             const results = {};
-            const methods = ["kmeans", "histogram", "median"];
 
             // Process each method in parallel
             const promises = methods.map((method) =>
