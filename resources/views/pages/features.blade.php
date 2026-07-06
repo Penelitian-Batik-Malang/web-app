@@ -88,6 +88,18 @@
                 :url="route('rekomendasi.batik')"
             />
             @endif
+
+            {{-- Pencarian by Deskripsi Teks (Text-to-Image) --}}
+            @if(!auth()->check() || auth()->user()->hasMenuAccess('pencarian-batik'))
+            <x-card-features
+                title="Pencarian by Deskripsi Teks"
+                description="Ceritakan motif atau warna batik yang kamu bayangkan, sistem akan mencarikan gambar paling sesuai"
+                icon="bi-chat-text"
+                iconBgColor="bg-emerald-500/10"
+                iconTextColor="text-emerald-500"
+                :url="route('search')"
+            />
+            @endif
         </div>
     </div>
     @endif

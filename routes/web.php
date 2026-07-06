@@ -92,3 +92,8 @@ Route::middleware('auth')->group(function () {
     // Auto-like: guest klik like -> login -> route ini terpanggil -> like applied -> redirect ke detail batik
     Route::get('/galeri/like/{imageId}', [App\Http\Controllers\GalleryController::class, 'autoLike'])->name('galeri.auto-like');
 });
+
+// ── Pencarian Batik Text (publik) ─────────────────────────────────────────────────
+Route::middleware('menu.access_or_guest:retrieval-batik')->group(function () {
+    Route::get('/pencarian', [App\Http\Controllers\MLController::class, 'searchText'])->name('search');
+});
