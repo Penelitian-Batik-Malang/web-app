@@ -340,7 +340,7 @@
                             <i class="bi bi-hourglass-split animate-spin text-amber-500 text-4xl"></i>
                         </div>
                         <p class="text-white font-semibold mb-2">Memproses Pewarnaan</p>
-                        <p class="text-gray-400 text-sm">Memproses 3 metode pewarnaan...</p>
+                        <p class="text-gray-400 text-sm">{{ ($colorSourceType ?? 'upload') === 'manual' ? 'Memproses 1 metode pewarnaan...' : 'Memproses 3 metode pewarnaan...' }}</p>
                     </div>
                 </div>
 
