@@ -106,6 +106,9 @@ return [
             'palet_extract'        => '/api/recolor/palette/extract',
             'palet_recolor'        => '/api/recolor/recolor',
             'palet_recolor_simple' => '/api/recolor/recolor/simple',
+
+            // Text-based search → router prefix /api/retrieval
+            'search_text'          => '/api/retrieval/text',
         ],
 
         // ── S3 Object Storage ──────────────────────────────────────────

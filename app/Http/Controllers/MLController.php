@@ -262,19 +262,52 @@ class MLController extends Controller
     public function searchText(Request $request)
     {
         $query = $request->query('query');
+        $wantsJson = $request->ajax() || $request->wantsJson();
 
-        if (!$query) {
-            return view('pages.features.retrieval-batik');
+        try {
+            if (!$query) {
+                if ($wantsJson) {
+                    return response()->json(['success' => true, 'query' => null, 'results' => [], 'error' => null]);
+                }
+                return view('pages.features.retrieval-batik');
+            }
+
+            $topK = (int) $request->query('top_k', 10);
+            $data = $this->performTextSearch($query, $topK);
+            $error = $data['success'] ? null : ($data['message'] ?? 'Model pencarian belum tersedia.');
+
+            if ($wantsJson) {
+                return response()->json([
+                    'success' => $data['success'],
+                    'query'   => $query,
+                    'results' => $data['results'],
+                    'error'   => $error,
+                ]);
+            }
+
+            return view('pages.features.retrieval-batik', [
+                'query'   => $query,
+                'results' => $data['results'],
+                'error'   => $error,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('searchText fatal error: ' . $e->getMessage(), ['exception' => $e]);
+
+            if ($wantsJson) {
+                return response()->json([
+                    'success' => false,
+                    'query'   => $query,
+                    'results' => [],
+                    'error'   => 'Terjadi kesalahan server saat mencari.',
+                ], 500);
+            }
+
+            return view('pages.features.retrieval-batik', [
+                'query'   => $query,
+                'results' => [],
+                'error'   => 'Terjadi kesalahan server saat mencari.',
+            ]);
         }
-
-        $topK = (int) $request->query('top_k', 10);
-        $data = $this->performTextSearch($query, $topK);
-
-        return view('pages.features.retrieval-batik', [
-            'query'   => $query,
-            'results' => $data['results'],
-            'error'   => $data['success'] ? null : ($data['message'] ?? 'Model pencarian belum tersedia.'),
-        ]);
     }
 
     private function performTextSearch(string $query, int $topK): array
@@ -293,14 +326,19 @@ class MLController extends Controller
             $path = $this->endpoints['search_text'] ?? '/search-text';
             $url  = $this->baseUrl . '/' . ltrim($path, '/');
 
-            $response = Http::timeout(30)->post($url, [
-                'query' => $query,
-                'top_k' => $topK,
-            ]);
+            $response = Http::timeout(30)
+                ->acceptJson()
+                ->asJson()
+                ->withToken(config('services.ml.hf_token'))
+                ->withHeaders(['X-API-Key' => config('services.ml.api_key'),])
+                ->post($url, [
+                    'query' => $query,
+                    'top_k' => $topK,
+                ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                $rawResults = $data['results'] ?? [];
+                $rawResults = data_get($data, 'data.results', []);
 
                 $results = collect($rawResults)->map(function ($item, $i) {
                     return [
