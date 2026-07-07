@@ -205,7 +205,7 @@ window.ColorSearchModal = {
         scanBtn.disabled = false;
         scanBtn.classList.remove("opacity-60", "cursor-not-allowed");
         actionNote.textContent =
-            "Palette siap. Klik Cari Rekomendasi untuk mengambil rekomendasi.";
+            "Palette siap. Klik Pindai Gambar untuk mengambil rekomendasi.";
     },
 
     _syncActionSection(id) {
@@ -572,7 +572,7 @@ window.ColorSearchModal = {
         } finally {
             if (scanBtn) {
                 scanBtn.disabled = false;
-                scanBtn.textContent = "Cari Rekomendasi";
+                scanBtn.textContent = "Pindai Gambar";
             }
             this._setScanButtonState(id);
         }
