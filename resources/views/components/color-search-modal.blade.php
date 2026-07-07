@@ -134,7 +134,7 @@
                         onclick="ColorSearchModal.search('{{ $id }}')"
                         class="rounded-xl bg-primary py-3 font-bold text-black transition-colors hover:bg-amber-600"
                     >
-                        Pindai Gambar
+                        Cari Rekomendasi
                     </button>
                     <button
                         type="button"

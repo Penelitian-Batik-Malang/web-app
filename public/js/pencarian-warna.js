@@ -457,7 +457,7 @@
             scanBtn.disabled = false;
             scanBtn.classList.remove("opacity-60", "cursor-not-allowed");
             actionNote.textContent =
-                "Palet siap. Klik Pindai Gambar untuk mengambil rekomendasi.";
+                "Palet siap. Klik Cari Rekomendasi untuk mengambil rekomendasi.";
         },
 
         _syncRefreshButton: function () {
@@ -835,27 +835,47 @@
                 }
 
                 var recommendationPayload = recommendationData.data || {};
-                var results = recommendationPayload.results || [];
-                var seen = new Set();
-                this.state.recommendations = results
-                    .filter(function (item) {
-                        var key = "";
-                        if (item && item.image_id != null) {
-                            key = "image:" + String(item.image_id);
-                        } else if (item && item.vec_id != null) {
-                            key = "vec:" + String(item.vec_id);
-                        } else {
-                            key =
-                                "label:" +
-                                String(item && item.label ? item.label : "");
-                        }
-                        if (seen.has(key)) {
-                            return false;
-                        }
-                        seen.add(key);
-                        return true;
-                    })
-                    .slice(0, 15);
+                // Support multiple response shapes: data.results, result.recommendations, or top-level results
+                var results = [];
+                var usedSource = null;
+                if (
+                    recommendationPayload &&
+                    Array.isArray(recommendationPayload.results)
+                ) {
+                    results = recommendationPayload.results;
+                    usedSource = "data.results";
+                } else if (
+                    recommendationData &&
+                    recommendationData.result &&
+                    Array.isArray(recommendationData.result.recommendations)
+                ) {
+                    results = recommendationData.result.recommendations;
+                    usedSource = "result.recommendations";
+                } else if (Array.isArray(recommendationData.results)) {
+                    results = recommendationData.results;
+                    usedSource = "results";
+                } else {
+                    results = recommendationPayload.results || [];
+                    usedSource = "fallback";
+                }
+                console.debug(
+                    "FAISS API using source:",
+                    usedSource,
+                    "results length:",
+                    results.length,
+                );
+                console.debug(
+                    "FAISS API results sample (first 20):",
+                    results.slice(0, 20).map(function (r) {
+                        return {
+                            id: r.id || r.image_id || r.vec_id,
+                            label: r.label || r.name || r.label,
+                        };
+                    }),
+                );
+                // Temporarily disable client-side deduplication — show top 15
+                // items from the backend as-is so UI reflects server output.
+                this.state.recommendations = results.slice(0, 15);
                 console.debug(
                     "FAISS API results length after filtering:",
                     this.state.recommendations.length,
