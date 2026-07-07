@@ -903,10 +903,9 @@
                 return;
             }
 
-            console.log(this.state.recommendations);
             var html = this.state.recommendations
                 .map(function (item, index) {
-                    var label = item.name || "Batik Serupa";
+                    var label = item.label || item.name || "Batik Serupa";
                     var imageUrl = item.image_url || item.image_path || "";
                     var distance =
                         typeof item.distance === "number"
