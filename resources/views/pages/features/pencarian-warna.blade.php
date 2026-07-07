@@ -122,7 +122,7 @@ Langkah implementasi:
                 <div class="space-y-4">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <h2 class="text-xl font-bold text-white">Palet Warna Dominan</h2>
-                        <span class="text-xs text-gray-500">Maksimal 14 Palet</span>
+                        <span class="text-xs text-gray-500">Maksimal 5 Palet</span>
                     </div>
 
                     <div id="color-search-page-palette-empty" class="flex min-h-[260px] items-center justify-center rounded-2xl border border-gray-800 bg-gray-900/30 p-5 text-center text-sm text-gray-500">
@@ -151,7 +151,7 @@ Langkah implementasi:
                         type="button"
                         class="rounded-xl bg-primary py-3 font-bold text-black transition-colors hover:bg-amber-600"
                     >
-                        Cari Rekomendasi
+                        Pindai Gambar
                     </button>
                     <button
                         id="color-search-page-reset-btn"
