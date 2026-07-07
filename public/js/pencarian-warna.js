@@ -457,7 +457,7 @@
             scanBtn.disabled = false;
             scanBtn.classList.remove("opacity-60", "cursor-not-allowed");
             actionNote.textContent =
-                "Palet siap. Klik Pindai Gambar untuk mengambil rekomendasi.";
+                "Palet siap. Klik Cari Rekomendasi untuk mengambil rekomendasi.";
         },
 
         _syncRefreshButton: function () {
@@ -850,7 +850,7 @@
             } finally {
                 if (scanBtn) {
                     scanBtn.disabled = false;
-                    scanBtn.textContent = "Pindai Gambar";
+                    scanBtn.textContent = "Cari Rekomendasi";
                 }
                 this._setScanButtonState();
             }
