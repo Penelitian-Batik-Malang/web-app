@@ -856,6 +856,10 @@
                         return true;
                     })
                     .slice(0, 15);
+                console.debug(
+                    "FAISS API results length after filtering:",
+                    this.state.recommendations.length,
+                );
 
                 this._renderRecommendations();
                 this._setScanButtonState();
