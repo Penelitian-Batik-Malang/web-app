@@ -537,8 +537,14 @@ window.ColorSearchModal = {
                 );
             }
 
+            console.debug("FAISS modal raw response:", recommendationData);
             const recommendationPayload = recommendationData.data || {};
+            console.debug("FAISS modal payload.data:", recommendationPayload);
             const recommendationResults = recommendationPayload.results || [];
+            console.debug(
+                "FAISS modal results length before filtering:",
+                recommendationResults.length,
+            );
             const seen = new Set();
             state.recommendations = recommendationResults
                 .filter((item) => {
@@ -557,6 +563,10 @@ window.ColorSearchModal = {
                     return true;
                 })
                 .slice(0, 15);
+            console.debug(
+                "FAISS modal results length after filtering:",
+                state.recommendations.length,
+            );
 
             this._renderRecommendations(id);
             this._setScanButtonState(id);
