@@ -884,8 +884,7 @@
                 this._renderRecommendations();
                 this._setScanButtonState();
 
-                if (actionLabel)
-                    actionLabel.textContent = "Ingin Pindai Ulang?";
+                if (actionLabel) actionLabel.textContent = "Ingin Cari Ulang?";
                 this._notify(
                     "info",
                     "Rekomendasi berhasil diambil (" +
@@ -902,7 +901,7 @@
             } finally {
                 if (scanBtn) {
                     scanBtn.disabled = false;
-                    scanBtn.textContent = "Pindai Gambar";
+                    scanBtn.textContent = "Cari Rekomendasi";
                 }
                 this._setScanButtonState();
             }
