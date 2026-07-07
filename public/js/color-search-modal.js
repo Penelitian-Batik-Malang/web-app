@@ -331,10 +331,43 @@ window.ColorSearchModal = {
                 );
             }
 
-            const paletteResult = paletteData.result || {};
-            state.palettes = paletteResult.palettes || [];
+            let palettePayload = null;
+            let paletteSource = "unknown";
+            if (paletteData && typeof paletteData.data === "object") {
+                palettePayload = paletteData.data;
+                paletteSource = "data";
+            } else if (paletteData && typeof paletteData.result === "object") {
+                palettePayload = paletteData.result;
+                paletteSource = "result";
+            } else {
+                palettePayload = paletteData;
+                paletteSource = "root";
+            }
+
+            let palettes = [];
+            if (Array.isArray(palettePayload.palette)) {
+                palettes = palettePayload.palette;
+            } else if (Array.isArray(palettePayload.palettes)) {
+                palettes = palettePayload.palettes;
+            } else if (Array.isArray(paletteData.palette)) {
+                palettes = paletteData.palette;
+                paletteSource = "root.palette";
+            } else if (Array.isArray(paletteData.palettes)) {
+                palettes = paletteData.palettes;
+                paletteSource = "root.palettes";
+            }
+
+            console.debug(
+                "Palette response source:",
+                paletteSource,
+                "length:",
+                palettes.length,
+                palettePayload,
+            );
+
+            state.palettes = palettes;
             state.selectedPaletteIndexes =
-                paletteResult.selected_palette_indexes ||
+                palettePayload.selected_palette_indexes ||
                 state.palettes.map((palette) => palette.index);
 
             this._renderPalettes(id);

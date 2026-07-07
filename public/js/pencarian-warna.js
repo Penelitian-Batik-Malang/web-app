@@ -573,10 +573,44 @@
                     );
                 }
 
-                var palettePayload = paletteData.data || {};
-                var paletteResult = paletteData.result || {};
-                this.state.palettes =
-                    palettePayload.palette || paletteResult.palette || [];
+                var palettePayload = null;
+                var paletteSource = "unknown";
+                if (paletteData && typeof paletteData.data === "object") {
+                    palettePayload = paletteData.data;
+                    paletteSource = "data";
+                } else if (
+                    paletteData &&
+                    typeof paletteData.result === "object"
+                ) {
+                    palettePayload = paletteData.result;
+                    paletteSource = "result";
+                } else {
+                    palettePayload = paletteData;
+                    paletteSource = "root";
+                }
+
+                var palettes = [];
+                if (Array.isArray(palettePayload.palette)) {
+                    palettes = palettePayload.palette;
+                } else if (Array.isArray(palettePayload.palettes)) {
+                    palettes = palettePayload.palettes;
+                } else if (Array.isArray(paletteData.palette)) {
+                    palettes = paletteData.palette;
+                    paletteSource = "root.palette";
+                } else if (Array.isArray(paletteData.palettes)) {
+                    palettes = paletteData.palettes;
+                    paletteSource = "root.palettes";
+                }
+
+                console.debug(
+                    "Palette response source:",
+                    paletteSource,
+                    "length:",
+                    palettes.length,
+                    palettePayload,
+                );
+
+                this.state.palettes = palettes;
                 this.state.selectedPaletteNos = this.state.palettes.map(
                     function (item) {
                         return item.no;
