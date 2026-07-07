@@ -242,7 +242,7 @@
             if (video) {
                 try {
                     video.pause();
-                } catch (_e) { }
+                } catch (_e) {}
                 video.srcObject = null;
             }
 
@@ -531,7 +531,7 @@
 
             var csrfToken =
                 document.querySelector('meta[name="csrf-token"]') &&
-                    document.querySelector('meta[name="csrf-token"]').content
+                document.querySelector('meta[name="csrf-token"]').content
                     ? document.querySelector('meta[name="csrf-token"]').content
                     : "";
 
@@ -599,8 +599,8 @@
                 this._notify(
                     "info",
                     "Palet berhasil diambil (" +
-                    this.state.palettes.length +
-                    " warna). Pilih warna yang diinginkan.",
+                        this.state.palettes.length +
+                        " warna). Pilih warna yang diinginkan.",
                 );
                 return true;
             } catch (error) {
@@ -681,7 +681,10 @@
 
             var html = this.state.palettes
                 .map(function (palette) {
-                    var nameLabel = palette.name ? palette.name.charAt(0).toUpperCase() + palette.name.slice(1) : "";
+                    var nameLabel = palette.name
+                        ? palette.name.charAt(0).toUpperCase() +
+                          palette.name.slice(1)
+                        : "";
                     var isSelected =
                         ColorSearchPage.state.selectedPaletteNos.indexOf(
                             palette.no,
@@ -710,8 +713,8 @@
                         "</span>" +
                         (nameLabel
                             ? '<span class="absolute bottom-2 right-2 rounded bg-black/60 px-1.5 py-0.5 text-[11px] font-semibold text-white">' +
-                            nameLabel +
-                            "</span>"
+                              nameLabel +
+                              "</span>"
                             : "") +
                         "</button>"
                     );
@@ -767,18 +770,24 @@
 
             var csrfToken =
                 document.querySelector('meta[name="csrf-token"]') &&
-                    document.querySelector('meta[name="csrf-token"]').content
+                document.querySelector('meta[name="csrf-token"]').content
                     ? document.querySelector('meta[name="csrf-token"]').content
                     : "";
 
             try {
                 // Bersihkan list rekomendasi lama sebelum pindai ulang
-                var sectionEl = document.getElementById(this.id + "-recommend-section");
-                var listEl    = document.getElementById(this.id + "-recommend-list");
-                var countEl   = document.getElementById(this.id + "-recommend-count");
+                var sectionEl = document.getElementById(
+                    this.id + "-recommend-section",
+                );
+                var listEl = document.getElementById(
+                    this.id + "-recommend-list",
+                );
+                var countEl = document.getElementById(
+                    this.id + "-recommend-count",
+                );
                 if (sectionEl) sectionEl.classList.add("hidden");
-                if (listEl)    listEl.innerHTML = "";
-                if (countEl)   countEl.textContent = "";
+                if (listEl) listEl.innerHTML = "";
+                if (countEl) countEl.textContent = "";
                 this.state.recommendations = [];
 
                 this._notify("info", "Mengambil rekomendasi batik...");
@@ -826,8 +835,48 @@
                 }
 
                 var recommendationPayload = recommendationData.data || {};
-                this.state.recommendations =
-                    recommendationPayload.results || [];
+                var results = recommendationPayload.results || [];
+                this.state.recommendations = results.filter(
+                    function (item, index, arr) {
+                        var currentLabel = (
+                            item && item.label ? String(item.label) : ""
+                        )
+                            .trim()
+                            .toLowerCase();
+                        if (!currentLabel) {
+                            return (
+                                index ===
+                                arr.findIndex(function (candidate) {
+                                    return (
+                                        (candidate && candidate.image_id
+                                            ? candidate.image_id
+                                            : candidate && candidate.vec_id
+                                              ? candidate.vec_id
+                                              : "") ===
+                                        (item && item.image_id
+                                            ? item.image_id
+                                            : item && item.vec_id
+                                              ? item.vec_id
+                                              : "")
+                                    );
+                                })
+                            );
+                        }
+                        return (
+                            index ===
+                            arr.findIndex(function (candidate) {
+                                return (
+                                    (candidate && candidate.label
+                                        ? String(candidate.label)
+                                        : ""
+                                    )
+                                        .trim()
+                                        .toLowerCase() === currentLabel
+                                );
+                            })
+                        );
+                    },
+                );
 
                 this._renderRecommendations();
                 this._setScanButtonState();
@@ -837,8 +886,8 @@
                 this._notify(
                     "info",
                     "Rekomendasi berhasil diambil (" +
-                    this.state.recommendations.length +
-                    " item).",
+                        this.state.recommendations.length +
+                        " item).",
                 );
             } catch (error) {
                 this._notify(
@@ -886,12 +935,22 @@
                             : "-";
 
                     var colorBadges = "";
-                    if (Array.isArray(item.color_names_label) && item.color_names_label.length > 0) {
-                        colorBadges = '<div class="mt-2 flex flex-wrap gap-1">' +
-                            item.color_names_label.map(function (c) {
-                                return '<span class="rounded bg-gray-800 px-1.5 py-0.5 text-[10px] text-gray-300">' + c + '</span>';
-                            }).join('') +
-                            '</div>';
+                    if (
+                        Array.isArray(item.color_names_label) &&
+                        item.color_names_label.length > 0
+                    ) {
+                        colorBadges =
+                            '<div class="mt-2 flex flex-wrap gap-1">' +
+                            item.color_names_label
+                                .map(function (c) {
+                                    return (
+                                        '<span class="rounded bg-gray-800 px-1.5 py-0.5 text-[10px] text-gray-300">' +
+                                        c +
+                                        "</span>"
+                                    );
+                                })
+                                .join("") +
+                            "</div>";
                     }
 
                     return (

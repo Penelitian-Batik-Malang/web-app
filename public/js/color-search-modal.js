@@ -537,8 +537,41 @@ window.ColorSearchModal = {
                 );
             }
 
-            const recommendationResult = recommendationData.result || {};
-            state.recommendations = recommendationResult.recommendations || [];
+            const recommendationPayload = recommendationData.data || {};
+            const recommendationResults = recommendationPayload.results || [];
+            state.recommendations = recommendationResults.filter(
+                (item, index, arr) => {
+                    const currentLabel = (item?.label ? String(item.label) : "")
+                        .trim()
+                        .toLowerCase();
+                    if (!currentLabel) {
+                        return (
+                            index ===
+                            arr.findIndex((candidate) => {
+                                return (
+                                    (candidate?.image_id ??
+                                        candidate?.vec_id ??
+                                        "") ===
+                                    (item?.image_id ?? item?.vec_id ?? "")
+                                );
+                            })
+                        );
+                    }
+                    return (
+                        index ===
+                        arr.findIndex((candidate) => {
+                            return (
+                                (candidate?.label
+                                    ? String(candidate.label)
+                                    : ""
+                                )
+                                    .trim()
+                                    .toLowerCase() === currentLabel
+                            );
+                        })
+                    );
+                },
+            );
 
             this._renderRecommendations(id);
             this._setScanButtonState(id);
