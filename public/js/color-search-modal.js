@@ -205,7 +205,7 @@ window.ColorSearchModal = {
         scanBtn.disabled = false;
         scanBtn.classList.remove("opacity-60", "cursor-not-allowed");
         actionNote.textContent =
-            "Palette siap. Klik Pindai Gambar untuk mengambil rekomendasi.";
+            "Palette siap. Klik Cari Rekomendasi untuk mengambil rekomendasi.";
     },
 
     _syncActionSection(id) {
@@ -391,24 +391,26 @@ window.ColorSearchModal = {
                 URL.revokeObjectURL(url);
                 reject(new Error("Gagal membaca gambar."));
             };
-            img.src = url;
-        });
-    },
-
-    _blobFromCanvas(canvas, quality) {
-        return new Promise((resolve) => {
-            canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
-        });
-    },
-
-    async _optimizeImage(file, maxBytes) {
-        try {
-            const image = await this._loadImage(file);
-            const maxWidth = 1600;
-            const maxHeight = 1600;
-
-            let width = image.width;
-            let height = image.height;
+                // Support multiple response shapes: data.results, result.recommendations, or top-level results
+                let recommendationResults = [];
+                let usedSource = null;
+                if (recommendationPayload && Array.isArray(recommendationPayload.results)) {
+                    recommendationResults = recommendationPayload.results;
+                    usedSource = 'data.results';
+                } else if (recommendationData && recommendationData.result && Array.isArray(recommendationData.result.recommendations)) {
+                    recommendationResults = recommendationData.result.recommendations;
+                    usedSource = 'result.recommendations';
+                } else if (Array.isArray(recommendationData.results)) {
+                    recommendationResults = recommendationData.results;
+                    usedSource = 'results';
+                } else {
+                    recommendationResults = recommendationPayload.results || [];
+                    usedSource = 'fallback';
+                }
+                console.debug('FAISS modal using source:', usedSource, 'results length:', recommendationResults.length);
+                console.debug('FAISS modal results sample (first 20):', recommendationResults.slice(0, 20).map(r => ({ id: r.id || r.image_id || r.vec_id, label: r.label || r.name })));
+                // Temporarily disable client-side deduplication so modal shows the backend's top 15 results directly.
+                state.recommendations = recommendationResults.slice(0, 15);
             const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
             width = Math.max(1, Math.floor(width * ratio));
             height = Math.max(1, Math.floor(height * ratio));
@@ -582,7 +584,7 @@ window.ColorSearchModal = {
         } finally {
             if (scanBtn) {
                 scanBtn.disabled = false;
-                scanBtn.textContent = "Pindai Gambar";
+                scanBtn.textContent = "Cari Rekomendasi";
             }
             this._setScanButtonState(id);
         }
