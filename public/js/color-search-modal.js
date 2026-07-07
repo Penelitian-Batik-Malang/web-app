@@ -573,7 +573,7 @@ window.ColorSearchModal = {
             this._renderRecommendations(id);
             this._setScanButtonState(id);
 
-            if (actionLabel) actionLabel.textContent = "Ingin Pindai Ulang?";
+            if (actionLabel) actionLabel.textContent = "Ingin Cari Ulang?";
             this._notify(
                 id,
                 "info",
