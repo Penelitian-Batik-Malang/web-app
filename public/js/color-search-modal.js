@@ -539,39 +539,24 @@ window.ColorSearchModal = {
 
             const recommendationPayload = recommendationData.data || {};
             const recommendationResults = recommendationPayload.results || [];
-            state.recommendations = recommendationResults.filter(
-                (item, index, arr) => {
-                    const currentLabel = (item?.label ? String(item.label) : "")
-                        .trim()
-                        .toLowerCase();
-                    if (!currentLabel) {
-                        return (
-                            index ===
-                            arr.findIndex((candidate) => {
-                                return (
-                                    (candidate?.image_id ??
-                                        candidate?.vec_id ??
-                                        "") ===
-                                    (item?.image_id ?? item?.vec_id ?? "")
-                                );
-                            })
-                        );
+            const seen = new Set();
+            state.recommendations = recommendationResults
+                .filter((item) => {
+                    let key = "";
+                    if (item?.image_id != null) {
+                        key = `image:${item.image_id}`;
+                    } else if (item?.vec_id != null) {
+                        key = `vec:${item.vec_id}`;
+                    } else {
+                        key = `label:${item?.label ?? ""}`;
                     }
-                    return (
-                        index ===
-                        arr.findIndex((candidate) => {
-                            return (
-                                (candidate?.label
-                                    ? String(candidate.label)
-                                    : ""
-                                )
-                                    .trim()
-                                    .toLowerCase() === currentLabel
-                            );
-                        })
-                    );
-                },
-            );
+                    if (seen.has(key)) {
+                        return false;
+                    }
+                    seen.add(key);
+                    return true;
+                })
+                .slice(0, 15);
 
             this._renderRecommendations(id);
             this._setScanButtonState(id);

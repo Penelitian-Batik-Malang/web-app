@@ -836,47 +836,26 @@
 
                 var recommendationPayload = recommendationData.data || {};
                 var results = recommendationPayload.results || [];
-                this.state.recommendations = results.filter(
-                    function (item, index, arr) {
-                        var currentLabel = (
-                            item && item.label ? String(item.label) : ""
-                        )
-                            .trim()
-                            .toLowerCase();
-                        if (!currentLabel) {
-                            return (
-                                index ===
-                                arr.findIndex(function (candidate) {
-                                    return (
-                                        (candidate && candidate.image_id
-                                            ? candidate.image_id
-                                            : candidate && candidate.vec_id
-                                              ? candidate.vec_id
-                                              : "") ===
-                                        (item && item.image_id
-                                            ? item.image_id
-                                            : item && item.vec_id
-                                              ? item.vec_id
-                                              : "")
-                                    );
-                                })
-                            );
+                var seen = new Set();
+                this.state.recommendations = results
+                    .filter(function (item) {
+                        var key = "";
+                        if (item && item.image_id != null) {
+                            key = "image:" + String(item.image_id);
+                        } else if (item && item.vec_id != null) {
+                            key = "vec:" + String(item.vec_id);
+                        } else {
+                            key =
+                                "label:" +
+                                String(item && item.label ? item.label : "");
                         }
-                        return (
-                            index ===
-                            arr.findIndex(function (candidate) {
-                                return (
-                                    (candidate && candidate.label
-                                        ? String(candidate.label)
-                                        : ""
-                                    )
-                                        .trim()
-                                        .toLowerCase() === currentLabel
-                                );
-                            })
-                        );
-                    },
-                );
+                        if (seen.has(key)) {
+                            return false;
+                        }
+                        seen.add(key);
+                        return true;
+                    })
+                    .slice(0, 15);
 
                 this._renderRecommendations();
                 this._setScanButtonState();
