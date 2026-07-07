@@ -661,9 +661,9 @@ window.ColorSearchModal = {
             .map(
                 (item) => `
                 <article class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-                    <img src="${item.image_url}" alt="${item.name}" class="h-24 w-full object-cover sm:h-28 md:h-32">
+                    <img src="${item.image_url || item.image_path || ""}" alt="${item.label || item.name || "Batik Serupa"}" class="h-24 w-full object-cover sm:h-28 md:h-32">
                     <div class="p-3">
-                        <p class="line-clamp-1 text-xs font-semibold text-white sm:text-sm">${item.name}</p>
+                        <p class="line-clamp-1 text-xs font-semibold text-white sm:text-sm">${item.label || item.name || "Batik Serupa"}</p>
                     </div>
                 </article>
             `,
