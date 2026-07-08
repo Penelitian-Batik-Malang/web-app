@@ -60,13 +60,12 @@ class RekomendasiBatikController extends BaseMLController
         $url = $this->fashionServiceUrl('/fashion/blend-cbir');
 
         try {
+            $headers = array_merge(['Accept' => 'application/json'], $this->getMLHeaders());
+
             $guzzle     = new GuzzleClient(['timeout' => 120]);
             $guzzleResp = $guzzle->post($url, [
                 'http_errors' => false,
-                'headers'     => [
-                    'Accept'    => 'application/json',
-                    'X-API-Key' => $this->apiKey
-                ],
+                'headers'     => $headers,
                 'multipart'   => [
                     ['name' => 'session_id',     'contents' => (string) $request->input('session_id')],
                     ['name' => 'part',           'contents' => (string) $request->input('part')],

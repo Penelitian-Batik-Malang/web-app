@@ -125,14 +125,13 @@ class TerapkanBatikController extends BaseMLController
                 ], 422);
             }
 
+            $headers = array_merge(['Accept' => 'application/json'], $this->getMLHeaders());
+
             // Pakai GuzzleHttp langsung — lebih reliable untuk multipart besar
             $guzzle     = new GuzzleClient(['timeout' => 120]);
             $guzzleResp = $guzzle->post($url, [
                 'http_errors' => false,
-                'headers'     => [
-                    'Accept'    => 'application/json',
-                    'X-API-Key' => $this->apiKey
-                ],
+                'headers'     => $headers,
                 'multipart'   => [
                     ['name' => 'session_id',     'contents' => (string) $request->input('session_id')],
                     ['name' => 'part',           'contents' => (string) $request->input('part')],
