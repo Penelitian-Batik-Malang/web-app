@@ -8,7 +8,7 @@
     'triggerIcon' => 'bi-cpu',              // Bootstrap Icon class tombol trigger
     'inputType'   => 'image',               // image | text
     'outputType'  => 'text',                // text | image
-    'scanText'    => 'Cari Rekomendasi',
+    'scanText'    => 'Pindai Gambar',
     'textPlaceholder' => 'Masukkan prompt atau teks input...',
 ])
 
@@ -226,7 +226,7 @@
                     onclick="MLDetector.primaryAction('{{ $id }}', '{{ $endpoint }}', '{{ $inputType }}', '{{ $outputType }}')"
                     class="bg-primary hover:bg-amber-600 text-black font-bold py-3 rounded-xl transition-all shadow-lg"
                 >
-                    Cari Rekomendasi
+                    Pindai Gambar
                 </button>
                 <button
                     onclick="MLDetector.reset('{{ $id }}')"

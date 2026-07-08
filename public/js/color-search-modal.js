@@ -331,10 +331,43 @@ window.ColorSearchModal = {
                 );
             }
 
-            const paletteResult = paletteData.result || {};
-            state.palettes = paletteResult.palettes || [];
+            let palettePayload = null;
+            let paletteSource = "unknown";
+            if (paletteData && typeof paletteData.data === "object") {
+                palettePayload = paletteData.data;
+                paletteSource = "data";
+            } else if (paletteData && typeof paletteData.result === "object") {
+                palettePayload = paletteData.result;
+                paletteSource = "result";
+            } else {
+                palettePayload = paletteData;
+                paletteSource = "root";
+            }
+
+            let palettes = [];
+            if (Array.isArray(palettePayload.palette)) {
+                palettes = palettePayload.palette;
+            } else if (Array.isArray(palettePayload.palettes)) {
+                palettes = palettePayload.palettes;
+            } else if (Array.isArray(paletteData.palette)) {
+                palettes = paletteData.palette;
+                paletteSource = "root.palette";
+            } else if (Array.isArray(paletteData.palettes)) {
+                palettes = paletteData.palettes;
+                paletteSource = "root.palettes";
+            }
+
+            console.debug(
+                "Palette response source:",
+                paletteSource,
+                "length:",
+                palettes.length,
+                palettePayload,
+            );
+
+            state.palettes = palettes;
             state.selectedPaletteIndexes =
-                paletteResult.selected_palette_indexes ||
+                palettePayload.selected_palette_indexes ||
                 state.palettes.map((palette) => palette.index);
 
             this._renderPalettes(id);
@@ -391,24 +424,26 @@ window.ColorSearchModal = {
                 URL.revokeObjectURL(url);
                 reject(new Error("Gagal membaca gambar."));
             };
-            img.src = url;
-        });
-    },
-
-    _blobFromCanvas(canvas, quality) {
-        return new Promise((resolve) => {
-            canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
-        });
-    },
-
-    async _optimizeImage(file, maxBytes) {
-        try {
-            const image = await this._loadImage(file);
-            const maxWidth = 1600;
-            const maxHeight = 1600;
-
-            let width = image.width;
-            let height = image.height;
+                // Support multiple response shapes: data.results, result.recommendations, or top-level results
+                let recommendationResults = [];
+                let usedSource = null;
+                if (recommendationPayload && Array.isArray(recommendationPayload.results)) {
+                    recommendationResults = recommendationPayload.results;
+                    usedSource = 'data.results';
+                } else if (recommendationData && recommendationData.result && Array.isArray(recommendationData.result.recommendations)) {
+                    recommendationResults = recommendationData.result.recommendations;
+                    usedSource = 'result.recommendations';
+                } else if (Array.isArray(recommendationData.results)) {
+                    recommendationResults = recommendationData.results;
+                    usedSource = 'results';
+                } else {
+                    recommendationResults = recommendationPayload.results || [];
+                    usedSource = 'fallback';
+                }
+                console.debug('FAISS modal using source:', usedSource, 'results length:', recommendationResults.length);
+                console.debug('FAISS modal results sample (first 20):', recommendationResults.slice(0, 20).map(r => ({ id: r.id || r.image_id || r.vec_id, label: r.label || r.name })));
+                // Temporarily disable client-side deduplication so modal shows the backend's top 15 results directly.
+                state.recommendations = recommendationResults.slice(0, 15);
             const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
             width = Math.max(1, Math.floor(width * ratio));
             height = Math.max(1, Math.floor(height * ratio));
@@ -537,8 +572,14 @@ window.ColorSearchModal = {
                 );
             }
 
+            console.debug("FAISS modal raw response:", recommendationData);
             const recommendationPayload = recommendationData.data || {};
+            console.debug("FAISS modal payload.data:", recommendationPayload);
             const recommendationResults = recommendationPayload.results || [];
+            console.debug(
+                "FAISS modal results length before filtering:",
+                recommendationResults.length,
+            );
             const seen = new Set();
             state.recommendations = recommendationResults
                 .filter((item) => {
@@ -557,11 +598,15 @@ window.ColorSearchModal = {
                     return true;
                 })
                 .slice(0, 15);
+            console.debug(
+                "FAISS modal results length after filtering:",
+                state.recommendations.length,
+            );
 
             this._renderRecommendations(id);
             this._setScanButtonState(id);
 
-            if (actionLabel) actionLabel.textContent = "Ingin Pindai Ulang?";
+            if (actionLabel) actionLabel.textContent = "Ingin Cari Ulang?";
             this._notify(
                 id,
                 "info",
@@ -661,9 +706,9 @@ window.ColorSearchModal = {
             .map(
                 (item) => `
                 <article class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-                    <img src="${item.image_url}" alt="${item.name}" class="h-24 w-full object-cover sm:h-28 md:h-32">
+                    <img src="${item.image_url || item.image_path || ""}" alt="${item.label || item.name || "Batik Serupa"}" class="h-24 w-full object-cover sm:h-28 md:h-32">
                     <div class="p-3">
-                        <p class="line-clamp-1 text-xs font-semibold text-white sm:text-sm">${item.name}</p>
+                        <p class="line-clamp-1 text-xs font-semibold text-white sm:text-sm">${item.label || item.name || "Batik Serupa"}</p>
                     </div>
                 </article>
             `,

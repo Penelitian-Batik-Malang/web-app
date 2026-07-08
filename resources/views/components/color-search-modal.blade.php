@@ -107,7 +107,7 @@
                 <div class="space-y-3">
                     <p class="text-center text-sm font-semibold text-amber-500">Pallet Warnamu</p>
                     <div id="{{ $id }}-palette-empty" class="flex min-h-[250px] items-center justify-center rounded-2xl border border-gray-800 bg-gray-900/30 p-5 text-center text-sm text-gray-500 sm:min-h-[300px] lg:min-h-[320px]">
-                        Hasil palette akan muncul setelah proses Cari Rekomendasi.
+                        Hasil palette akan muncul setelah proses pindai gambar.
                     </div>
                     <div id="{{ $id }}-palette-list" class="hidden min-h-[250px] rounded-2xl border border-amber-700/60 bg-gray-900/30 p-3 sm:min-h-[300px] sm:p-4 lg:min-h-[320px]"></div>
                     <div id="{{ $id }}-refresh-wrap" class="hidden text-center">
