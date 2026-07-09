@@ -50,6 +50,7 @@ class RekomendasiBatikController extends BaseMLController
             'session_id'     => 'required|string',
             'part'           => 'required|string',
             'instance_index' => 'required|integer',
+            'blending_mode'  => 'nullable|string|in:multiply,linear_burn',
             'batik_filename' => 'required|string',
         ]);
 
@@ -70,6 +71,7 @@ class RekomendasiBatikController extends BaseMLController
                     ['name' => 'session_id',     'contents' => (string) $request->input('session_id')],
                     ['name' => 'part',           'contents' => (string) $request->input('part')],
                     ['name' => 'instance_index', 'contents' => (string) ((int) $request->input('instance_index', 0))],
+                    ['name' => 'blending_mode',  'contents' => (string) $request->input('blending_mode', 'multiply')],
                     ['name' => 'batik_filename', 'contents' => (string) $request->input('batik_filename')],
                 ],
             ]);

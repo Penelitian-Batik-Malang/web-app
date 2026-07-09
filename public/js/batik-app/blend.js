@@ -108,6 +108,12 @@ window.BatikApp.Blend.init = function () {
             fd.append('part', state.selectedPart.partName);
             fd.append('instance_index', String(state.selectedPart.index));
             fd.append('batik', new File([blob], 'batik_crop.jpg', { type: 'image/jpeg' }));
+            
+            // Get selected blending mode from radio buttons
+            const blendingModeInput = document.querySelector('input[name="blending_mode"]:checked');
+            const blendingMode = blendingModeInput ? blendingModeInput.value : 'multiply';
+            fd.append('blending_mode', blendingMode);
+            
             fd.append('_token', helpers.csrf());
 
             const resp = await fetch(config.apiBlendRoute, {

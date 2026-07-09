@@ -60,6 +60,26 @@ Elemen penting (ID dipakai oleh JS):
                     <button id="batik-reset-transform" class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 rounded-lg transition-colors" title="Reset"><i class="bi bi-aspect-ratio"></i></button>
                 </div>
                 <p id="panel-status" class="hidden text-xs text-red-400 mt-1"></p>
+                
+                {{-- Blending Mode Selector --}}
+                <div class="bg-gray-900/50 border border-gray-700/50 rounded-lg p-3 space-y-2">
+                    <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Mode Blending</p>
+                    <div class="flex flex-col gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input type="radio" id="blending-mode-multiply" name="blending_mode" value="multiply" checked
+                                   class="w-4 h-4 text-primary bg-gray-700 border-gray-600 focus:ring-primary">
+                            <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Multiply Blending</span>
+                            <span class="text-[10px] text-gray-600 ml-auto">Default</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <input type="radio" id="blending-mode-linear-burn" name="blending_mode" value="linear_burn"
+                                   class="w-4 h-4 text-amber-500 bg-gray-700 border-gray-600 focus:ring-amber-500">
+                            <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Linear Burn Blending</span>
+                            <span class="text-[10px] text-gray-600 ml-auto">Kontras</span>
+                        </label>
+                    </div>
+                </div>
+                
                 <div class="flex gap-3 mt-auto">
                     <button id="apply-blend-btn" class="flex-1 bg-primary hover:bg-amber-600 text-black font-bold py-2.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1">
                         <i class="bi bi-check2"></i> Terapkan
