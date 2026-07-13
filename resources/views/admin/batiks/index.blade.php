@@ -98,17 +98,32 @@
                                 <form action="{{ route('admin.batiks.destroy', $batik) }}" method="POST"
                                       onsubmit="return confirm('Sembunyikan \'{{ $batik->name }}\' dari galeri publik? Data & likes tetap aman.');">
                                     @csrf @method('DELETE')
+                                    @foreach(request()->only(['page', 'cari', 'tipe', 'status']) as $key => $value)
+                                        @if($value !== null && $value !== '')
+                                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                        @endif
+                                    @endforeach
                                     <button type="submit" class="text-yellow-500 hover:text-yellow-400 font-medium">Sembunyikan</button>
                                 </form>
                             @else
                                 {{-- Sembunyi → bisa diaktifkan --}}
                                 <form action="{{ route('admin.batiks.activate', $batik) }}" method="POST">
                                     @csrf
+                                    @foreach(request()->only(['page', 'cari', 'tipe', 'status']) as $key => $value)
+                                        @if($value !== null && $value !== '')
+                                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                        @endif
+                                    @endforeach
                                     <button type="submit" class="text-green-500 hover:text-green-400 font-medium">Aktifkan</button>
                                 </form>
                                 <form action="{{ route('admin.batiks.destroy-permanent', $batik) }}" method="POST"
                                       onsubmit="return confirm('Hapus permanen \'{{ $batik->name }}\'? Semua data dan gambar akan terhapus.');">
                                     @csrf @method('DELETE')
+                                    @foreach(request()->only(['page', 'cari', 'tipe', 'status']) as $key => $value)
+                                        @if($value !== null && $value !== '')
+                                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                        @endif
+                                    @endforeach
                                     <button type="submit" class="text-red-500 hover:text-red-400 font-medium ml-2">Hapus</button>
                                 </form>
                             @endif

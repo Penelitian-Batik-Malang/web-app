@@ -16,6 +16,7 @@ namespace App\Http\Controllers\Features;
 use App\Models\Batik;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class TerapkanBatikController extends BaseMLController
@@ -166,6 +167,65 @@ class TerapkanBatikController extends BaseMLController
             return response()->json([
                 'success' => false,
                 'message' => 'Blend error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Reset area bagian pakaian ke gambar original.
+     *
+     * POST /api/reset-part → Fashion Service POST /fashion/reset-part
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function resetPart(Request $request)
+    {
+        $request->validate([
+            'session_id'     => 'required|string',
+            'part'           => 'required|string|in:shirt,t-shirt,sweater,cardigan,jacket,vest,dress,jumpsuit,suit,coat,sleeve,collar,lapel,hood,pocket,neckline,epaulette',
+            'instance_index' => 'nullable|integer|min:0',
+        ]);
+
+        if (!$this->isFashionAvailable()) {
+            return $this->notConfiguredResponse();
+        }
+
+        $url = $this->fashionServiceUrl('/fashion/reset-part');
+
+        try {
+            if (empty($this->apiKey)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Konfigurasi API Key ML tidak ditemukan di server.',
+                ], 503);
+            }
+
+            $response = Http::timeout(30)
+                ->asForm()
+                ->withHeaders($this->getMLHeaders())
+                ->post($url, [
+                    'session_id'     => $request->input('session_id'),
+                    'part'           => $request->input('part'),
+                    'instance_index' => (string) ((int) $request->input('instance_index', 0)),
+                ]);
+
+            if ($response->successful()) {
+                $raw = $response->json();
+                $data = isset($raw['data']) && isset($raw['status']) ? $raw['data'] : $raw;
+                return response()->json($data);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mereset bagian pakaian (HTTP ' . $response->status() . ').',
+            ], $response->status());
+
+        } catch (\Throwable $e) {
+            Log::error('Fashion Reset Part Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghubungi Fashion Service.',
             ], 500);
         }
     }

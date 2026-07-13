@@ -96,32 +96,38 @@ class BatikGalleryController extends Controller
      * Gunakan tombol "Aktifkan" di halaman edit untuk mengaktifkan kembali.
      * Untuk hapus permanen, gunakan destroyPermanent().
      */
-    public function destroy(Batik $batik)
+    public function destroy(Request $request, Batik $batik)
     {
         $batik->update(['is_active' => false]);
-        return redirect()->route('admin.batiks.index')->with('success', "'{$batik->name}' disembunyikan dari galeri publik. Data & likes tetap aman.");
+
+        return redirect()->route('admin.batiks.index', $request->only(['page', 'cari', 'tipe', 'status']))
+            ->with('success', "'{$batik->name}' disembunyikan dari galeri publik. Data & likes tetap aman.");
     }
 
     /**
      * Aktifkan kembali batik yang tersembunyi.
      */
-    public function activate(Batik $batik)
+    public function activate(Request $request, Batik $batik)
     {
         $batik->update(['is_active' => true]);
-        return redirect()->route('admin.batiks.index')->with('success', "'{$batik->name}' berhasil diaktifkan dan tampil di galeri.");
+
+        return redirect()->route('admin.batiks.index', $request->only(['page', 'cari', 'tipe', 'status']))
+            ->with('success', "'{$batik->name}' berhasil diaktifkan dan tampil di galeri.");
     }
 
     /**
      * Hapus permanen batik dan seluruh gambarnya.
      */
-    public function destroyPermanent(Batik $batik)
+    public function destroyPermanent(Request $request, Batik $batik)
     {
         foreach ($batik->images as $image) {
             $this->deleteImageFile($image);
             $image->delete();
         }
         $batik->delete();
-        return redirect()->route('admin.batiks.index')->with('success', "Motif '{$batik->name}' beserta seluruh gambarnya telah dihapus secara permanen.");
+
+        return redirect()->route('admin.batiks.index', $request->only(['page', 'cari', 'tipe', 'status']))
+            ->with('success', "Motif '{$batik->name}' beserta seluruh gambarnya telah dihapus secara permanen.");
     }
 
     /**
